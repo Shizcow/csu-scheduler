@@ -187,9 +187,10 @@ var app = new Vue(
 		    return this.courses_generator;
 		}
 		//automatic generator
-		console.log(courses)
 		if("A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
+		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
+		    this.course = this.course.home; // basically just a render bug
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.map(function(course){
 		    return course.home.alts.concat(course.home); // expand course to list of [alts...]
 		}))).filter(this.schedCompat);
