@@ -1,8 +1,4 @@
 /*
-BUGS:
-Switching from automatic to manual:
-if an alternate course is on the board, it reverts to its home course instead of keeping its alt
-
 ADD:
 In automatic mode, include a big indicator when there is no valid sched
 */
@@ -47,11 +43,9 @@ class Lazy{ // a memoized and simplified version of the Lazy class you can find 
 	    if(this.filters.reduce(function(acc, cur_filter){ // run all filters on value
 		return acc && cur_filter(tmp.value);
 	    }, true)){
-		var value = tmp.value;
-		var selected = value.filter(function(course){
+		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){
 		    return !course.home.alts.concat(course.home).includes(app.course);
-		});
-		this.data.push({value: value, selected: selected});
+		})});
             }
 	}
 	var data = this.data[i];
