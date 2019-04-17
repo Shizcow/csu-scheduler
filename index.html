@@ -66,7 +66,7 @@
         <div v-if="courses.length">
           <span class="title">Courses</span>
           <input v-model="search" placeholder="Search for a course..." style="width: 100%;">
-          <select size="25" v-model="course" @keyup.delete="course = ''" @keyup.esc="course = ''">
+          <select size="25" v-model="course" @keyup.delete="course = null" @keyup.esc="course = null">
             <option v-for="c in autoFilter(courses)" v-if="!safari || filterSearch(c)" v-show="filterSearch(c)" :value="c" v-text="c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle"></option>
           </select>
           <input v-model="closed" type="checkbox"> Closed

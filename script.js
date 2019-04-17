@@ -43,12 +43,14 @@ class Lazy{ // a memoized and simplified version of the Lazy class you can find 
 	    if(this.filters.reduce(function(acc, cur_filter){ // run all filters on value
 		return acc && cur_filter(tmp.value);
 	    }, true)){
-		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){
-		    return !course.home.alts.concat(course.home).includes(app.course);
+		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){ // cache selected change
+		    return !course.home.alts.concat(course.home).includes(app.course); // we need to do this here so it updates the url dynamically
 		})});
             }
 	}
 	var data = this.data[i];
+	if(!data)
+	    return false; // no valid schedules
 	app.selected = data.selected;
         return data.value;
     }
@@ -171,20 +173,27 @@ var app = new Vue(
 		if(courses[0] == null) return {get: function(i){return []}}; // no courses - go no further
 		if(courses.slice(-1)[0]==null) // remove null at end when no class is selected
 		    courses.pop();
-		if(courses.map(function(el){return el.courseReferenceNumber;}).join() == this.savedCourseGenerator)
-		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.mode == "Manual"){
-		    this.savedCourseGenerator = courses.map(function(el){return el.courseReferenceNumber;}).join();
+		    if("M"+courses.map(function(el){return el.courseReferenceNumber;}).join() == this.savedCourseGenerator)
+			return this.courses_generator; // don't have to run the calculation for every hour in every day
+		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
+			courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
+			this.course = courses.filter(function(course){
+			    return course.home == app.course.home;
+			})[0]; // replace app.course with the proper one automatically assigned
+		    }
+		    this.savedCourseGenerator = "M"+courses.map(function(el){return el.courseReferenceNumber;}).join();
 		    this.courses_generator = {get: function(i){return courses;}};
 		    return this.courses_generator;
 		}
 		//automatic generator
-		if(courses.map(function(el){return el.home.courseReferenceNumber;}).join() == this.savedCourseGenerator)
+		console.log(courses)
+		if("A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.map(function(course){
 		    return course.home.alts.concat(course.home); // expand course to list of [alts...]
 		}))).filter(this.schedCompat);
-		this.savedCourseGenerator = courses.map(function(el){return el.home.courseReferenceNumber;}).join();
+		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join();
 		return this.courses_generator;
 	    },
 	    //Generates a Cartesian Product with given dimensions
