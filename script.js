@@ -47,10 +47,16 @@ class Lazy{ // a memoized and simplified version of the Lazy class you can find 
 	    if(this.filters.reduce(function(acc, cur_filter){ // run all filters on value
 		return acc && cur_filter(tmp.value);
 	    }, true)){
-		this.data.push(tmp.value);
+		var value = tmp.value;
+		var selected = value.filter(function(course){
+		    return !course.home.alts.concat(course.home).includes(app.course);
+		});
+		this.data.push({value: value, selected: selected});
             }
 	}
-        return this.data[i];
+	var data = this.data[i];
+	app.selected = data.selected;
+        return data.value;
     }
     filter(filter_fun){
 	this.filters.push(filter_fun);
@@ -137,6 +143,12 @@ var app = new Vue(
                     return (course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
 			course.courseTitle.toLowerCase().indexOf(search) > -1;
 		}
+		if(this.mode == "Automatic"){
+		    if(this.selected.reduce(function(acc, course){
+			return course ? acc.concat(course.home.alts.concat(course.home)) : acc;
+		    }, []).includes(course))
+			return false;
+		}
 		return true;
             },
 	    autoFilter: function(courses){ // remove all consecutive duplicates - only in automatic mode
@@ -176,7 +188,7 @@ var app = new Vue(
 		if(courses.map(function(el){return el.home.courseReferenceNumber;}).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.map(function(course){
-		    return course.home.alts.concat(course); // expand course to list of [alts...]
+		    return course.home.alts.concat(course.home); // expand course to list of [alts...]
 		}))).filter(this.schedCompat);
 		this.savedCourseGenerator = courses.map(function(el){return el.home.courseReferenceNumber;}).join();
 		return this.courses_generator;
@@ -438,12 +450,12 @@ var app = new Vue(
 		{
                     ga('send', 'event', 'course', 'add');
                     this.course = null;
-                    this.selected.push(this.mode == "Manual" ? course : course.home);
+                    this.selected.push(course);
 		}
 		else
 		{
                     ga('send', 'event', 'course', 'remove');
-                    this.selected.splice(this.selected.indexOf(this.mode == "Manual" ? course : course.home), 1);
+                    this.selected.splice(this.selected.indexOf(course), 1);
                     this.hovering = false;
 		}
 
