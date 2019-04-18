@@ -35,7 +35,6 @@ class Lazy{ // a memoized and simplified version of the Lazy class you can find 
     }
     get(i){
         while(!this.done && (this.data.length <= i)){
-	    console.log("gen...")
 	    var tmp = this.core.next();
 	    if(tmp.done){
 		this.done = true;
@@ -164,8 +163,8 @@ var app = new Vue(
 	    },
 	    // check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
 	    autoInAlts: function(check_course, course_alts){ // pretty much just fixes a render bug
-		if(course_alts == null)
-		    return false; // we'll get an error in a few lines if we don't do this
+		if(check_course == null || course_alts == null)
+		    return false; // if there's one or zero, we don't even need to check
 		if(this.mode == "Manual")
 		    return check_course == course_alts;
 		return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
@@ -180,7 +179,7 @@ var app = new Vue(
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
 			courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
-			this.course = courses.filter(function(course){
+			this.course = courses.filter(function(course){ // This has thrown an error once in its life - be on the lookout as to why
 			    return course.home == app.course.home;
 			})[0]; // replace app.course with the proper one automatically assigned
 		    }
@@ -204,6 +203,9 @@ var app = new Vue(
 	    genNext: function(){
 		if(this.courses_generator && this.courses_generator.get(this.courses_generator.data.length)){ // see if there's more we haven't seen yet
 		    this.course_list_selection = this.courses_generator.data.length-1; // and show it to us
+		} else { // done - start looping
+		    this.course_list_selection++;
+		    this.course_list_selection%=this.courses_generator.data.length;
 		}
 	    },
 	    //Generates a Cartesian Product with given dimensions
@@ -374,6 +376,7 @@ var app = new Vue(
 		this.selected = [];	
 		this.course_list_selection = 0;
 		this.courses_generator = null;
+		this.saved_course_generator = "";
 
 		xhrzip(server_cx("registration"), function() { // This is needed to for cookie spoofing
 		    if (this.readyState === 4 && this.status === 200) {
