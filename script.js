@@ -202,7 +202,7 @@ var app = new Vue(
 	    },
 	    //Generate the next valid schedule and apply it to the board, if possible
 	    genNext: function(){
-		if(this.courses_generator.get(this.courses_generator.data.length)){ // see if there's more we haven't seen yet
+		if(this.courses_generator && this.courses_generator.get(this.courses_generator.data.length)){ // see if there's more we haven't seen yet
 		    this.course_list_selection = this.courses_generator.data.length-1; // and show it to us
 		}
 	    },
@@ -371,7 +371,9 @@ var app = new Vue(
 		this.course = null;
 		this.search = "";
 		this.courses = [];
-		this.selected = [];		
+		this.selected = [];	
+		this.course_list_selection = 0;
+		this.courses_generator = null;
 
 		xhrzip(server_cx("registration"), function() { // This is needed to for cookie spoofing
 		    if (this.readyState === 4 && this.status === 200) {
