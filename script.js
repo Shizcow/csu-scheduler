@@ -35,6 +35,7 @@ class Lazy{ // a memoized and simplified version of the Lazy class you can find 
     }
     get(i){
         while(!this.done && (this.data.length <= i)){
+	    console.log("gen...")
 	    var tmp = this.core.next();
 	    if(tmp.done){
 		this.done = true;
@@ -76,6 +77,7 @@ var app = new Vue(
 	    courses_list: [],
 	    course_list_selection: 0,
 	    savedCourseGenerator: ["0"],
+	    courses_generator: null,
             selected: [],
             search: "",
             closed: false,
@@ -191,11 +193,18 @@ var app = new Vue(
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.course.home; // basically just a render bug
+		this.course_list_selection = 0; // Reset on each new sched gen
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.map(function(course){
 		    return course.home.alts.concat(course.home); // expand course to list of [alts...]
 		}))).filter(this.schedCompat);
 		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join();
 		return this.courses_generator;
+	    },
+	    //Generate the next valid schedule and apply it to the board, if possible
+	    genNext: function(){
+		if(this.courses_generator.get(this.courses_generator.data.length)){ // see if there's more we haven't seen yet
+		    this.course_list_selection = this.courses_generator.data.length-1; // and show it to us
+		}
 	    },
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]

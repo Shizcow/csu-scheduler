@@ -56,9 +56,10 @@
 	<br>
         <input class="mode" v-model="mode" type="radio" value="Automatic"> Automatic
 	<br>
-	<!--<div>
-	  <span class="Title"> {{ courses_list }} </span>
-	</div>-->
+	<div v-if="mode == 'Automatic'" style="display: inline-block">
+	  <input type="range" min="0" v-bind:max="courses_generator ? courses_generator.data.length-1 : 0" v-model="course_list_selection" style="width: 66%;">
+	  <button v-on:click="genNext()" v-bind:disabled="courses_generator ? courses_generator.done : false" style="width: 30%;float: right;">{{ (courses_generator ? courses_generator.done : false) ? "Done" : "Next" }}</button>
+	</div>
 	<span class="title">Term</span>
         <select v-model="term" @change="changedTerm">
           <option v-for="term in terms" :value="term" v-text="term.description"></option>
