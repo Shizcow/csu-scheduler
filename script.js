@@ -4,6 +4,8 @@ I think everything dies when connection is lost during course retrieval
 
 
 ADD:
+If you select on an alternate schedule, maybe start generating from that one?
+
 In automatic mode, include a big indicator when there is no valid sched
 
 ASYNC XHR PLEASE
@@ -62,6 +64,7 @@ class Lazy{ // a memoized and simplified version of the Lazy class you can find 
 	if(!data)
 	    return false; // no valid schedules
 	app.selected = data.selected;
+	location.hash = app.generateHash(); // update url
         return data.value;
     }
     filter(filter_fun){
@@ -197,11 +200,9 @@ var app = new Vue(
 		    this.courses_generator = {get: function(i){return courses;}};
 		    return this.courses_generator;
 		}
+		courses = this.removeDuplicatesBy(course => course.subjectCourse, courses); // remove labs
 		//automatic generator
-		if("A"+courses.map(function(el){
-		    if(el.scheduleTypeDescription != "Laboratory" || el.home.labs == [])
-			return el.home.courseReferenceNumber;
-		}).filter(c => c).join() == this.savedCourseGenerator)
+		if("A"+courses.map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.course.home; // basically just a render bug
@@ -212,12 +213,17 @@ var app = new Vue(
 			acc.push(course.home.labs);
 		    return acc;
 		}, []))).filter(this.schedCompat);
-		this.savedCourseGenerator = "A"+courses.map(function(el){
-		    if(el.scheduleTypeDescription != "Laboratory" || el.home.labs == [])
-			return el.home.courseReferenceNumber;
-		}).filter(c => c).join();
+		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join();
 		console.log("new");
 		return this.courses_generator;
+	    },
+	    removeDuplicatesBy: function(keyFn, array) {
+		var mySet = new Set();
+		return array.filter(function(x) {
+		    var key = keyFn(x), isNew = !mySet.has(key);
+		    if (isNew) mySet.add(key);
+		    return isNew;
+		});
 	    },
 	    //Generate the next valid schedule and apply it to the board, if possible
 	    genNext: function(){
@@ -497,8 +503,11 @@ var app = new Vue(
                     this.course = null;
 		    if(this.mode == "Manual")
 			this.selected.push(course)
-		    else
-			this.selected.push(course.home)
+		    else {
+			this.selected.push(course.home);
+			this.savedCourseGenerator = "A";
+			this.autoConstruct(this.selected).get(0); // force url update
+		    }
 		}
 		else
 		{
