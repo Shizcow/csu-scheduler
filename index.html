@@ -27,9 +27,9 @@
               <td v-for="day in daylist(true)" class="block">
                 <div class="wrapper">
                   <div>
-                    <div v-for="c in autoConstruct(selected.concat(course)).get(mode == 'Manual' ? 0 : course_list_selection)" @dblClick="click(c)" @mouseenter="hovering = c" @mouseleave="hovering = null" v-if="c && courseHere(day, hour, c)"
-                         :class="{item: true, selected: !autoInAlts(c, course), hovering: hovering == c}" 
-                         :style="{top: courseHere(day, hour, c).top * 100 + '%', height: hovering == c ? 'auto' : courseHere(day, hour, c).length * 100 + '%', minHeight: hovering != c ? 'auto' : courseHere(day, hour, c).length * 100 + '%'}">
+                    <div v-for="c in autoConstruct(selected.concat(course)).get(mode == 'Manual' ? 0 : course_list_selection)" @dblClick="click(c)" @mouseenter="hovering = autoAndLabs(c)" @mouseleave="hovering = []" v-if="c && courseHere(day, hour, c)"
+                         :class="{item: true, selected: !autoInAlts(c, course), hovering: hovering.includes(c)}" 
+                         :style="{top: courseHere(day, hour, c).top * 100 + '%', height: hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%', minHeight: !hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%'}">
                       {{ c.subject }} {{ c.courseNumber }}<br> 
                       {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br>
                       {{ genFaculty(c) }}<br>

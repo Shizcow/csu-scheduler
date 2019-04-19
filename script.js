@@ -79,7 +79,7 @@ var app = new Vue(
 	data:
 	{
 	    mode: "Manual",
-            hovering: null,
+            hovering: [],
             currentstorage: null,
             localStorage: [],
             terms: [],
@@ -182,13 +182,21 @@ var app = new Vue(
 		    return check_course == course_alts;
 		return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
 	    },
+	    // grab the course, and pair it with any labs if available (and in auto). Determines hover style
+	    autoAndLabs: function(check_course){ // pretty much just fixes a render bug
+		if(check_course == null)
+		    return []; // if there's one or zero, we don't even need to check
+		if(this.mode == "Manual")
+		    return [check_course]; // Manual mode - only hover on one section
+		return this.courses_generator ? this.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
+	    },
 	    // return a Lazy object which spits out valid schedules, and cache it so that Vue templating doesnt calculate it a million times
 	    autoConstruct: function(courses){
 		if(courses[0] == null) return {get: function(i){return []}}; // no courses - go no further
 		if(courses.slice(-1)[0]==null) // remove null at end when no class is selected
 		    courses.pop();
 		if(this.mode == "Manual"){
-		    if("M"+courses.map(function(el){return el.courseReferenceNumber;}).join() == this.savedCourseGenerator)
+		    if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
 			courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
@@ -515,7 +523,7 @@ var app = new Vue(
 			this.selected.splice(this.selected.indexOf(course), 1);
 		    else
 			this.selected = this.selected.filter(c => course.subjectCourse != c.subjectCourse);
-                    this.hovering = false;
+                    this.hovering = [];
 		}
 
 		location.hash = this.generateHash();
