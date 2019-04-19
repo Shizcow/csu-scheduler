@@ -214,7 +214,6 @@ var app = new Vue(
 		    return acc;
 		}, []))).filter(this.schedCompat);
 		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join();
-		console.log("new");
 		return this.courses_generator;
 	    },
 	    removeDuplicatesBy: function(keyFn, array) {
@@ -512,7 +511,10 @@ var app = new Vue(
 		else
 		{
                     ga('send', 'event', 'course', 'remove');
-                    this.selected.splice(this.selected.indexOf(course), 1);
+		    if(this.mode == "Manual")
+			this.selected.splice(this.selected.indexOf(course), 1);
+		    else
+			this.selected = this.selected.filter(c => course.subjectCourse != c.subjectCourse);
                     this.hovering = false;
 		}
 
