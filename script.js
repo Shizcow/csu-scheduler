@@ -1,8 +1,18 @@
 /*
+BUG:
+I think everything dies when connection is lost during course retrieval
+
+
 ADD:
 In automatic mode, include a big indicator when there is no valid sched
+
+ASYNC XHR PLEASE
+
+If we get a code 500, retry
+
+Okay so turns out you actually need to log in :/
 */
-let test_percent_cap = 1;
+let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 500;
 Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
@@ -193,9 +203,12 @@ var app = new Vue(
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.course.home; // basically just a render bug
 		this.course_list_selection = 0; // Reset on each new sched gen
-		this.courses_generator = new Lazy(this.cartesianProduct(courses.map(function(course){
-		    return course.home.alts.concat(course.home); // expand course to list of [alts...]
-		}))).filter(this.schedCompat);
+		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
+		    acc.push(course.home.alts.concat(course.home)); // expand course to list of [alts...]
+		    if(course.home.labs.length)
+			acc.push(course.home.labs);
+		    return acc;
+		}, []))).filter(this.schedCompat);
 		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join();
 		return this.courses_generator;
 	    },
@@ -400,18 +413,25 @@ var app = new Vue(
 				    } else {
 					app.courses = rec.data.reduce(function(acc, cur){
 					    if(acc.length > 0){
-						if(acc[acc.length-1].subjectCourse == cur.subjectCourse){
+						if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
 						    var i = acc.length-1;
-						    for(; !acc[i].alts; --i);
+						    for(; !acc[i].labs; --i); // back to home
+						    cur.home = acc[i];
+						    acc[i].labs = acc[i].labs.concat(cur);
+						} else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
+						    var i = acc.length-1;
+						    for(; !acc[i].alts; --i); // back to home
 						    cur.home = acc[i];
 						    acc[i].alts = acc[i].alts.concat(cur);
 						} else {
 						    cur.alts = [];
+						    cur.labs = [];
 						    cur.home = cur;
 						}
 						return acc.concat(cur);
 					    } else {
 						cur.alts = [];
+						cur.labs = [];
 						cur.home = cur;
 						return [cur];
 					    }
