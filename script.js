@@ -85,7 +85,7 @@ var app = new Vue(
             course: null,
 	    courses_list: [],
 	    course_list_selection: 0,
-	    savedCourseGenerator: ["0"],
+	    savedCourseGenerator: "0",
 	    courses_generator: null,
             selected: [],
             search: "",
@@ -198,7 +198,10 @@ var app = new Vue(
 		    return this.courses_generator;
 		}
 		//automatic generator
-		if("A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join() == this.savedCourseGenerator)
+		if("A"+courses.map(function(el){
+		    if(el.scheduleTypeDescription != "Laboratory" || el.home.labs == [])
+			return el.home.courseReferenceNumber;
+		}).filter(c => c).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.course.home; // basically just a render bug
@@ -209,7 +212,11 @@ var app = new Vue(
 			acc.push(course.home.labs);
 		    return acc;
 		}, []))).filter(this.schedCompat);
-		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).join();
+		this.savedCourseGenerator = "A"+courses.map(function(el){
+		    if(el.scheduleTypeDescription != "Laboratory" || el.home.labs == [])
+			return el.home.courseReferenceNumber;
+		}).filter(c => c).join();
+		console.log("new");
 		return this.courses_generator;
 	    },
 	    //Generate the next valid schedule and apply it to the board, if possible
@@ -488,7 +495,10 @@ var app = new Vue(
 		{
                     ga('send', 'event', 'course', 'add');
                     this.course = null;
-                    this.selected.push(course);
+		    if(this.mode == "Manual")
+			this.selected.push(course)
+		    else
+			this.selected.push(course.home)
 		}
 		else
 		{
