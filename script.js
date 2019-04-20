@@ -54,19 +54,30 @@ let xhrzip = function(url, onstate){
     xhr.send(JSON.stringify(data));
 }
 let xhrzipPOST = function(url, onstate){
-    var formData = new FormData();
-    formData.append("term", "201990");
-    formData.append("studyPath", "");
-    formData.append("studyPathText", "");
-    formData.append("startDatepicker", "");
-    formData.append("endDatePicker", "");
     xhr.onreadystatechange = onstate;
+    var data = {term: '201990', studyPath:'', studyPathText:'', startDatepicker:'', endDatepicker:''};
+    var urlEncodedData = "";
+    var urlEncodedDataPairs = [];
+    var name;
 
+    // Turn the data object into an array of URL-encoded key/value pairs.
+    for(name in data) {
+	urlEncodedDataPairs.push(encodeURIComponent(name) + '=' + encodeURIComponent(data[name]));
+    }
+
+    // Combine the pairs into a single string and replace all %-encoded spaces to 
+    // the '+' character; matches the behaviour of browser form submissions.
+    urlEncodedData = urlEncodedDataPairs.join('&').replace(/%20/g, '+');
+    
     xhr.open("POST", url);
+
+    // Add the required HTTP header for form data POST requests
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader("Accept", 'application/json, text/javascript, */*; q=0.01')
     xhr.setRequestHeader("Accept-Language", 'en-US,en;q=0.5')
     xhr.withCredentials = true;
-    xhr.send(formData);
+    console.log(urlEncodedData)
+    xhr.send(urlEncodedData);
 }
 
 class Lazy{ // a memoized and simplified version of the Lazy class you can find online
