@@ -53,22 +53,8 @@ let xhrzip = function(url, onstate){
     xhr.withCredentials = true;
     xhr.send(JSON.stringify(data));
 }
-let xhrzipPOST = function(url, onstate){
+let xhrzipPOST = function(url, term, onstate){
     xhr.onreadystatechange = onstate;
-    var data = {term: '201990', studyPath:'', studyPathText:'', startDatepicker:'', endDatepicker:''};
-    var urlEncodedData = "";
-    var urlEncodedDataPairs = [];
-    var name;
-
-    // Turn the data object into an array of URL-encoded key/value pairs.
-    for(name in data) {
-	urlEncodedDataPairs.push(encodeURIComponent(name) + '=' + encodeURIComponent(data[name]));
-    }
-
-    // Combine the pairs into a single string and replace all %-encoded spaces to 
-    // the '+' character; matches the behaviour of browser form submissions.
-    urlEncodedData = urlEncodedDataPairs.join('&').replace(/%20/g, '+');
-    
     xhr.open("POST", url);
 
     // Add the required HTTP header for form data POST requests
@@ -76,8 +62,7 @@ let xhrzipPOST = function(url, onstate){
     xhr.setRequestHeader("Accept", 'application/json, text/javascript, */*; q=0.01')
     xhr.setRequestHeader("Accept-Language", 'en-US,en;q=0.5')
     xhr.withCredentials = true;
-    console.log(urlEncodedData)
-    xhr.send(urlEncodedData);
+    xhr.send("term=" + term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=");
 }
 
 class Lazy{ // a memoized and simplified version of the Lazy class you can find online
@@ -445,14 +430,13 @@ var app = new Vue(
 		this.courses_generator = null;
 		this.saved_course_generator = "";
 
-		
-		xhrzipPOST(server_cx("term/search?mode=search"), function() { // This is needed to for cookie spoofing
+		xhrzipPOST(server_cx("term/search?mode=search"), this.term.code, function() { // This is needed to for cookie spoofing
 		    if (this.readyState === 4 && this.status === 200) {
 			xhrzip(server_cx("registration"), function() { // This is needed to for cookie spoofing
 			    if (this.readyState === 4 && this.status === 200) {
 				let recursive_loader = function(rec = null){
 				    let offset = rec ? rec.data.length : 0;
-				    xhrzip(server_cx("searchResults/searchResults?txt_term=201990&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), function () {
+				    xhrzip(server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), function () {
 					if (this.readyState === 4 && this.status === 200) {
 					    let response = JSON.parse(this.responseText);
 					    if(!rec){
