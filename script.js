@@ -13,6 +13,13 @@ ASYNC XHR PLEASE
 If we get a code 500, retry
 
 Okay so turns out you actually need to log in :/
+
+
+
+NETWORK:
+First cookie set @:
+https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/registration/registration
+
 */
 let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 500;
@@ -135,7 +142,6 @@ var app = new Vue(
 	methods:
 	{
             fetchDescription: function(course) {
-		ga('send', 'event', 'description', 'fetch');
                 
 		if(!course.description) {
 		    xhrzip(server_cx('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), function(){
@@ -305,7 +311,6 @@ var app = new Vue(
 		return location.hash;
             },
             save: function() {
-		ga('send', 'event', 'schedule', 'save');
 		
 		if(!this.currentstorage) {
                     var name = window.prompt("Please enter a name for the schedule");
@@ -322,7 +327,6 @@ var app = new Vue(
 		console.log(this.localStorage)
             },
             load: function(schedule) {
-		ga('send', 'event', 'schedule', 'load');
 
 		if(this.changed && this.selected.length) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
@@ -353,7 +357,6 @@ var app = new Vue(
 		this.justLoaded = false;
             },
             discard: function() {
-		ga('send', 'event', 'schedule', 'discard');
 
 		if (!window.confirm("Are you sure you want to discard your changes?")) {
                     return;
@@ -364,13 +367,11 @@ var app = new Vue(
 		this.load(schedule);
             },
             saveNew: function() {
-		ga('send', 'event', 'schedule', 'save-new');
 
 		this.currentstorage = null;
 		this.save();
             },
             deleteSchedule: function() {
-		ga('send', 'event', 'schedule', 'delete');
 
 		if (window.confirm("Are you sure you want to delete the schedule " + this.currentstorage + "?")) {
                     var schedules = JSON.parse(localStorage.schedules);
@@ -382,7 +383,6 @@ var app = new Vue(
 		}
             },
             clear: function() {
-		ga('send', 'event', 'schedule', 'new');
 
 		if(this.changed) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
@@ -401,7 +401,6 @@ var app = new Vue(
             },
             changedTerm: function(loadHash)
             {
-		ga('send', 'event', 'term', 'change');
 		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
 		this.search = "";
@@ -506,7 +505,6 @@ var app = new Vue(
             {
 		if (this.autoInAlts(this.course, course)) // needs to be added to selected
 		{
-                    ga('send', 'event', 'course', 'add');
                     this.course = null;
 		    if(this.mode == "Manual")
 			this.selected.push(course)
@@ -518,7 +516,6 @@ var app = new Vue(
 		}
 		else
 		{
-                    ga('send', 'event', 'course', 'remove');
 		    if(this.mode == "Manual")
 			this.selected.splice(this.selected.indexOf(course), 1);
 		    else
@@ -571,27 +568,3 @@ var app = new Vue(
 	    }
 	}
     });
-
-// Analytics
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-			 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-			})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-ga('create', 'UA-96461430-1', 'auto');
-ga('send', 'pageview');
-
-
-// HeadUser
-(function () { var hu = document.createElement("script"); hu.type = "text/javascript"; hu.async = true; hu.src = "//www.heeduser.com/supfiles/Script/widget.js"; var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(hu, s); })()
-var _heeduser = {
-    type: "button",
-    community: "sitscheduler",
-    url: "http://sitscheduler.heeduser.com",
-    placement: "middle-right",
-    color: "#202021",
-    widget_layout: "full",
-    sso_token: ""
-}
-var heeduser_url = _heeduser.url + "/FeedbackWidget/Widget.aspx?sso_token=" + encodeURIComponent(_heeduser.sso_token);
-document.getElementById("feedback").innerHTML = '<a id="heeduser_wb" href="JavaScript:heeduser_openwidget(heeduser_url,\'' + _heeduser.widget_layout + '\')">Leave your feedback!</a>';
-
