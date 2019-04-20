@@ -20,6 +20,15 @@ NETWORK:
 First cookie set @:
 https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/registration/registration
 
+IMPORTANT:
+https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/term/search?mode=search
+Method: POST
+Form data~~
+term: 201990
+studyPath:	
+studyPathText:
+startDatepicker:	
+endDatepicker:	
 */
 let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 500;
@@ -43,6 +52,21 @@ let xhrzip = function(url, onstate){
     };
     xhr.withCredentials = true;
     xhr.send(JSON.stringify(data));
+}
+let xhrzipPOST = function(url, onstate){
+    var formData = new FormData();
+    formData.append("term", "201990");
+    formData.append("studyPath", "");
+    formData.append("studyPathText", "");
+    formData.append("startDatepicker", "");
+    formData.append("endDatePicker", "");
+    xhr.onreadystatechange = onstate;
+
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Accept", 'application/json, text/javascript, */*; q=0.01')
+    xhr.setRequestHeader("Accept-Language", 'en-US,en;q=0.5')
+    xhr.withCredentials = true;
+    xhr.send(formData);
 }
 
 class Lazy{ // a memoized and simplified version of the Lazy class you can find online
@@ -410,63 +434,68 @@ var app = new Vue(
 		this.courses_generator = null;
 		this.saved_course_generator = "";
 
-		xhrzip(server_cx("registration"), function() { // This is needed to for cookie spoofing
+		
+		xhrzipPOST(server_cx("term/search?mode=search"), function() { // This is needed to for cookie spoofing
 		    if (this.readyState === 4 && this.status === 200) {
-			let recursive_loader = function(rec = null){
-			    let offset = rec ? rec.data.length : 0;
-			    xhrzip(server_cx("searchResults/searchResults?txt_term=201990&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), function () {
-				if (this.readyState === 4 && this.status === 200) {
-				    let response = JSON.parse(this.responseText);
-				    if(!rec){
-					rec = response;
-				    } else {
-					response.data.forEach(function(el){
-					    rec.data.push(el);
-					}, this);
-				    }
-				    
-				    console.log(rec);
-				    app.percent = rec.data.length.toString() + '/' + rec.sectionsFetchedCount.toString();
-				    if(rec.data.length < (test_percent_cap ? test_percent_cap/100*rec.sectionsFetchedCount : rec.sectionsFetchedCount)){
-					recursive_loader(rec);
-				    } else {
-					app.courses = rec.data.reduce(function(acc, cur){
-					    if(acc.length > 0){
-						if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
-						    var i = acc.length-1;
-						    for(; !acc[i].labs; --i); // back to home
-						    cur.home = acc[i];
-						    acc[i].labs = acc[i].labs.concat(cur);
-						} else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-						    var i = acc.length-1;
-						    for(; !acc[i].alts; --i); // back to home
-						    cur.home = acc[i];
-						    acc[i].alts = acc[i].alts.concat(cur);
-						} else {
-						    cur.alts = [];
-						    cur.labs = [];
-						    cur.home = cur;
-						}
-						return acc.concat(cur);
+			xhrzip(server_cx("registration"), function() { // This is needed to for cookie spoofing
+			    if (this.readyState === 4 && this.status === 200) {
+				let recursive_loader = function(rec = null){
+				    let offset = rec ? rec.data.length : 0;
+				    xhrzip(server_cx("searchResults/searchResults?txt_term=201990&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), function () {
+					if (this.readyState === 4 && this.status === 200) {
+					    let response = JSON.parse(this.responseText);
+					    if(!rec){
+						rec = response;
 					    } else {
-						cur.alts = [];
-						cur.labs = [];
-						cur.home = cur;
-						return [cur];
+						response.data.forEach(function(el){
+						    rec.data.push(el);
+						}, this);
 					    }
-					}, []);
-					if (loadHash === true && app.hashExists())
-					{
-					    var hashes = location.hash.slice(8).split(',');
-					    app.selected = app.courses.filter(function(course){
-						return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-					    });
+					    
+					    console.log(rec);
+					    app.percent = rec.data.length.toString() + '/' + rec.sectionsFetchedCount.toString();
+					    if(rec.data.length < (test_percent_cap ? test_percent_cap/100*rec.sectionsFetchedCount : rec.sectionsFetchedCount)){
+						recursive_loader(rec);
+					    } else {
+						app.courses = rec.data.reduce(function(acc, cur){
+						    if(acc.length > 0){
+							if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
+							    var i = acc.length-1;
+							    for(; !acc[i].labs; --i); // back to home
+							    cur.home = acc[i];
+							    acc[i].labs = acc[i].labs.concat(cur);
+							} else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
+							    var i = acc.length-1;
+							    for(; !acc[i].alts; --i); // back to home
+							    cur.home = acc[i];
+							    acc[i].alts = acc[i].alts.concat(cur);
+							} else {
+							    cur.alts = [];
+							    cur.labs = [];
+							    cur.home = cur;
+							}
+							return acc.concat(cur);
+						    } else {
+							cur.alts = [];
+							cur.labs = [];
+							cur.home = cur;
+							return [cur];
+						    }
+						}, []);
+						if (loadHash === true && app.hashExists())
+						{
+						    var hashes = location.hash.slice(8).split(',');
+						    app.selected = app.courses.filter(function(course){
+							return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+						    });
+						}
+					    }
 					}
-				    }
+				    });
 				}
-			    });
-			}
-			recursive_loader();
+				recursive_loader();
+			    }
+			});
 		    }
 		});
             },
