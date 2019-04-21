@@ -8,14 +8,15 @@ If you select on an alternate schedule, maybe start generating from that one?
 
 In automatic mode, include a big indicator when there is no valid sched
 
-ASYNC XHR PLEASE
-
 If we get a code 500, retry
 
 Okay so turns out you actually need to log in :/
 */
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
-let chunk = 500;
+let chunk = 500; // 500 is the largest the server will honor, and is the fastest
+//NOTE: 100 might be a bit faster. This needs more testing
+//500: 69000ms
+//100: 6500ms
 Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
@@ -401,11 +402,14 @@ var app = new Vue(
 			let offsets = [];
 			for(var i=10; i<test_percent_cap*(max-10)/100; i+=chunk)
 			    offsets.push(i); // generate array of all the needed request-offset values
+			let percentEnd = offsets[offsets.length-1]+chunk;
+			percentEnd = '/' + (percentEnd < max ? percentEnd : max).toString();
 			offsets.forEach(function(offset){
 			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
 				let response = JSON.parse(this.responseText);
 				data.push(response); // add to array in no particular order
 				max -= chunk; // signal completion
+				app.percent = data.reduce((acc, el) => acc+el.data.length, 0).toString() + percentEnd;
 				if(data[0].totalCount-(max-10) > test_percent_cap*(data[0].totalCount)/100){ // all are done
 				    data = data.sort((a, b) => a.pageOffset - b.pageOffset); // sort to proper order
 				    data.forEach(function(payload){ // itterate over all responses
