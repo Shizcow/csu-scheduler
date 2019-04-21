@@ -13,56 +13,19 @@ ASYNC XHR PLEASE
 If we get a code 500, retry
 
 Okay so turns out you actually need to log in :/
-
-
-
-NETWORK:
-First cookie set @:
-https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/registration/registration
-
-IMPORTANT:
-https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/term/search?mode=search
-Method: POST
-Form data~~
-term: 201990
-studyPath:	
-studyPathText:
-startDatepicker:	
-endDatepicker:	
 */
 let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 500;
 Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
-let xhr = new XMLHttpRequest();
-let xhrzip = function(url, onstate){
-    xhr.onreadystatechange = onstate;
-
-    xhr.open("GET", url);
-    xhr.setRequestHeader("Accept", 'application/json, text/javascript, */*; q=0.01')
-    xhr.setRequestHeader("Accept-Language", 'en-US,en;q=0.5')
-    let data = {
-      headers: {
-      Host: 'bannerxe.is.colostate.edu',
-	    Referer: 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/classSearch/classSearch',
-	    Connection: 'keep-alive'
-	},
-	method: 'GET'
-    };
-    xhr.withCredentials = true;
-    xhr.send(JSON.stringify(data));
-}
-let xhrzipPOST = function(url, term, onstate){
-    xhr.onreadystatechange = onstate;
-    xhr.open("POST", url);
-
-    // Add the required HTTP header for form data POST requests
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader("Accept", 'application/json, text/javascript, */*; q=0.01')
-    xhr.setRequestHeader("Accept-Language", 'en-US,en;q=0.5')
-    xhr.withCredentials = true;
-    xhr.send("term=" + term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=");
+let xhrzip = function(method, url, data, onstate){
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = onstate; // callback
+    xhr.open(method, url);
+    xhr.withCredentials = true; // needed for auth cookies
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
+    xhr.send(data);
 }
 
 class Lazy{ // a memoized and simplified version of the Lazy class you can find online
@@ -130,7 +93,7 @@ var app = new Vue(
 	mounted: function()
 	{
             this.$el.style.display = 'block';
-	    xhrzip(server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), function() {
+	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
 		if (this.readyState === 4 && this.status === 200) {
 		    let response = JSON.parse(this.responseText);
 		    app.terms = response;
@@ -162,9 +125,8 @@ var app = new Vue(
 	methods:
 	{
             fetchDescription: function(course) {
-                
 		if(!course.description) {
-		    xhrzip(server_cx('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), function(){
+		    xhrzip("GET", server_cx('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), null, function(){
 			Vue.set(course, 'description', this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
 		    });
 		}
@@ -430,67 +392,63 @@ var app = new Vue(
 		this.courses_generator = null;
 		this.saved_course_generator = "";
 
-		xhrzipPOST(server_cx("term/search?mode=search"), this.term.code, function() { // This is needed to for cookie spoofing
+		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + this.term.code + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
 		    if (this.readyState === 4 && this.status === 200) {
-			xhrzip(server_cx("registration"), function() { // This is needed to for cookie spoofing
-			    if (this.readyState === 4 && this.status === 200) {
-				let recursive_loader = function(rec = null){
-				    let offset = rec ? rec.data.length : 0;
-				    xhrzip(server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), function () {
-					if (this.readyState === 4 && this.status === 200) {
-					    let response = JSON.parse(this.responseText);
-					    if(!rec){
-						rec = response;
-					    } else {
-						response.data.forEach(function(el){
-						    rec.data.push(el);
-						}, this);
-					    }
-					    
-					    console.log(rec);
-					    app.percent = rec.data.length.toString() + '/' + rec.sectionsFetchedCount.toString();
-					    if(rec.data.length < (test_percent_cap ? test_percent_cap/100*rec.sectionsFetchedCount : rec.sectionsFetchedCount)){
-						recursive_loader(rec);
-					    } else {
-						app.courses = rec.data.reduce(function(acc, cur){
-						    if(acc.length > 0){
-							if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
-							    var i = acc.length-1;
-							    for(; !acc[i].labs; --i); // back to home
-							    cur.home = acc[i];
-							    acc[i].labs = acc[i].labs.concat(cur);
-							} else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-							    var i = acc.length-1;
-							    for(; !acc[i].alts; --i); // back to home
-							    cur.home = acc[i];
-							    acc[i].alts = acc[i].alts.concat(cur);
-							} else {
-							    cur.alts = [];
-							    cur.labs = [];
-							    cur.home = cur;
-							}
-							return acc.concat(cur);
-						    } else {
-							cur.alts = [];
-							cur.labs = [];
-							cur.home = cur;
-							return [cur];
-						    }
-						}, []);
-						if (loadHash === true && app.hashExists())
-						{
-						    var hashes = location.hash.slice(8).split(',');
-						    app.selected = app.courses.filter(function(course){
-							return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-						    });
+			let recursive_loader = function(rec = null){
+			    let offset = rec ? rec.data.length : 0;
+			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
+				if (this.readyState === 4 && this.status === 200) {
+				    let response = JSON.parse(this.responseText);
+				    if(!rec){
+					rec = response;
+				    } else {
+					response.data.forEach(function(el){
+					    rec.data.push(el);
+					}, this);
+				    }
+				    
+				    console.log(rec);
+				    app.percent = rec.data.length.toString() + '/' + rec.sectionsFetchedCount.toString();
+				    if(rec.data.length < (test_percent_cap ? test_percent_cap/100*rec.sectionsFetchedCount : rec.sectionsFetchedCount)){
+					recursive_loader(rec);
+				    } else {
+					app.courses = rec.data.reduce(function(acc, cur){
+					    if(acc.length > 0){
+						if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
+						    var i = acc.length-1;
+						    for(; !acc[i].labs; --i); // back to home
+						    cur.home = acc[i];
+						    acc[i].labs = acc[i].labs.concat(cur);
+						} else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
+						    var i = acc.length-1;
+						    for(; !acc[i].alts; --i); // back to home
+						    cur.home = acc[i];
+						    acc[i].alts = acc[i].alts.concat(cur);
+						} else {
+						    cur.alts = [];
+						    cur.labs = [];
+						    cur.home = cur;
 						}
+						return acc.concat(cur);
+					    } else {
+						cur.alts = [];
+						cur.labs = [];
+						cur.home = cur;
+						return [cur];
 					    }
+					}, []);
+					if (loadHash === true && app.hashExists())
+					{
+					    var hashes = location.hash.slice(8).split(',');
+					    app.selected = app.courses.filter(function(course){
+						return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+					    });
 					}
-				    });
+				    }
 				}
-				recursive_loader();
-			    }
-			});
+			    });
+			}
+			recursive_loader();
 		    }
 		});
             },
