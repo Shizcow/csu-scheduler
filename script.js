@@ -14,7 +14,7 @@ If we get a code 500, retry
 
 Okay so turns out you actually need to log in :/
 */
-let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 500;
 Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
@@ -399,19 +399,43 @@ var app = new Vue(
 			let max = first_response.totalCount;
 			let data = [first_response];
 			let offsets = [];
-			for(var i=10; i<max-10; i+=chunk)
+			for(var i=10; i<test_percent_cap*(max-10)/100; i+=chunk)
 			    offsets.push(i); // generate array of all the needed request-offset values
 			offsets.forEach(function(offset){
 			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
 				let response = JSON.parse(this.responseText);
 				data.push(response); // add to array in no particular order
 				max -= chunk; // signal completion
-				if(max <= 10){ // all are done
+				if(data[0].totalCount-(max-10) > test_percent_cap*(data[0].totalCount)/100){ // all are done
 				    data = data.sort((a, b) => a.pageOffset - b.pageOffset); // sort to proper order
 				    data.forEach(function(payload){ // itterate over all responses
 					app.courses = app.courses.concat(payload.data); // and add to courses
 				    });
-				    console.log(app.courses)
+				    app.courses = app.courses.reduce(function(acc, cur){ // post process in preparation for manual mode
+					if(acc.length > 0){
+					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
+						var i = acc.length-1;
+						for(; !acc[i].labs; --i); // back to home
+						cur.home = acc[i];
+						acc[i].labs = acc[i].labs.concat(cur);
+					    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
+						var i = acc.length-1;
+						for(; !acc[i].alts; --i); // back to home
+						cur.home = acc[i];
+						acc[i].alts = acc[i].alts.concat(cur);
+					    } else {
+						cur.alts = [];
+						cur.labs = [];
+						cur.home = cur;
+					    }
+					    return acc.concat(cur);
+					} else {
+					    cur.alts = [];
+					    cur.labs = [];
+					    cur.home = cur;
+					    return [cur];
+					}
+				    }, []);
 				}
 			    });
 			});
