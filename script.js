@@ -20,8 +20,11 @@ Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 let xhrzip = function(method, url, data, onstate){
-    let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = onstate; // callback
+    let xhr = new XMLHttpRequest(); // we need a new one every time in case we're doing async requests
+    xhr.onreadystatechange = function(){ // callback
+	if (this.readyState === 4 && this.status === 200)
+	    ({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
+    };
     xhr.open(method, url);
     xhr.withCredentials = true; // needed for auth cookies
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
@@ -94,21 +97,19 @@ var app = new Vue(
 	{
             this.$el.style.display = 'block';
 	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
-		if (this.readyState === 4 && this.status === 200) {
-		    let response = JSON.parse(this.responseText);
-		    app.terms = response;
-		    console.log(response);
-		    if (app.hashExists() && (index = app.terms.indexOf(location.hash.slice(1, 6))) > -1)
-		    {
-			app.term = app.terms[index];
-		    }
-		    else
-		    {
-			app.term = app.terms[0];
-		    }
-		    app.changedTerm(true);
-		    if(localStorage.schedules) app.localStorage = JSON.parse(localStorage.schedules);
+		let response = JSON.parse(this.responseText);
+		app.terms = response;
+		console.log(response);
+		if (app.hashExists() && (index = app.terms.indexOf(location.hash.slice(1, 6))) > -1)
+		{
+		    app.term = app.terms[index];
 		}
+		else
+		{
+		    app.term = app.terms[0];
+		}
+		app.changedTerm(true);
+		if(localStorage.schedules) app.localStorage = JSON.parse(localStorage.schedules);
 	    });
 	},
 	computed:
@@ -393,11 +394,9 @@ var app = new Vue(
 		this.saved_course_generator = "";
 
 		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + this.term.code + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
-		    if (this.readyState === 4 && this.status === 200) {
 			let recursive_loader = function(rec = null){
 			    let offset = rec ? rec.data.length : 0;
 			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
-				if (this.readyState === 4 && this.status === 200) {
 				    let response = JSON.parse(this.responseText);
 				    if(!rec){
 					rec = response;
@@ -445,11 +444,9 @@ var app = new Vue(
 					    });
 					}
 				    }
-				}
 			    });
 			}
 			recursive_loader();
-		    }
 		});
             },
 	    genFaculty: function(c)
