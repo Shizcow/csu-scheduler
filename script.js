@@ -392,61 +392,30 @@ var app = new Vue(
 		this.course_list_selection = 0;
 		this.courses_generator = null;
 		this.saved_course_generator = "";
-
+		//xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {});
 		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + this.term.code + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
-			let recursive_loader = function(rec = null){
-			    let offset = rec ? rec.data.length : 0;
+		    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc"), null, function () { // we first do a short grab in order to get the max size
+			let first_response = JSON.parse(this.responseText);
+			let max = first_response.totalCount;
+			let data = [first_response];
+			let offsets = [];
+			for(var i=10; i<max-10; i+=chunk)
+			    offsets.push(i); // generate array of all the needed request-offset values
+			offsets.forEach(function(offset){
 			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
-				    let response = JSON.parse(this.responseText);
-				    if(!rec){
-					rec = response;
-				    } else {
-					response.data.forEach(function(el){
-					    rec.data.push(el);
-					}, this);
-				    }
-				    
-				    console.log(rec);
-				    app.percent = rec.data.length.toString() + '/' + rec.sectionsFetchedCount.toString();
-				    if(rec.data.length < (test_percent_cap ? test_percent_cap/100*rec.sectionsFetchedCount : rec.sectionsFetchedCount)){
-					recursive_loader(rec);
-				    } else {
-					app.courses = rec.data.reduce(function(acc, cur){
-					    if(acc.length > 0){
-						if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
-						    var i = acc.length-1;
-						    for(; !acc[i].labs; --i); // back to home
-						    cur.home = acc[i];
-						    acc[i].labs = acc[i].labs.concat(cur);
-						} else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-						    var i = acc.length-1;
-						    for(; !acc[i].alts; --i); // back to home
-						    cur.home = acc[i];
-						    acc[i].alts = acc[i].alts.concat(cur);
-						} else {
-						    cur.alts = [];
-						    cur.labs = [];
-						    cur.home = cur;
-						}
-						return acc.concat(cur);
-					    } else {
-						cur.alts = [];
-						cur.labs = [];
-						cur.home = cur;
-						return [cur];
-					    }
-					}, []);
-					if (loadHash === true && app.hashExists())
-					{
-					    var hashes = location.hash.slice(8).split(',');
-					    app.selected = app.courses.filter(function(course){
-						return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-					    });
-					}
-				    }
+				let response = JSON.parse(this.responseText);
+				data.push(response); // add to array in no particular order
+				max -= chunk; // signal completion
+				if(max <= 10){ // all are done
+				    data = data.sort((a, b) => a.pageOffset - b.pageOffset); // sort to proper order
+				    data.forEach(function(payload){ // itterate over all responses
+					app.courses = app.courses.concat(payload.data); // and add to courses
+				    });
+				    console.log(app.courses)
+				}
 			    });
-			}
-			recursive_loader();
+			});
+		    });
 		});
             },
 	    genFaculty: function(c)
