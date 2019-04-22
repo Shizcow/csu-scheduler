@@ -4,7 +4,7 @@ I think everything dies when connection is lost during course retrieval
 When we've got all the courses loaded, automatic mode is slow. Find out why, and fix it.
 
 ADD:
-If you select on an alternate schedule, maybe start generating from that one?
+Make courses "sticky" when browsing for new ones - IDFK how
 
 In automatic mode, include a big indicator when there is no valid sched
 
@@ -58,7 +58,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 	var data = this.data[i];
 	if(!data)
 	    return false; // no valid schedules
-	app.selected = data.selected;
+	app.selected = data.selected; // but update elsewhise
 	location.hash = app.generateHash(); // update url
         return data.value;
     }
@@ -146,7 +146,7 @@ var app = new Vue(
 		}
 		if(this.mode == "Automatic"){
 		    if(this.selected.reduce(function(acc, course){
-			return course ? acc.concat(course.home.alts.concat(course.home)) : acc;
+			return course ? acc.concat([course.home].concat(course.home.alts).concat(course.home.labs)) : acc;
 		    }, []).includes(course))
 			return false;
 		}
@@ -200,7 +200,7 @@ var app = new Vue(
 		    return this.courses_generator;
 		}
 		//automatic generator
-		if("A"+this.removeDuplicatesBy(course => course.subjectCourse, courses).map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join() == this.savedCourseGenerator)
+		if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.course.home; // basically just a render bug
@@ -208,13 +208,14 @@ var app = new Vue(
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
 		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
 		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
-			var comp_packs = prev_packs.filter(prev_pack => prev_pack[0].home.labs.includes(course)); // all the packs that actually conflict
+			var comp_packs = prev_packs.filter(prev_pack => prev_pack[0].home.labs.includes(course)); // all the pack(s) that are labs and not alts
 			if(comp_packs.length){ // course is a lab of a previous
 			    comp_packs.forEach(function(comp_pack){
 				acc = acc.filter(pack => pack[0].home != comp_pack[0].home); // remove the old labs
 			    });
 			    acc.push([course].concat(course.home.labs.filter(c => c!=course))); // and replace with the new ones, w/ course first this time
 			}
+			// else it's an alt. Ignore for duplicate's sake
 		    } else { // course is brand new
 			acc.push(course.home.alts.filter(c => c!=course)); // add alts (minus active)
 			if(!course.home.labs.length){
@@ -228,11 +229,10 @@ var app = new Vue(
 				acc.push(course.home.labs);		    
 			    }
 			}
-			
 		    }
 		    return acc;
 		}, []))).filter(this.schedCompat);
-		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join();
+		this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join();
 		return this.courses_generator;
 	    },
 	    removeDuplicatesBy: function(keyFn, array) {
