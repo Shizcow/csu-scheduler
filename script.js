@@ -4,7 +4,12 @@ I think everything dies when connection is lost during course retrieval
 When we've got all the courses loaded, automatic mode is slow. Find out why, and fix it.
 
 ADD:
+auto webclasses
+auto export, save, etc
+
 Make courses "sticky" when browsing for new ones - IDFK how
+L-> maybe only update selected (might as well update url) in Lazy get ONLY IF we're !browsing
+ L-> How to determing Browsing?
 
 In automatic mode, include a big indicator when there is no valid sched
 
@@ -40,7 +45,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
     	this.filters = [];
 	this.done = false;
     }
-    get(i){
+    get(i, set=false){
         while(!this.done && (this.data.length <= i)){
 	    var tmp = this.core.next();
 	    if(tmp.done){
@@ -50,15 +55,16 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 	    if(this.filters.reduce(function(acc, cur_filter){ // run all filters on value
 		return acc && cur_filter(tmp.value);
 	    }, true)){
-		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){ // cache selected change
-		    return !course.home.alts.concat(course.home).includes(app.course); // remove pending
-		})}); // we need to do this here so it updates the url dynamically
+		this.data.push({value: tmp.value, selected: tmp.value.filter(course => // cache selected change
+		    !course.home.alts.concat(course.home).includes(app.course) // remove pending
+		)}); // we need to do this here so it updates the url dynamically
             }
 	}
 	var data = this.data[i];
 	if(!data)
 	    return false; // no valid schedules
-	app.selected = data.selected; // but update elsewhise
+	if(set)
+	    app.selected = data.selected; // update selected on click
 	location.hash = app.generateHash(); // update url
         return data.value;
     }
@@ -208,15 +214,19 @@ var app = new Vue(
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
 		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
 		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
-			var comp_packs = prev_packs.filter(prev_pack => prev_pack[0].home.labs.includes(course)); // all the pack(s) that are labs and not alts
+			console.log("prev")
+			console.log(prev_packs)
+			var comp_packs = prev_packs.filter(prev_pack => prev_pack.includes(course)); // all the pack(s) that are labs and not alts
+			console.log(comp_packs)
 			if(comp_packs.length){ // course is a lab of a previous
 			    comp_packs.forEach(function(comp_pack){
-				acc = acc.filter(pack => pack[0].home != comp_pack[0].home); // remove the old labs
+				acc = acc.filter(pack => pack[0] != comp_pack[0]); // remove the old lab pack(s)
 			    });
 			    acc.push([course].concat(course.home.labs.filter(c => c!=course))); // and replace with the new ones, w/ course first this time
 			}
 			// else it's an alt. Ignore for duplicate's sake
 		    } else { // course is brand new
+			console.log("noprev")
 			acc.push(course.home.alts.filter(c => c!=course)); // add alts (minus active)
 			if(!course.home.labs.length){
 			    acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);
@@ -255,6 +265,7 @@ var app = new Vue(
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
 	    cartesianProduct: function*(dimensions){
+		console.log(dimensions)
 		if(dimensions.length <= 1){// no need to calculate for 1 length lists (0 too just in case) - just yield each schedule
 		    for(var i = 0; i<dimensions[0].length; ++i)
 			yield [dimensions[0][i]]; // wrap each course as its own schedule
@@ -506,7 +517,7 @@ var app = new Vue(
 		    this.selected.push(course);
 		    if(this.mode == "Automatic"){
 			this.savedCourseGenerator = "A";
-			this.autoConstruct(this.selected).get(0); // force url update
+			this.autoConstruct(this.selected).get(0, true); // force url update & selected update
 		    }
 		}
 		else
