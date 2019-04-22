@@ -51,8 +51,8 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 		return acc && cur_filter(tmp.value);
 	    }, true)){
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){ // cache selected change
-		    return !course.home.alts.concat(course.home).includes(app.course); // we need to do this here so it updates the url dynamically
-		})});
+		    return !course.home.alts.concat(course.home).includes(app.course); // remove pending
+		})}); // we need to do this here so it updates the url dynamically
             }
 	}
 	var data = this.data[i];
@@ -199,17 +199,37 @@ var app = new Vue(
 		    this.courses_generator = {get: function(i){return courses;}};
 		    return this.courses_generator;
 		}
-		courses = this.removeDuplicatesBy(course => course.subjectCourse, courses); // remove labs
 		//automatic generator
-		if("A"+courses.map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join() == this.savedCourseGenerator)
+		if("A"+this.removeDuplicatesBy(course => course.subjectCourse, courses).map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join() == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.course.home; // basically just a render bug
 		this.course_list_selection = 0; // Reset on each new sched gen
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
-		    acc.push(course.home.alts.concat(course.home)); // expand course to list of [alts...]
-		    if(course.home.labs.length)
-			acc.push(course.home.labs);
+		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
+		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
+			var comp_packs = prev_packs.filter(prev_pack => prev_pack[0].home.labs.includes(course)); // all the packs that actually conflict
+			if(comp_packs.length){ // course is a lab of a previous
+			    comp_packs.forEach(function(comp_pack){
+				acc = acc.filter(pack => pack[0].home != comp_pack[0].home); // remove the old labs
+			    });
+			    acc.push([course].concat(course.home.labs.filter(c => c!=course))); // and replace with the new ones, w/ course first this time
+			}
+		    } else { // course is brand new
+			acc.push(course.home.alts.filter(c => c!=course)); // add alts (minus active)
+			if(!course.home.labs.length){
+			    acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);
+			} else { // need to add labs manually
+			    if(course.home.labs.includes(course)){
+				acc[acc.length-1] = [course.home].concat(acc[acc.length-1]);
+				acc.push([course].concat(course.home.labs.filter(c => c!=course)));
+			    } else {
+				acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);	
+				acc.push(course.home.labs);		    
+			    }
+			}
+			
+		    }
 		    return acc;
 		}, []))).filter(this.schedCompat);
 		this.savedCourseGenerator = "A"+courses.map(function(el){return el.home.courseReferenceNumber;}).filter(c => c).join();
@@ -483,10 +503,8 @@ var app = new Vue(
 		if (this.autoInAlts(this.course, course)) // needs to be added to selected
 		{
                     this.course = null;
-		    if(this.mode == "Manual")
-			this.selected.push(course)
-		    else {
-			this.selected.push(course.home);
+		    this.selected.push(course);
+		    if(this.mode == "Automatic"){
 			this.savedCourseGenerator = "A";
 			this.autoConstruct(this.selected).get(0); // force url update
 		    }
