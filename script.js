@@ -7,10 +7,6 @@ ADD:
 auto webclasses
 auto export, save, etc
 
-Make courses "sticky" when browsing for new ones - IDFK how
-L-> maybe only update selected (might as well update url) in Lazy get ONLY IF we're !browsing
- L-> How to determing Browsing?
-
 In automatic mode, include a big indicator when there is no valid sched
 
 If we get a code 500, retry
@@ -107,7 +103,6 @@ var app = new Vue(
 	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
 		let response = JSON.parse(this.responseText);
 		app.terms = response;
-		console.log(response);
 		if (app.hashExists() && (index = app.terms.indexOf(location.hash.slice(1, 6))) > -1)
 		{
 		    app.term = app.terms[index];
@@ -214,10 +209,7 @@ var app = new Vue(
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
 		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
 		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
-			console.log("prev")
-			console.log(prev_packs)
 			var comp_packs = prev_packs.filter(prev_pack => prev_pack.includes(course)); // all the pack(s) that are labs and not alts
-			console.log(comp_packs)
 			if(comp_packs.length){ // course is a lab of a previous
 			    comp_packs.forEach(function(comp_pack){
 				acc = acc.filter(pack => pack[0] != comp_pack[0]); // remove the old lab pack(s)
@@ -226,7 +218,6 @@ var app = new Vue(
 			}
 			// else it's an alt. Ignore for duplicate's sake
 		    } else { // course is brand new
-			console.log("noprev")
 			acc.push(course.home.alts.filter(c => c!=course)); // add alts (minus active)
 			if(!course.home.labs.length){
 			    acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);
@@ -265,7 +256,6 @@ var app = new Vue(
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
 	    cartesianProduct: function*(dimensions){
-		console.log(dimensions)
 		if(dimensions.length <= 1){// no need to calculate for 1 length lists (0 too just in case) - just yield each schedule
 		    for(var i = 0; i<dimensions[0].length; ++i)
 			yield [dimensions[0][i]]; // wrap each course as its own schedule
@@ -327,7 +317,6 @@ var app = new Vue(
 		return location.hash;
             },
             save: function() {
-		
 		if(!this.currentstorage) {
                     var name = window.prompt("Please enter a name for the schedule");
                     if(!name) return;
