@@ -63,7 +63,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 	var data = this.data[i];
 	if(!data)
 	    return false; // no valid schedules
-	if(set)
+	if(set || this.data.length != 1) // set selected on either a click, or on a autobar change
 	    app.selected = data.selected; // update selected on click
 	location.hash = app.generateHash(); // update url
         return data.value;
@@ -517,7 +517,7 @@ var app = new Vue(
 		    this.selected.push(course);
 		    if(this.mode == "Automatic"){
 			this.savedCourseGenerator = "A";
-			this.autoConstruct(this.selected).get(0, true); // force url update & selected update
+			this.autoConstruct(this.selected).get(this.course_list_selection, true); // force url update & selected update
 		    }
 		}
 		else
