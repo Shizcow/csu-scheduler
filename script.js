@@ -1,7 +1,7 @@
 /*
 BUG:
 I think everything dies when connection is lost during course retrieval
-
+When we've got all the courses loaded, automatic mode is slow. Find out why, and fix it.
 
 ADD:
 If you select on an alternate schedule, maybe start generating from that one?
@@ -9,14 +9,15 @@ If you select on an alternate schedule, maybe start generating from that one?
 In automatic mode, include a big indicator when there is no valid sched
 
 If we get a code 500, retry
-
-Okay so turns out you actually need to log in :/
 */
-let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
-let chunk = 500; // 500 is the largest the server will honor, and is the fastest
-//NOTE: 100 might be a bit faster. This needs more testing
-//500: 69000ms
-//100: 6500ms
+let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
+let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
+//These values have been found from tested on my machine. Feel free to test yourself
+//500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
+//400---> Finish: 44.52s, 40.94s, 37.04s = 40.826s avg
+//300---> Finish: 38.30s, 35.46s, 38.66s = 37.473s avg ***
+//200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
+//100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
 Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
@@ -32,7 +33,7 @@ let xhrzip = function(method, url, data, onstate){
     xhr.send(data);
 }
 
-class Lazy{ // a memoized and simplified version of the Lazy class you can find online
+class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy class you can find online
     constructor(inputgen){
         this.core = inputgen;
         this.data = [];
