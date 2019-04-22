@@ -5,7 +5,6 @@ When we've got all the courses loaded, automatic mode is slow. Find out why, and
 
 ADD:
 auto webclasses
-auto export, save, etc
 
 In automatic mode, include a big indicator when there is no valid sched
 
