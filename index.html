@@ -13,12 +13,13 @@
     </div>
     
     <div id="app">
+      
       <div class="left">
         <table>
           <thead>
             <tr>
               <td class="time"></td>
-              <td v-for="day in daylist(false)" v-text="day"></td>
+              <td v-once v-for="day in daylist(false)" v-text="day"></td>
             </tr>
           </thead>
           <tbody>
@@ -26,19 +27,21 @@
               <td v-text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
               <td v-for="day in daylist(true)" class="block">
                 <div class="wrapper">
-                  <div>
-                    <div v-for="c in autoConstruct(selected.concat(course)).get(mode == 'Manual' ? 0 : course_list_selection)" @dblClick="click(c)" @mouseenter="hovering = autoAndLabs(c)" @mouseleave="hovering = []" v-if="c && courseHere(day, hour, c)"
-                         :class="{item: true, selected: !autoInAlts(c, course), hovering: hovering.includes(c)}" 
-                         :style="{top: courseHere(day, hour, c).top * 100 + '%', height: hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%', minHeight: !hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%'}">
-                      {{ c.subject }} {{ c.courseNumber }}<br> 
-                      {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br>
-                      {{ genFaculty(c) }}<br>
-                      {{ courseHere(day, hour, c).loc }}<br>
-                      {{ (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) + ' credit' + ( (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) != 1 ? 's' : '') }}<br>
-                      {{ Math.max(0, c.seatsAvailable) + '/' + c.maximumEnrollment }} seats open<br>
-                      {{ c.courseReferenceNumber }}<br>
-                      <a class="link" @click="fetchDescription(c)">Description <span v-if="c.prereqs">(P)</span> <span v-if="c.coreqs">(C)</span></a>
-                    </div>
+                  <div class="wrapperInternal" :data-hour="hour" :data-day="day">
+		    <!--
+			<div v-for="c in autoConstruct(selected.concat(courses[course])).get(mode == 'Manual' ? 0 : course_list_selection)" @dblClick="click(c)" @mouseenter="hovering = autoAndLabs(c)" @mouseleave="hovering = []" v-if="c && courseHere(day, hour, c)"
+                             :class="{item: true, selected: !autoInAlts(c, courses[course]), hovering: hovering.includes(c)}" 
+                             :style="{top: courseHere(day, hour, c).top * 100 + '%', height: hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%', minHeight: !hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%'}">
+			  {{ c.subject }} {{ c.courseNumber }}<br> 
+			  {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br>
+			  {{ genFaculty(c) }}<br>
+			  {{ courseHere(day, hour, c).loc }}<br>
+			  {{ (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) + ' credit' + ( (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) != 1 ? 's' : '') }}<br>
+			  {{ Math.max(0, c.seatsAvailable) + '/' + c.maximumEnrollment }} seats open<br>
+			  {{ c.courseReferenceNumber }}<br>
+			  <a class="link" @click="fetchDescription(c)">Description</a>
+			</div>
+			-->
                   </div>
                   <div></div>                               
                   <div></div>                               
@@ -48,27 +51,28 @@
           </tbody>
         </table>
       </div>
+
       <div class="right">
         <!--<img src="https://web.stevens.edu/scheduler/stevens-logo-100px.jpg" /><br><br>-->
 	<span class="title">Mode</span>
 	<br>
-        <input class="mode" v-model="mode" type="radio" value="Manual"> Manual
+        <input id="Manual" class="mode" v-model="mode" type="radio" value="Manual" onchange="app.fillSearch(this)"> Manual
 	<br>
-        <input class="mode" v-model="mode" type="radio" value="Automatic"> Automatic
+        <input id="Automatic" class="mode" v-model="mode" type="radio" value="Automatic" onchange="app.fillSearch(this)"> Automatic
 	<br>
-	<div v-if="mode == 'Automatic' && !!selected.concat(course)[0]" style="display: inline-block">
-	  <input type="range" min="0" v-bind:max="courses_generator ? courses_generator.data.length-1 : 0" v-model="course_list_selection" style="width: 66%;">
-	  <button v-on:click="genNext()" style="width: 30%;float: right;">{{ (courses_generator ? courses_generator.done : false) ? "Loop" : "Next" }}</button>
+	<div v-if="mode == 'Automatic' && !!selected.concat(courses[course])[0]" style="display: inline-block">
+	  <input oninput="app.fillSchedule(this)" type="range" min="0" v-bind:max="courses_generator ? courses_generator.data.length-1 : 0" v-model="course_list_selection" style="width: 66%;">
+	  <button onclick="app.genNext()" style="width: 30%;float: right;">{{ (courses_generator ? courses_generator.done : false) ? "Loop" : "Next" }}</button>
 	</div>
 	<span class="title">Term</span>
         <select v-model="term" @change="changedTerm">
           <option v-for="term in terms" :value="term" v-text="term.description"></option>
         </select>
-        <div v-if="courses.length">
+        <div v-show="courses.length">
           <span class="title">Courses</span>
-          <input v-model="search" placeholder="Search for a course..." style="width: 100%;">
-          <select size="25" v-model="course" @keyup.delete="course = null" @keyup.esc="course = null">
-            <option v-for="c in autoFilter(courses)" v-if="!safari || filterSearch(c)" v-show="filterSearch(c)" :value="c" v-text="c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle"></option>
+          <input id="searchBox" oninput="app.hideSearch()" v-model="search" placeholder="Search for a course..." style="width: 100%;">
+          <select id="selectBox" onchange="app.fillSchedule()" size="25" v-model="course" @keyup.delete="course = null" @keyup.esc="course = null">
+	    <!-- options are filled in automatically -->
           </select>
           <input v-model="closed" type="checkbox"> Closed
           
@@ -78,10 +82,10 @@
           
           <span class="title">Total Credits:</span> {{ totalCredits }}<br><br>
 
-          <div v-if="webclasses(selected.concat(course)).length">
+          <div v-if="webclasses(selected.concat(courses[course])).length">
             <span class="title">Web Classes</span>
             <div class="selectedList">
-              <div v-for="c in webclasses(selected.concat(course))" @dblClick="click(c)" :class="{selected: c != course }">
+              <div v-for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
                 {{ c.subject }} {{ c.courseNumber }}: {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br> 
                 {{ genFaculty(c) }}<br> 
                 {{ (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) + ' credit' + ( (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) != 1 ? 's' : '') }}<br>
@@ -92,15 +96,12 @@
 </div>
 </div>
 </div>
-<div v-else class="loadingCourses">Loading Courses... {{ percent }}</div>
+<div v-show="!courses.length" class="loadingCourses">Loading Courses... {{ percent }}</div>
 
 <br><br>
 
 * Open seats can take up to two hours to update during peak registration hours
-
-<div id="feedback"></div>
-
-</div>
+<!--
 <div class="footer">
   <div v-if="localStorage" v-for="schedule in Object.keys(localStorage)" :class="{option: true, selected: currentstorage == schedule}" @click="load(schedule)">
     {{ schedule }}
@@ -108,24 +109,24 @@
   <div class="floatRight">
     <div v-if="(justLoaded || changed) && selected.length" class="option" @click="save">
       Save
-    </div><!--
-            --><div v-if="changed && currentstorage && selected.length" class="option" @click="discard">
+    </div>
+    <div v-if="changed && currentstorage && selected.length" class="option" @click="discard">
       Discard Changes
-    </div><!--
-            --><div v-if="currentstorage" class="option" @click="saveNew">
+    </div>
+    <div v-if="currentstorage" class="option" @click="saveNew">
       Save as New
-    </div><!--
-            --><div v-if="currentstorage" class="option" @click="deleteSchedule">
+    </div>
+    <div v-if="currentstorage" class="option" @click="deleteSchedule">
       Delete
-    </div><!--
-            --><div v-if="selected.length" class="option" @click="showExport = true">
+    </div>
+    <div v-if="selected.length" class="option" @click="showExport = true">
       Export
-    </div><!--
-            --><div v-if="selected.length" class="option" @click="clear">
+    </div>
+    <div v-if="selected.length" class="option" @click="clear">
       New
     </div>
   </div>
-  
+  -->
 </div>
 <div class="export" name="export" v-if="showExport" @click="showExport = $event.target.attributes.name == undefined">
   <div class="wrapper">
