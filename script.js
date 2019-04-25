@@ -70,6 +70,15 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
     }
 }
 
+window.addEventListener("keydown", function (e) { // remove app.course and re-render
+    if(e.key == "Escape" || e.key == "Delete"){   // when deleted or escaped
+	document.getElementById("selectBox").value = "";
+	app.course = null;
+	app.fillSchedule();
+    }
+})
+
+
 var app = new Vue(
     {
 	el: '#app',
@@ -82,6 +91,8 @@ var app = new Vue(
             terms: [],
             term: "",
             courses: [],
+	    courses_auto: [],
+	    courses_manual: [],
             course: null,
 	    courses_list: [],
 	    course_list_selection: 0,
@@ -206,17 +217,12 @@ var app = new Vue(
 		update();
 	    },
 	    fillSearch: function(referrer) {
-		var courses = this.autoFilter(this.courses, referrer);
 		var selectBox = document.getElementById("selectBox");
 		while(selectBox.firstChild)
 		    selectBox.removeChild(selectBox.firstChild);
-		for(var i = 0; i < courses.length; i++) {
-		    var c = courses[i];
-		    var el = document.createElement("option");
-		    el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
-		    el.value = c.index;
-		    selectBox.appendChild(el);
-		}
+		var courses = this.autoFilter(this.courses, referrer);
+		for(var i = 0; i < courses.length; i++)
+		    selectBox.appendChild(courses[i]);
 		this.hideSearch();
 	    },
 	    hideSearch: function() {
@@ -252,17 +258,7 @@ var app = new Vue(
             },
 	    autoFilter: function(courses, referrer){ // remove all consecutive duplicates - only in automatic mode
 		this.mode = referrer ? referrer.value : this.mode;
-		return this.mode == "Manual" ? courses : courses.reduce(function(acc, cur){
-		    if(acc.length > 0){
-			if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
-			    return acc.concat(cur); // add new
-			} else {
-			    return acc; // ignore duplicate
-			}
-		    } else {
-			return [cur]; // first iteration - set up accumulator
-		    }
-		}, []);
+		return this.mode == "Manual" ? this.courses_manual : this.courses_auto;
 	    },
 	    // check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
 	    autoInAlts: function(check_course, course_alts){ // pretty much just fixes a render bug
@@ -290,8 +286,9 @@ var app = new Vue(
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
 			courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
-			this.course = courses.filter(function(course){ // This has thrown an error once in its  life - be on the lookout as to why
-			    return course.home == app.courses[app.course.home];
+			console.log(courses)
+			this.course = courses.filter(function(course){
+			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(function(el){return el.courseReferenceNumber;}).join();
@@ -344,13 +341,14 @@ var app = new Vue(
 	    },
 	    //Generate the next valid schedule and apply it to the board, if possible
 	    genNext: function(){
-		if(this.courses_generator && this.courses_generator.get(this.courses_generator.data.length)){ // see if there's more we haven't seen yet
-		    this.course_list_selection = this.courses_generator.data.length-1; // and show it to us
+		if(this.courses_generator && this.courses_generator.get(this.courses_generator.data ? this.courses_generator.data.length : 0)){ // see if there's more we haven't seen yet
+		    this.course_list_selection = (this.courses_generator.data ? this.courses_generator.data.length : 0)-1; // and show it to us
 		} else { // done - start looping
 		    this.course_list_selection++;
-		    this.course_list_selection%=this.courses_generator.data.length;
+		    this.course_list_selection%=(this.courses_generator ? this.courses_generator.data.length : 0);
 		}
 		this.fillSchedule();
+		document.getElementById("Range").max = this.courses_generator ? this.courses_generator.data.length-1 : 0;
 	    },
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
@@ -562,6 +560,33 @@ var app = new Vue(
 				    }, []);
 				    for(var i = 0; i< app.courses.length; ++i)
 					app.courses[i].index = i;
+				    courses_auto = app.courses.reduce(function(acc, cur){
+					if(acc.length > 0){
+					    if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
+						return acc.concat(cur); // add new
+					    } else {
+						return acc; // ignore duplicate
+					    }
+					} else {
+					    return [cur]; // first iteration - set up accumulator
+					}
+				    }, []);
+				    app.courses_manual = [];
+				    for(var i = 0; i < app.courses.length; i++){
+					var c = app.courses[i];
+					var el = document.createElement("option");
+					el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
+					el.value = c.index;
+					app.courses_manual.push(el);
+				    }
+				    app.courses_auto = [];
+				    for(var i = 0; i < courses_auto.length; i++){
+					var c = courses_auto[i];
+					var el = document.createElement("option");
+					el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
+					el.value = c.index;
+					app.courses_auto.push(el);
+				    }
 				    app.fillSearch();
 				}
 			    });

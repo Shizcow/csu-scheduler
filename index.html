@@ -23,7 +23,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
+            <tr v-once v-for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
               <td v-text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
               <td v-for="day in daylist(true)" class="block">
                 <div class="wrapper">
@@ -56,12 +56,12 @@
         <!--<img src="https://web.stevens.edu/scheduler/stevens-logo-100px.jpg" /><br><br>-->
 	<span class="title">Mode</span>
 	<br>
-        <input id="Manual" class="mode" v-model="mode" type="radio" value="Manual" onchange="app.fillSearch(this)"> Manual
+        <input id="Manual" class="mode" v-model="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Manual
 	<br>
-        <input id="Automatic" class="mode" v-model="mode" type="radio" value="Automatic" onchange="app.fillSearch(this)"> Automatic
+        <input id="Automatic" class="mode" v-model="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Automatic
 	<br>
 	<div v-if="mode == 'Automatic' && !!selected.concat(courses[course])[0]" style="display: inline-block">
-	  <input oninput="app.fillSchedule(this)" type="range" min="0" v-bind:max="courses_generator ? courses_generator.data.length-1 : 0" v-model="course_list_selection" style="width: 66%;">
+	  <input id="Range" oninput="app.fillSchedule(this)" type="range" min="0" max="0" v-model="course_list_selection" style="width: 66%;">
 	  <button onclick="app.genNext()" style="width: 30%;float: right;">{{ (courses_generator ? courses_generator.done : false) ? "Loop" : "Next" }}</button>
 	</div>
 	<span class="title">Term</span>
@@ -71,7 +71,7 @@
         <div v-show="courses.length">
           <span class="title">Courses</span>
           <input id="searchBox" oninput="app.hideSearch()" v-model="search" placeholder="Search for a course..." style="width: 100%;">
-          <select id="selectBox" onchange="app.fillSchedule()" size="25" v-model="course" @keyup.delete="course = null" @keyup.esc="course = null">
+          <select id="selectBox" onchange="app.fillSchedule()" size="25" v-model="course">
 	    <!-- options are filled in automatically -->
           </select>
           <input v-model="closed" type="checkbox"> Closed
