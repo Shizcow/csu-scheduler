@@ -10,7 +10,7 @@ In automatic mode, include a big indicator when there is no valid sched
 
 If we get a code 500, retry
 */
-let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -124,6 +124,7 @@ var app = new Vue(
 		}
 		app.changedTerm(true);
 		if(localStorage.schedules) app.localStorage = JSON.parse(localStorage.schedules);
+		app.updateSaved();
 	    });
 	},
 	computed:
@@ -413,6 +414,45 @@ var app = new Vue(
             getHash: function() {
 		return location.hash;
             },
+	    updateSaved: function() {
+		if(!this.localStorage)
+		    return;
+		var schedules = Object.keys(app.localStorage);
+		var saves = document.getElementById("saves");
+		for(var i=0; i<saves.children.length; ++i){
+		    var save = saves.children[i];
+		    var index = schedules.findIndex(el => el == save.innerText);
+		    if(index == -1){ // need to remove
+			saves.removeChild(save); // remove child
+			--i; // and step back into it's index
+		    } else {
+			schedules.splice(index, 1); // track the ones we've already found
+		    }
+		}
+		for(var i=0; i<schedules.length; ++i){
+		    var div = document.createElement("div");
+		    div.className = "option";
+		    div.innerText = schedules[i];
+		    saves.appendChild(div);
+		}
+		var options = saves.children;
+		var update = function(divs){
+		    return function(){
+			for(var i=0; i<divs.length; ++i){
+			    var div = divs[i];
+			    if(app.currentstorage == div.innerText)
+				div.classList.add("selected");
+			    else
+				div.classList.remove("selected");
+			}
+		    };
+		}(options);
+		for(var i = 0; i<options.length; ++i)
+		    options[i].onclick = function(schedule){
+			return function(){app.load(schedule); update();}
+		    }(options[i].innerText);
+		update();
+	    },
             save: function() {
 		if(!this.currentstorage) {
                     var name = window.prompt("Please enter a name for the schedule");
@@ -426,27 +466,28 @@ var app = new Vue(
 		localStorage.setItem('schedules', JSON.stringify(schedules));
 		this.localStorage = schedules;
 		this.changed = false;
-		console.log(this.localStorage)
+		console.log(this.localStorage);
+		this.updateSaved();
             },
             load: function(schedule) {
-
+		console.log("???")
 		if(this.changed && this.selected.length) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
 			return;
                     }
 		}
-		if(this.currentstorage === schedule) return;
 		this.currentstorage = schedule;
 		this.changed = false;
 		location.hash = this.localStorage[schedule];
-		
 		if ((index = this.terms.map(function(el){return el.code}).indexOf(location.hash.slice(1, 7))) > -1)
 		{
+		    console.log("????")
                     if(this.term != this.terms[index]) {
 			this.term = this.terms[index];
 			this.changedTerm(true);
                     }
                     else {
+			console.log("?????")
 			this.course = null;
 			this.search = "";
 			this.term = this.terms[index];
@@ -457,9 +498,9 @@ var app = new Vue(
                     }
 		}
 		this.justLoaded = false;
+		this.fillSchedule();
             },
             discard: function() {
-
 		if (!window.confirm("Are you sure you want to discard your changes?")) {
                     return;
 		}
@@ -474,7 +515,6 @@ var app = new Vue(
 		this.save();
             },
             deleteSchedule: function() {
-
 		if (window.confirm("Are you sure you want to delete the schedule " + this.currentstorage + "?")) {
                     var schedules = JSON.parse(localStorage.schedules);
                     delete schedules[this.currentstorage];
@@ -482,6 +522,8 @@ var app = new Vue(
                     this.localStorage = schedules;
                     this.changed = false;
                     this.clear();
+		    this.updateSaved();
+		    this.fillSchedule();
 		}
             },
             clear: function() {
@@ -494,6 +536,8 @@ var app = new Vue(
 		this.selected = [];
 		this.currentstorage = null;
 		this.justLoaded = false;
+		this.updateSaved();
+		this.fillSchedule();
             },
             webclasses: function(courses)
             {
@@ -587,7 +631,13 @@ var app = new Vue(
 					el.value = c.index;
 					app.courses_auto.push(el);
 				    }
+				    console.log("?")
+				    var saves = document.getElementById("saves");
+				    for(var i=0; i<saves.children.length; ++i)
+					if(saves.children[i].classList.contains("selected"))
+					    app.load(saves.children[i].innerText);
 				    app.fillSearch();
+				    app.fillSchedule();
 				}
 			    });
 			});

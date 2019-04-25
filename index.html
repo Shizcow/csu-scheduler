@@ -101,10 +101,10 @@
 <br><br>
 
 * Open seats can take up to two hours to update during peak registration hours
-<!--
+</div>
+
 <div class="footer">
-  <div v-if="localStorage" v-for="schedule in Object.keys(localStorage)" :class="{option: true, selected: currentstorage == schedule}" @click="load(schedule)">
-    {{ schedule }}
+  <div id="saves">
   </div>
   <div class="floatRight">
     <div v-if="(justLoaded || changed) && selected.length" class="option" @click="save">
@@ -126,7 +126,6 @@
       New
     </div>
   </div>
-  -->
 </div>
 <div class="export" name="export" v-if="showExport" @click="showExport = $event.target.attributes.name == undefined">
   <div class="wrapper">

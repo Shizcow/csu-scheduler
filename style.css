@@ -181,6 +181,10 @@ table .item.selected.hovering {
     display: inline-block;
 }
 
+#saves {
+    float: left;
+}
+
 .hint {
     float: right;
     font-size: 11px;
