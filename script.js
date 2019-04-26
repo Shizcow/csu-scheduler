@@ -171,6 +171,7 @@ var app = new Vue(
 			    div.appendChild(link)
 			    div.setAttribute("data-index", course.index);
 			    div.setAttribute("data-length", courseHere.length);
+			    div.setAttribute("data-top", courseHere.top);
 			    wrapper.appendChild(div);
 			    divTracker.push(div);
 			}
@@ -189,7 +190,7 @@ var app = new Vue(
 				div.classList.add("hovering");
 			    else
 				div.classList.remove("hovering");
-			    div.style.top = div.getAttribute("data-length") * 100 + '%';
+			    div.style.top = div.getAttribute("data-top") * 100 + '%';
 			    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 			    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 			}
