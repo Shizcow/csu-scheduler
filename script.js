@@ -302,7 +302,7 @@ var app = new Vue(
 		    return this.courses_generator;
 		}
 		//automatic generator
-		if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() == this.savedCourseGenerator)
+		if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "") == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
 		    this.course = this.courses[this.course].home.index; // basically just a render bug
@@ -336,7 +336,7 @@ var app = new Vue(
 		}, []))).filter(function(schedule){
 		    return !schedule.filter(course => !course.seatsAvailable && !app.closed).length;
 		}).filter(this.schedCompat);
-		this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join();
+		this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "");
 		return this.courses_generator;
 	    },
 	    removeDuplicatesBy: function(keyFn, array) {

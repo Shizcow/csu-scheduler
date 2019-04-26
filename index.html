@@ -64,7 +64,7 @@
           <select id="selectBox" onchange="app.fillSchedule()" size="25" v-model="course">
 	    <!-- options are filled in automatically -->
           </select>
-          <input onclick="app.hideSearch(this)" type="checkbox"> Closed
+          <input onclick="app.hideSearch(this); app.fillSchedule(this)" type="checkbox"> Closed
           <br>
           <span v-if="course" class="hint">Press esc to cancel selection</span>
           
