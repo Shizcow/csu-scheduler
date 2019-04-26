@@ -22,32 +22,20 @@
               <td v-once v-for="day in daylist(false)" v-text="day"></td>
             </tr>
           </thead>
-          <tbody>
-            <tr v-once v-for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
-              <td v-text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
-              <td v-for="day in daylist(true)" class="block">
+          <tbody id="schedTable">
+	    <!--
+            <tr v-once for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
+              <td text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
+              <td for="day in daylist(true)" class="block">
                 <div class="wrapper">
-                  <div class="wrapperInternal" :data-hour="hour" :data-day="day">
-		    <!--
-			<div v-for="c in autoConstruct(selected.concat(courses[course])).get(mode == 'Manual' ? 0 : course_list_selection)" @dblClick="click(c)" @mouseenter="hovering = autoAndLabs(c)" @mouseleave="hovering = []" v-if="c && courseHere(day, hour, c)"
-                             :class="{item: true, selected: !autoInAlts(c, courses[course]), hovering: hovering.includes(c)}" 
-                             :style="{top: courseHere(day, hour, c).top * 100 + '%', height: hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%', minHeight: !hovering.includes(c) ? 'auto' : courseHere(day, hour, c).length * 100 + '%'}">
-			  {{ c.subject }} {{ c.courseNumber }}<br> 
-			  {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br>
-			  {{ genFaculty(c) }}<br>
-			  {{ courseHere(day, hour, c).loc }}<br>
-			  {{ (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) + ' credit' + ( (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) != 1 ? 's' : '') }}<br>
-			  {{ Math.max(0, c.seatsAvailable) + '/' + c.maximumEnrollment }} seats open<br>
-			  {{ c.courseReferenceNumber }}<br>
-			  <a class="link" @click="fetchDescription(c)">Description</a>
-			</div>
-			-->
+                  <div class="wrapperInternal" data-hour="hour" data-day="day">
                   </div>
                   <div></div>                               
                   <div></div>                               
                 </div>
               </td>
             </tr>
+	    -->
           </tbody>
         </table>
       </div>
@@ -146,6 +134,7 @@
 <script src="https://unpkg.com/vue"></script>
 <script src="https://cdn.jsdelivr.net/vue.resource/1.2.1/vue-resource.min.js"></script>
 <script src="./script.js?v=1.07" charset="utf-8"></script>
+<script src="./index.js?v=1.07" charset="utf-8"></script>
 </body>
 
 </html>
