@@ -2,10 +2,11 @@
 
 (function(){
     var thead = document.getElementById("schedThead");
-    var days = app.daylist(false);
+    var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     for(var i=0; i<days.length; ++i){
+	var day = days[i];
 	var td = document.createElement("td");
-	td.innerText = days[i];
+	td.innerText = day;
 	thead.appendChild(td);
     }
 })();
@@ -13,9 +14,8 @@
 (function(){ // tbody body
     var tbody = document.getElementById("schedTbody");
     var hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-    var days = app.daylist(true);
-
-    var tr_template = document.createElement("tr");
+    var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    var tr_template = document.createElement("tr"); // CSS says Saturday & Sunday are hidden
     var td0 = document.createElement("td");
     td0.className = "time";
     //td0.innerText = ((hour - 1) % 12 + 1) + ':00';

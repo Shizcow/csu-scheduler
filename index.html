@@ -17,7 +17,7 @@
       <div class="left">
         <table>
           <thead>
-            <tr  id="schedThead">
+            <tr id="schedThead">
               <td class="time"></td>
 	      <!--
 		  <td for="day in daylist(false)" text="day"></td>
@@ -46,9 +46,9 @@
         <!--<img src="https://web.stevens.edu/scheduler/stevens-logo-100px.jpg" /><br><br>-->
 	<span class="title">Mode</span>
 	<br>
-        <input id="Manual" class="mode" v-model="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Manual
+        <input id="Manual" class="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Manual
 	<br>
-        <input id="Automatic" class="mode" v-model="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Automatic
+        <input id="Automatic" class="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Automatic
 	<br>
 	<div v-if="mode == 'Automatic' && !!selected.concat(courses[course])[0]" style="display: inline-block">
 	  <input id="Range" oninput="app.fillSchedule(this)" type="range" min="0" max="0" v-model="course_list_selection" style="width: 66%;">
