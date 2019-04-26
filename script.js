@@ -1,7 +1,7 @@
 /*
-BUG:
+BUGS:
 I think everything dies when connection is lost during course retrieval
-When we've got all the courses loaded, automatic mode is slow. Find out why, and fix it.
+When loading, sometimes the small request returns a different # of courses. Account for that
 
 ADD:
 auto webclasses
@@ -114,7 +114,7 @@ var app = new Vue(
 	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
 		let response = JSON.parse(this.responseText);
 		app.terms = response;
-		if (app.hashExists() && (index = app.terms.indexOf(location.hash.slice(1, 6))) > -1)
+		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.slice(1, 7))) > -1)
 		{
 		    app.term = app.terms[index];
 		}
@@ -297,7 +297,7 @@ var app = new Vue(
 			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
 		    }
-		    this.savedCourseGenerator = "M"+courses.map(function(el){return el.courseReferenceNumber;}).join();
+		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
 		    this.courses_generator = {get: function(i){return courses;}};
 		    return this.courses_generator;
 		}
@@ -477,7 +477,6 @@ var app = new Vue(
 		this.updateSaved();
             },
             load: function(schedule) {
-		console.log("???")
 		if(this.changed && this.selected.length) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
 			return;
@@ -488,13 +487,11 @@ var app = new Vue(
 		location.hash = this.localStorage[schedule];
 		if ((index = this.terms.map(function(el){return el.code}).indexOf(location.hash.slice(1, 7))) > -1)
 		{
-		    console.log("????")
                     if(this.term != this.terms[index]) {
 			this.term = this.terms[index];
 			this.changedTerm(true);
                     }
                     else {
-			console.log("?????")
 			this.course = null;
 			this.search = "";
 			this.term = this.terms[index];
@@ -562,7 +559,9 @@ var app = new Vue(
 		this.course_list_selection = 0;
 		this.courses_generator = null;
 		this.saved_course_generator = "";
-		//xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {});
+		this.fillSchedule(); // show empty while loading
+		this.percent = "";
+		
 		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + this.term.code + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
 		    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc"), null, function () { // we first do a short grab in order to get the max size
 			let first_response = JSON.parse(this.responseText);
@@ -643,6 +642,12 @@ var app = new Vue(
 					if(saves.children[i].classList.contains("selected"))
 					    app.load(saves.children[i].innerText);
 				    app.fillSearch();
+				    if(loadHash){ // loading from URL or save, get hash and parse it
+					var hashes = location.hash.slice(8).split(',');
+					app.selected = app.courses.filter(function(course){
+					    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+			});
+				    }
 				    app.fillSchedule();
 				}
 			    });
