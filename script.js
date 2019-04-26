@@ -286,6 +286,7 @@ var app = new Vue(
 		if(courses[0] == null) return {get: function(i){return []}}; // no courses - go no further
 		if(courses.slice(-1)[0]==null) // remove null at end when no class is selected
 		    courses.pop();
+		courses = courses.filter(course => course.seatsAvailable || app.closed);
 		if(this.mode == "Manual"){
 		    if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
@@ -332,7 +333,9 @@ var app = new Vue(
 			}
 		    }
 		    return acc;
-		}, []))).filter(this.schedCompat);
+		}, []))).filter(function(schedule){
+		    return !schedule.filter(course => !course.seatsAvailable && !app.closed).length;
+		}).filter(this.schedCompat);
 		this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join();
 		return this.courses_generator;
 	    },
