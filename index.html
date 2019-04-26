@@ -46,9 +46,9 @@
         <!--<img src="https://web.stevens.edu/scheduler/stevens-logo-100px.jpg" /><br><br>-->
 	<span class="title">Mode</span>
 	<br>
-        <input id="Manual" class="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Manual
+        <input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);" checked="checked"> Manual
 	<br>
-        <input id="Automatic" class="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Automatic
+        <input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0);"> Automatic
 	<br>
 	<div v-if="mode == 'Automatic' && !!selected.concat(courses[course])[0]" style="display: inline-block">
 	  <input id="Range" oninput="app.fillSchedule(this)" type="range" min="0" max="0" v-model="course_list_selection" style="width: 66%;">
@@ -64,8 +64,8 @@
           <select id="selectBox" onchange="app.fillSchedule()" size="25" v-model="course">
 	    <!-- options are filled in automatically -->
           </select>
-          <input v-model="closed" type="checkbox"> Closed
-          
+          <input onclick="app.hideSearch(this)" type="checkbox"> Closed
+          <br>
           <span v-if="course" class="hint">Press esc to cancel selection</span>
           
           <br><br>

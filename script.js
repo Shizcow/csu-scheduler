@@ -10,7 +10,7 @@ In automatic mode, include a big indicator when there is no valid sched
 
 If we get a code 500, retry
 */
-let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -132,7 +132,7 @@ var app = new Vue(
             totalCredits: function()
             {
 		return this.selected.map(function(c){
-		    return c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? c.creditHourLow : c.creditHourHigh ? c.creditHourHigh : 0;
+		    return (c.scheduleTypeDescription == "Laboratory" || c.scheduleTypeDescription == "Recitation") ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? c.creditHourLow : c.creditHourHigh ? c.creditHourHigh : 0;
 		}).concat(0).reduce(function(a, b){
 		    return a + b;
 		});
@@ -162,7 +162,7 @@ var app = new Vue(
 			if(course && courseHere){
 			    var div = document.createElement("div");
 			    div.className = "item";
-			    var creditText = (course.scheduleTypeDescription == "Laboratory" ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
+			    var creditText = ((course.scheduleTypeDescription == "Laboratory" || course.scheduleTypeDescription == "Recitation") ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
 			    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			    var link = document.createElement("a");
 			    link.className = "link";
@@ -217,6 +217,7 @@ var app = new Vue(
 		    }();
 		}
 		update();
+		this.dayUpdate();
 	    },
 	    fillSearch: function(referrer) {
 		var selectBox = document.getElementById("selectBox");
@@ -227,7 +228,9 @@ var app = new Vue(
 		    selectBox.appendChild(courses[i]);
 		this.hideSearch();
 	    },
-	    hideSearch: function() {
+	    hideSearch: function(referrer) {
+		if(referrer)
+		    this.closed = referrer.checked;
 		var options = document.getElementById("selectBox").children;
 		for(var i=0; i < options.length; ++i)
 		    options[i].style.display = this.filterSearch(this.courses[options[i].value]) ? "" : "none";
@@ -403,7 +406,7 @@ var app = new Vue(
 	    },
 	    // Check if two meetings are compatable
 	    meetingCompat: function(a, b){
-		if(!this.daylist(true).reduce(function(acc, day){ // check if any of the days overlap
+		if(!["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce(function(acc, day){ // check if any of the days overlap
 		    return acc || (a[day] && b[day]); // and carry over any trues
 		}, false))
 		    return true; // if the two aren't even on the same days, we knot it's compatable
@@ -580,7 +583,7 @@ var app = new Vue(
 				    });
 				    app.courses = app.courses.reduce(function(acc, cur){ // post process in preparation for manual mode
 					if(acc.length > 0){
-					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && cur.scheduleTypeDescription == "Laboratory"){ // lab
+					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // lab
 						var i = acc.length-1;
 						for(; !acc[i].labs; --i); // back to home
 						cur.home = acc[i];
@@ -632,7 +635,6 @@ var app = new Vue(
 					el.value = c.index;
 					app.courses_auto.push(el);
 				    }
-				    console.log("?")
 				    var saves = document.getElementById("saves");
 				    for(var i=0; i<saves.children.length; ++i)
 					if(saves.children[i].classList.contains("selected"))
@@ -713,32 +715,59 @@ var app = new Vue(
 		}).join();
 		return hash;
             },
-	    daylist: function(tolower){
-		return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-			this.selected.concat(this.courses[this.course]).map(function(c){
-			    if(!c) return false;
-			    return c.meetingsFaculty.map(function(m){
-				return m.meetingTime.saturday || m.meetingTime.sunday
-			    }).reduce(function(a, b){
-				return a || b;
-			    })
-			}).reduce(function(a, b){
-			    return a || b
-			}) ? "Saturday" : "",
-			this.selected.concat(this.courses[this.course]).map(function(c){
-			    if(!c) return false;
-			    return c.meetingsFaculty.map(function(m){
-				return m.meetingTime.sunday
-			    }).reduce(function(a, b){
-				return a || b;
-			    })
-			}).reduce(function(a, b){
-			    return a || b
-			}) ? "Sunday" : ""].filter(function(el){
-			    return el!=""
-			}).map(function(el){
-			    return tolower ? el.toLowerCase() : el;
-			});
+	    dayUpdate: function(){
+		var test = false;
+		if(this.mode == "Automatic"){
+		    if(this.courses_generator)
+			if(this.courses_generator.data)
+			    test = this.courses_generator.data[this.course_list_selection].value;
+		} else {
+		    test = this.selected.concat(this.courses[this.course]);
+		}
+		if(test != false ? test.map(function(c){ // Any of the courses are held on a Saturday (or Sunday)
+		    if(!c) return false;
+		    return c.meetingsFaculty.map(function(m){
+			return m.meetingTime.saturday || m.meetingTime.sunday
+		    }).reduce(function(a, b){
+			return a || b;
+		    })
+		}).reduce(function(a, b){
+		    return a || b;
+		}, false) : false){
+		    document.getElementById("schedThead").children[6].style.display = "";
+		    var trs = document.getElementById("schedTbody").children;
+		    for(var i=0; i<trs.length; ++i){
+			trs[i].children[6].style.display = "";
+		    }
+		} else {
+		    document.getElementById("schedThead").children[6].style.display = "none";
+		    var trs = document.getElementById("schedTbody").children;
+		    for(var i=0; i<trs.length; ++i){
+			trs[i].children[6].style.display = "none";
+		    }
+		}
+		if(test != false ? test.map(function(c){ // Any of the courses are held on a Sunday
+		    if(!c) return false;
+		    return c.meetingsFaculty.map(function(m){
+			return m.meetingTime.sunday
+		    }).reduce(function(a, b){
+			return a || b;
+		    })
+		}).reduce(function(a, b){
+		    return a || b
+		}, false) : false){
+		    document.getElementById("schedThead").children[7].style.display = "";
+		    var trs = document.getElementById("schedTbody").children;
+		    for(var i=0; i<trs.length; ++i){
+			trs[i].children[7].style.display = "";
+		    }
+		} else {
+		    document.getElementById("schedThead").children[7].style.display = "none";
+		    var trs = document.getElementById("schedTbody").children;
+		    for(var i=0; i<trs.length; ++i){
+			trs[i].children[7].style.display = "none";
+		    }
+		}
 	    }
 	}
     });

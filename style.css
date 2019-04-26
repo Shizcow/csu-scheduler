@@ -8,15 +8,6 @@ body {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
 }
-
-#schedThead td:nth-child(7), #schedTbody tr td:nth-child(7) {
-    display: none;
-}
-
-#schedThead td:nth-child(8), #schedTbody tr td:nth-child(8) {
-    display: none;
-}
-
 #loading {
     text-align: center;
     margin-top: 30px;

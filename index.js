@@ -14,7 +14,7 @@
 (function(){ // tbody body
     var tbody = document.getElementById("schedTbody");
     var hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-    var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    var days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     var tr_template = document.createElement("tr"); // CSS says Saturday & Sunday are hidden
     var td0 = document.createElement("td");
     td0.className = "time";
@@ -45,5 +45,16 @@
 	    tr.appendChild(td);
 	}
 	tbody.appendChild(tr);
+    }
+})();
+
+(function(){ // Hide Saturday and Sunday - will be shown on request
+    var ths = document.getElementById("schedThead").children;
+    ths[6].style.display = "none";
+    ths[7].style.display = "none";
+    var trs = document.getElementById("schedTbody").children;
+    for(var i=0; i<trs.length; ++i){
+	trs[i].children[6].style.display = "none";
+	trs[i].children[7].style.display = "none";
     }
 })();
