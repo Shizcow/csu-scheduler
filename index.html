@@ -17,12 +17,14 @@
       <div class="left">
         <table>
           <thead>
-            <tr>
+            <tr  id="schedThead">
               <td class="time"></td>
-              <td v-once v-for="day in daylist(false)" v-text="day"></td>
+	      <!--
+		  <td for="day in daylist(false)" text="day"></td>
+		  -->
             </tr>
           </thead>
-          <tbody id="schedTable">
+          <tbody id="schedTbody">
 	    <!--
             <tr v-once for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
               <td text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>

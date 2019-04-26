@@ -1,7 +1,17 @@
 //This file is meant to fill the tedious html layouts
 
 (function(){
-    var table = document.getElementById("schedTable");
+    var thead = document.getElementById("schedThead");
+    var days = app.daylist(false);
+    for(var i=0; i<days.length; ++i){
+	var td = document.createElement("td");
+	td.innerText = days[i];
+	thead.appendChild(td);
+    }
+})();
+
+(function(){ // tbody body
+    var tbody = document.getElementById("schedTbody");
     var hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     var days = app.daylist(true);
 
@@ -34,6 +44,6 @@
 	    td.firstChild.firstChild.setAttribute("data-day", day);
 	    tr.appendChild(td);
 	}
-	table.appendChild(tr);
+	tbody.appendChild(tr);
     }
 })();
