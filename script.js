@@ -727,8 +727,14 @@ var app = new Vue(
 		var test = false;
 		if(this.mode == "Automatic"){
 		    if(this.courses_generator)
-			if(this.courses_generator.data)
-			    test = this.courses_generator.data[this.course_list_selection].value;
+			if(this.courses_generator.data){
+			    console.log(this.courses_generator.data[this.course_list_selection]);
+			    if(this.courses_generator.data[this.course_list_selection]){
+				test = this.courses_generator.data[this.course_list_selection].value;
+			    } else { // no valid schedules - show msg
+				
+			    } // let it continue - will wipe saturdays & sundays
+			}
 		} else {
 		    test = this.selected.concat(this.courses[this.course]);
 		}
