@@ -8,6 +8,7 @@ body {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
 }
+
 #loading {
     text-align: center;
     margin-top: 30px;
@@ -254,4 +255,24 @@ table .item.selected.hovering {
 .export textarea {
     height: 200px;
     width: 100%;
+}
+
+#noSchedWrapper{
+    padding-left: 50px;
+    padding-top: 25px;
+    height: 100%;
+    width: 100%;
+}
+
+#noSchedAlign{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#noSched{
+    width: 400px;
+    text-align: center;
 }

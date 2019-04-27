@@ -6,8 +6,6 @@ When loading, sometimes the small request returns a different # of courses. Acco
 ADD:
 auto webclasses
 
-In automatic mode, include a big indicator when there is no valid sched
-
 If we get a code 500, retry
 */
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
@@ -111,6 +109,7 @@ var app = new Vue(
 	mounted: function()
 	{
             this.$el.style.display = 'block';
+	    document.getElementById("noSchedAlign").style.display = "none";
 	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
 		let response = JSON.parse(this.responseText);
 		app.terms = response;
@@ -291,11 +290,14 @@ var app = new Vue(
 		    if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
+			if(this.courses_generator.get(this.course_list_selection))
 			courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
-			console.log(courses)
+			
 			this.course = courses.filter(function(course){
 			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
+
+			//and fix a render bug
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
 		    this.courses_generator = {get: function(i){return courses;}};
@@ -473,7 +475,6 @@ var app = new Vue(
 		localStorage.setItem('schedules', JSON.stringify(schedules));
 		this.localStorage = schedules;
 		this.changed = false;
-		console.log(this.localStorage);
 		this.updateSaved();
             },
             load: function(schedule) {
@@ -728,15 +729,40 @@ var app = new Vue(
 		if(this.mode == "Automatic"){
 		    if(this.courses_generator)
 			if(this.courses_generator.data){
-			    console.log(this.courses_generator.data[this.course_list_selection]);
 			    if(this.courses_generator.data[this.course_list_selection]){
 				test = this.courses_generator.data[this.course_list_selection].value;
+				document.getElementById("noSchedAlign").style.display = "none";
+				if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
+				    for(var i=1; i<=5; ++i){
+					var trs = document.getElementById("schedTbody").children;
+					for(var j=0; j<trs.length; ++j){
+					    trs[j].children[i].style.display = "";
+					}
+				    }
+				}
 			    } else { // no valid schedules - show msg
-				
+				document.getElementById("noSchedAlign").style.display = "";
+				if(document.getElementById("schedTbody").children[0].children[1].style.display == ""){
+				    for(var i=1; i<=5; ++i){
+					var trs = document.getElementById("schedTbody").children;
+					for(var j=0; j<trs.length; ++j){
+					    trs[j].children[i].style.display = "none";
+					}
+				    }
+				}
 			    } // let it continue - will wipe saturdays & sundays
 			}
 		} else {
 		    test = this.selected.concat(this.courses[this.course]);
+		    document.getElementById("noSchedAlign").style.display = "none";
+		    if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
+			for(var i=1; i<=5; ++i){
+			    var trs = document.getElementById("schedTbody").children;
+			    for(var j=0; j<trs.length; ++j){
+				trs[j].children[i].style.display = "";
+			    }
+			}
+		    }
 		}
 		if(test != false ? test.map(function(c){ // Any of the courses are held on a Saturday (or Sunday)
 		    if(!c) return false;
