@@ -73,6 +73,7 @@ window.addEventListener("keydown", function (e) { // remove app.course and re-re
     if(e.key == "Escape" || e.key == "Delete"){   // when deleted or escaped
 	document.getElementById("selectBox").value = "";
 	app.course = null;
+	app.courses_generator = null;
 	app.fillSchedule();
     }
 })
@@ -143,7 +144,7 @@ var app = new Vue(
 	    fillSchedule: function(referrer) {
 		if(referrer)
 		    this.course_list_selection = referrer.value;
-		this.course = document.getElementById("selectBox").value;
+		this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
 		var wrappers = document.getElementsByClassName("wrapperInternal");
 		// First, clear the board
 		for(var i=0; i < wrappers.length; ++i)
@@ -292,9 +293,9 @@ var app = new Vue(
 		    if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
-			if(this.courses_generator.get(this.course_list_selection))
-			    courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
-			
+			if(this.courses_generator)
+			    if(this.courses_generator.get(this.course_list_selection))
+				courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
 			this.course = courses.filter(function(course){
 			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
