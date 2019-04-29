@@ -2,13 +2,14 @@
 BUGS:
 I think everything dies when connection is lost during course retrieval
 When loading, sometimes the small request returns a different # of courses. Account for that
+Moving from Manual to Auto - app.course doesn't always change perfectly
 
 ADD:
 auto webclasses
 
 If we get a code 500, retry
 */
-let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -200,6 +201,7 @@ var app = new Vue(
 			return function(){
 			    app.click(course);
 			    app.course = null;
+			    document.getElementById("selectBox").value = "";
 			}
 		    }(app.courses[divTracker[j].getAttribute("data-index")]);
 		    divTracker[j].onmouseenter = function(course){
@@ -291,12 +293,12 @@ var app = new Vue(
 			return this.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
 			if(this.courses_generator.get(this.course_list_selection))
-			courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
+			    courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
 			
 			this.course = courses.filter(function(course){
 			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
-
+			document.getElementById("selectBox").value = this.course.toString();
 			//and fix a render bug
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
@@ -306,8 +308,10 @@ var app = new Vue(
 		//automatic generator
 		if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "") == this.savedCourseGenerator)
 		    return this.courses_generator; // don't have to run the calculation for every hour in every day
-		if(this.savedCourseGenerator[0] == "M" && this.course) // switching from manual to automatic - update app.course
+		if(this.savedCourseGenerator[0] == "M" && this.course){ // switching from manual to automatic - update app.course
 		    this.course = this.courses[this.course].home.index; // basically just a render bug
+		    document.getElementById("selectBox").value = this.course.toString();
+		}
 		this.course_list_selection = 0; // Reset on each new sched gen
 		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
 		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
@@ -494,6 +498,7 @@ var app = new Vue(
                     }
                     else {
 			this.course = null;
+			document.getElementById("selectBox").value = "";
 			this.search = "";
 			this.term = this.terms[index];
 			var hashes = location.hash.slice(8).split(',');
@@ -554,6 +559,7 @@ var app = new Vue(
             {
 		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
+		document.getElementById("selectBox").value = "";
 		this.search = "";
 		this.courses = [];
 		this.selected = [];	
@@ -692,6 +698,7 @@ var app = new Vue(
 		if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
 		{
 		    this.course = null;
+		    document.getElementById("selectBox").value = "";
 		    this.selected.push(course);
 		    if(this.mode == "Automatic"){
 			this.savedCourseGenerator = "A";
