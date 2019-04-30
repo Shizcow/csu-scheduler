@@ -2,7 +2,6 @@
 BUGS:
 I think everything dies when connection is lost during course retrieval
 When loading, sometimes the small request returns a different # of courses. Account for that
-Moving from Manual to Auto - app.course doesn't always change perfectly
 
 ADD:
 auto webclasses
@@ -144,7 +143,10 @@ var app = new Vue(
 	    fillSchedule: function(referrer) {
 		if(referrer)
 		    this.course_list_selection = referrer.value;
+		console.log(">", app.course)
+		console.log(document.getElementById("selectBox").value);
 		this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
+		console.log(">>", app.course)
 		var wrappers = document.getElementsByClassName("wrapperInternal");
 		// First, clear the board
 		for(var i=0; i < wrappers.length; ++i)
@@ -223,18 +225,21 @@ var app = new Vue(
 	    },
 	    fillSearch: function(referrer) {
 		var selectBox = document.getElementById("selectBox");
-		while(selectBox.firstChild)
-		    selectBox.removeChild(selectBox.firstChild);
+		console.log(selectBox.selectedIndex)
+		var val = selectBox.value;
+		while(selectBox.lastChild.value != "")
+		    selectBox.removeChild(selectBox.lastChild);
 		var courses = this.autoFilter(this.courses, referrer);
 		for(var i = 0; i < courses.length; i++)
 		    selectBox.appendChild(courses[i]);
+		selectBox.value = val;
 		this.hideSearch();
 	    },
 	    hideSearch: function(referrer) {
 		if(referrer)
 		    this.closed = referrer.checked;
 		var options = document.getElementById("selectBox").children;
-		for(var i=0; i < options.length; ++i)
+		for(var i=1; i < options.length; ++i)
 		    options[i].style.display = this.filterSearch(this.courses[options[i].value]) ? "" : "none";
 	    },
             filterSearch: function(course) {
@@ -299,7 +304,11 @@ var app = new Vue(
 			this.course = courses.filter(function(course){
 			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
+			console.log("?>1", app.course)
+			console.log("?>2", document.getElementById("selectBox").value)
 			document.getElementById("selectBox").value = this.course.toString();
+			console.log("?>>1", app.course)
+			console.log("?>>2", document.getElementById("selectBox").value)
 			//and fix a render bug
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
