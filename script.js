@@ -1,10 +1,10 @@
 /*
 BUGS:
 I think everything dies when connection is lost during course retrieval
-When loading, sometimes the small request returns a different # of courses. Account for that
 
 ADD:
 auto webclasses
+L-> ACT 205
 
 If we get a code 500, retry
 */
@@ -24,6 +24,8 @@ let xhrzip = function(method, url, data, onstate){
     xhr.onreadystatechange = function(){ // callback
 	if (this.readyState === 4 && this.status === 200)
 	    ({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
+	if(this.status != 200 && this.status != 0)
+	    console.log(this.status) // will need in the future for testing errors
     };
     xhr.open(method, url);
     xhr.withCredentials = true; // needed for auth cookies
@@ -143,10 +145,7 @@ var app = new Vue(
 	    fillSchedule: function(referrer) {
 		if(referrer)
 		    this.course_list_selection = referrer.value;
-		console.log(">", app.course)
-		console.log(document.getElementById("selectBox").value);
 		this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
-		console.log(">>", app.course)
 		var wrappers = document.getElementsByClassName("wrapperInternal");
 		// First, clear the board
 		for(var i=0; i < wrappers.length; ++i)
@@ -180,6 +179,34 @@ var app = new Vue(
 			}
 		    }
 		}
+
+		//WEB CLASSES
+		var webWrapper = document.getElementById("webWrapper");
+		var web = document.getElementById("web");
+		while(web.firstChild)
+		    web.removeChild(web.firstChild);
+		var schedule = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+		var webClasses = this.webclasses(schedule);
+		webWrapper.style.display = webClasses.length ? "" : "none";
+		for(var j=0; j<webClasses.length; ++j){
+		    var course = webClasses[j];
+		    if(course){
+			var div = document.createElement("div");
+			div.className = "item";
+			var creditText = ((course.scheduleTypeDescription == "Laboratory" || course.scheduleTypeDescription == "Recitation") ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
+			div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
+			var link = document.createElement("a");
+			link.className = "link";
+			link.onclick = function(){app.fetchDescription(course);};
+			link.innerText = "Description";
+			div.appendChild(link)
+			div.setAttribute("data-index", course.index);
+			web.appendChild(div);
+			divTracker.push(div);
+		    }
+		}
+
+		//Set listeners
 		var update = function(divs){
 		    return function(){
 			for(var k=0; k<divs.length; ++k){
@@ -193,9 +220,11 @@ var app = new Vue(
 				div.classList.add("hovering");
 			    else
 				div.classList.remove("hovering");
-			    div.style.top = div.getAttribute("data-top") * 100 + '%';
-			    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-			    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+			    if(div.getAttribute("data-top")){ // non-web
+				div.style.top = div.getAttribute("data-top") * 100 + '%';
+				div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+				div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+			    }
 			}
 		    }
 		}(divTracker);
@@ -225,7 +254,6 @@ var app = new Vue(
 	    },
 	    fillSearch: function(referrer) {
 		var selectBox = document.getElementById("selectBox");
-		console.log(selectBox.selectedIndex)
 		var val = selectBox.value;
 		while(selectBox.lastChild.value != "")
 		    selectBox.removeChild(selectBox.lastChild);
@@ -304,11 +332,7 @@ var app = new Vue(
 			this.course = courses.filter(function(course){
 			    return course.home == app.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
-			console.log("?>1", app.course)
-			console.log("?>2", document.getElementById("selectBox").value)
 			document.getElementById("selectBox").value = this.course.toString();
-			console.log("?>>1", app.course)
-			console.log("?>>2", document.getElementById("selectBox").value)
 			//and fix a render bug
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
@@ -562,7 +586,7 @@ var app = new Vue(
             webclasses: function(courses)
             {
 		return courses.filter(function(course){
-		    return course && (course.meetingsFaculty.map(function(el){return el.meetingTime.building == "ONLINE"}).reduce(function(a, b){return a || b}));
+		    return course && (course.meetingsFaculty.map(el => el.meetingTime.building == "ONLINE").reduce((a, b) => (a || b), false));
 		});
             },
             changedTerm: function(loadHash)
@@ -585,7 +609,7 @@ var app = new Vue(
 			let max = first_response.totalCount;
 			let data = [first_response];
 			let offsets = [];
-			for(var i=10; i<test_percent_cap*(max-10)/100; i+=chunk)
+			for(var i=first_response.data.length; i<test_percent_cap*(max-first_response.data.length)/100; i+=chunk)
 			    offsets.push(i); // generate array of all the needed request-offset values
 			let percentEnd = offsets[offsets.length-1]+chunk;
 			percentEnd = '/' + (percentEnd < max ? percentEnd : max).toString();
@@ -595,7 +619,7 @@ var app = new Vue(
 				data.push(response); // add to array in no particular order
 				max -= chunk; // signal completion
 				app.percent = data.reduce((acc, el) => acc+el.data.length, 0).toString() + percentEnd;
-				if(data[0].totalCount-(max-10) > test_percent_cap*(data[0].totalCount)/100){ // all are done
+				if(data[0].totalCount-(max-first_response.data.length) > test_percent_cap*(data[0].totalCount)/100){ // all are done
 				    data = data.sort((a, b) => a.pageOffset - b.pageOffset); // sort to proper order
 				    data.forEach(function(payload){ // itterate over all responses
 					app.courses = app.courses.concat(payload.data); // and add to courses

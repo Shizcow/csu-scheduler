@@ -82,71 +82,73 @@
           
           <span class="title">Total Credits:</span> {{ totalCredits }}<br><br>
 
-          <div v-if="webclasses(selected.concat(courses[course])).length">
+          <div id="webWrapper" style="display:none;">
             <span class="title">Web Classes</span>
-            <div class="selectedList">
-              <div v-for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
-                {{ c.subject }} {{ c.courseNumber }}: {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br> 
-                {{ genFaculty(c) }}<br> 
-                {{ (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) + ' credit' + ( (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) != 1 ? 's' : '') }}<br>
-                {{ Math.max(0, c.seatsAvailable) + '/' + c.maximumEnrollment }} seats open <br>
-                {{ c.courseReferenceNumber }}<br>
-                <a class="link" @click="fetchDescription(c)">Description </span></a>
-</div>
-</div>
-</div>
-</div>
-<div v-show="!courses.length" class="loadingCourses">Loading Courses... {{ percent }}</div>
+            <div class="selectedList" id="web">
+	      <!--
+		  <div v-for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
+                    {{ c.subject }} {{ c.courseNumber }}: {{ c.courseTitle.replace(/&ndash;/g, "–") }}<br> 
+                    {{ genFaculty(c) }}<br> 
+                    {{ (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) + ' credit' + ( (c.scheduleTypeDescription == "Laboratory" ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? (c.creditHourHigh ? c.creditHourLow.toString() + '-' + c.creditHourHigh.toString() : c.creditHourLow) : c.creditHourHigh ? c.creditHourHigh : 0) != 1 ? 's' : '') }}<br>
+                    {{ Math.max(0, c.seatsAvailable) + '/' + c.maximumEnrollment }} seats open <br>
+                    {{ c.courseReferenceNumber }}<br>
+                    <a class="link" @click="fetchDescription(c)">Description</a>
+		  </div>
+		  -->
+	    </div>
+	  </div>
+	</div>
+	<div v-show="!courses.length" class="loadingCourses">Loading Courses... {{ percent }}</div>
 
-<br><br>
+	<br><br>
 
-* Open seats can take up to two hours to update during peak registration hours
-</div>
+	* Open seats can take up to two hours to update during peak registration hours
+      </div>
 
-<div class="footer">
-  <div id="saves">
-  </div>
-  <div class="floatRight">
-    <div v-if="(justLoaded || changed) && selected.length" class="option" @click="save">
-      Save
+      <div class="footer">
+	<div id="saves">
+	</div>
+	<div class="floatRight">
+	  <div v-if="(justLoaded || changed) && selected.length" class="option" @click="save">
+	    Save
+	  </div>
+	  <div v-if="changed && currentstorage && selected.length" class="option" @click="discard">
+	    Discard Changes
+	  </div>
+	  <div v-if="currentstorage" class="option" @click="saveNew">
+	    Save as New
+	  </div>
+	  <div v-if="currentstorage" class="option" @click="deleteSchedule">
+	    Delete
+	  </div>
+	  <div v-if="selected.length" class="option" @click="showExport = true">
+	    Export
+	  </div>
+	  <div v-if="selected.length" class="option" @click="clear">
+	    New
+	  </div>
+	</div>
+      </div>
+      <div class="export" name="export" v-if="showExport" @click="showExport = $event.target.attributes.name == undefined">
+	<div class="wrapper">
+	  Share link:<br>
+	  <input type="text" :value="'file:///home/notroot/Desktop/csuscheduler/index.html' + getHash()"><br><br>
+	  Course List:<br>
+	  <textarea v-text="selected.map(function(c) { return c.courseReferenceNumber + ': ' + c.subject + ' ' + c.courseNumber }).join('\n')"></textarea>
+	</div>
+      </div>
+      <div class="description" name="description" v-if="description" @click="($event.target.attributes.name == undefined) ? null : description = null">
+	<div class="wrapper">
+	  <strong>{{ description.subject }} {{ description.courseNumber }}:</strong><br><br>
+	  <span v-if="!description.description">Fetching description...</span>
+	  <span v-else style="white-space: pre-wrap;">{{ description.description }}</span>
+	</div>
+      </div>
     </div>
-    <div v-if="changed && currentstorage && selected.length" class="option" @click="discard">
-      Discard Changes
-    </div>
-    <div v-if="currentstorage" class="option" @click="saveNew">
-      Save as New
-    </div>
-    <div v-if="currentstorage" class="option" @click="deleteSchedule">
-      Delete
-    </div>
-    <div v-if="selected.length" class="option" @click="showExport = true">
-      Export
-    </div>
-    <div v-if="selected.length" class="option" @click="clear">
-      New
-    </div>
-  </div>
-</div>
-<div class="export" name="export" v-if="showExport" @click="showExport = $event.target.attributes.name == undefined">
-  <div class="wrapper">
-    Share link:<br>
-    <input type="text" :value="'file:///home/notroot/Desktop/csuscheduler/index.html' + getHash()"><br><br>
-    Course List:<br>
-    <textarea v-text="selected.map(function(c) { return c.courseReferenceNumber + ': ' + c.subject + ' ' + c.courseNumber }).join('\n')"></textarea>
-  </div>
-</div>
-<div class="description" name="description" v-if="description" @click="($event.target.attributes.name == undefined) ? null : description = null">
-  <div class="wrapper">
-    <strong>{{ description.subject }} {{ description.courseNumber }}:</strong><br><br>
-    <span v-if="!description.description">Fetching description...</span>
-    <span v-else style="white-space: pre-wrap;">{{ description.description }}</span>
-  </div>
-</div>
-</div>
-<script src="https://unpkg.com/vue"></script>
-<script src="https://cdn.jsdelivr.net/vue.resource/1.2.1/vue-resource.min.js"></script>
-<script src="./script.js?v=1.07" charset="utf-8"></script>
-<script src="./index.js?v=1.07" charset="utf-8"></script>
-</body>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://cdn.jsdelivr.net/vue.resource/1.2.1/vue-resource.min.js"></script>
+    <script src="./script.js?v=1.07" charset="utf-8"></script>
+    <script src="./index.js?v=1.07" charset="utf-8"></script>
+  </body>
 
 </html>
