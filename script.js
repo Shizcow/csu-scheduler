@@ -2,10 +2,9 @@
 BUGS:
 I think everything dies when connection is lost during course retrieval
 
-ADD:
-auto webclasses
-L-> ACT 205
+in fillSchedule, don't just clear everything. Take stock of what there is to clear, then clear it and only it. this will remove flashes
 
+ADD:
 If we get a code 500, retry
 */
 let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
@@ -347,7 +346,6 @@ var app = new Vue(
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
 		    this.courses_generator = {get: function(i){return courses;}};
-		    console.log(this.courses_generator)
 		    return this.courses_generator;
 		}
 		//automatic generator
@@ -588,6 +586,8 @@ var app = new Vue(
 			return;
                     }
 		}
+		document.getElementById("selectBox").value = "";
+		this.course = null;
 		this.selected = [];
 		this.currentstorage = null;
 		this.justLoaded = false;
