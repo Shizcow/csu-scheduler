@@ -74,7 +74,8 @@ window.addEventListener("keydown", function (e) { // remove app.course and re-re
     if(e.key == "Escape" || e.key == "Delete"){   // when deleted or escaped
 	document.getElementById("selectBox").value = "";
 	app.course = null;
-	app.courses_generator = null;
+	app.savedCourseGenerator = "";
+	app.courses_generator = null; // force a recalculation to reflect change in app.course
 	app.fillSchedule();
     }
 })
@@ -152,7 +153,7 @@ var app = new Vue(
 		    while(wrappers[i].firstChild)
 			wrappers[i].removeChild(wrappers[i].firstChild);
 		// Then, cycle through and build a divlist
-		var divTracker = []; 
+		var divTracker = [];
 		for(var i=0; i < wrappers.length; ++i){
 		    var wrapper = wrappers[i];
 		    var day = wrapper.getAttribute("data-day");
@@ -174,6 +175,11 @@ var app = new Vue(
 			    div.setAttribute("data-index", course.index);
 			    div.setAttribute("data-length", courseHere.length);
 			    div.setAttribute("data-top", courseHere.top);
+			    if(!app.autoInAlts(course, app.courses[app.course])) // run an update instantle - fixes flashes
+				div.classList.add("selected");
+			    div.style.top = div.getAttribute("data-top") * 100 + '%';
+			    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+			    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 			    wrapper.appendChild(div);
 			    divTracker.push(div);
 			}
@@ -201,6 +207,8 @@ var app = new Vue(
 			link.innerText = "Description";
 			div.appendChild(link)
 			div.setAttribute("data-index", course.index);
+			if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
+			    div.classList.add("selected");
 			web.appendChild(div);
 			divTracker.push(div);
 		    }
@@ -249,8 +257,10 @@ var app = new Vue(
 			}
 		    }();
 		}
-		update();
 		this.dayUpdate();
+
+		//Deal with the "you can deselect" thing
+		document.getElementById("escTip").style.display = this.course != null && (this.closed || this.courses[this.course].seatsAvailable) ? "" : "none";
 	    },
 	    fillSearch: function(referrer) {
 		var selectBox = document.getElementById("selectBox");
@@ -337,6 +347,7 @@ var app = new Vue(
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
 		    this.courses_generator = {get: function(i){return courses;}};
+		    console.log(this.courses_generator)
 		    return this.courses_generator;
 		}
 		//automatic generator
@@ -602,6 +613,9 @@ var app = new Vue(
 		this.saved_course_generator = "";
 		this.fillSchedule(); // show empty while loading
 		this.percent = "";
+
+		document.getElementById("coursesBox").style.display = "none";
+		document.getElementById("loadingCourses").style.display = "";
 		
 		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + this.term.code + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
 		    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc"), null, function () { // we first do a short grab in order to get the max size
@@ -687,9 +701,11 @@ var app = new Vue(
 					var hashes = location.hash.slice(8).split(',');
 					app.selected = app.courses.filter(function(course){
 					    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-			});
+					});
 				    }
 				    app.fillSchedule();
+				    document.getElementById("coursesBox").style.display = "";
+				    document.getElementById("loadingCourses").style.display = "none";
 				}
 			    });
 			});
