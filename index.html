@@ -13,7 +13,6 @@
     </div>
     
     <div id="app">
-      
       <div class="left">
 	<div id="noSchedWrapper">
 	  <div id="noSchedAlign">
@@ -55,13 +54,13 @@
         <!--<img src="https://web.stevens.edu/scheduler/stevens-logo-100px.jpg" /><br><br>-->
 	<span class="title">Mode</span>
 	<br>
-        <input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule()" checked="checked"> Manual
+        <input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();" checked="checked"> Manual
 	<br>
         <input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();"> Automatic
 	<br>
-	<div v-if="mode == 'Automatic' && !!selected.concat(courses[course])[0]" style="display: inline-block">
-	  <input id="Range" oninput="app.fillSchedule(this)" type="range" min="0" max="0" v-model="course_list_selection" style="width: 66%;">
-	  <button onclick="app.genNext()" style="width: 30%;float: right;">{{ (courses_generator ? courses_generator.done : false) ? "Loop" : "Next" }}</button>
+	<div id="autoBar" style="display: none;">
+	  <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
+	  <button id="nextButton" onclick="app.genNext(this);" style="width: 30%;float: right;"></button>
 	</div>
 	<span class="title">Term</span>
         <select v-model="term" @change="changedTerm">

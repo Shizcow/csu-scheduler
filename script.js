@@ -1,10 +1,3 @@
-/*
-BUGS:
-I think everything dies when connection is lost during course retrieval
-
-ADD:
-If we get a code 500, retry
-*/
 let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
@@ -22,7 +15,7 @@ let xhrzip = function(method, url, data, onstate){
 	if (this.readyState === 4 && this.status === 200)
 	    ({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
 	if(this.status != 200 && this.status != 0)
-	    console.log(this.status) // will need in the future for testing errors
+	    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
     };
     xhr.open(method, url);
     xhr.withCredentials = true; // needed for auth cookies
@@ -253,6 +246,7 @@ var app = new Vue(
 		    }();
 		}
 		this.dayUpdate();
+		this.autoBar();
 
 		//Deal with the "you can deselect" thing
 		document.getElementById("escTip").style.display = this.course != null && (this.closed || this.courses[this.course].seatsAvailable) ? "" : "none";
@@ -393,7 +387,7 @@ var app = new Vue(
 		});
 	    },
 	    //Generate the next valid schedule and apply it to the board, if possible
-	    genNext: function(){
+	    genNext: function(button){
 		if(this.courses_generator && this.courses_generator.get(this.courses_generator.data ? this.courses_generator.data.length : 0)){ // see if there's more we haven't seen yet
 		    this.course_list_selection = (this.courses_generator.data ? this.courses_generator.data.length : 0)-1; // and show it to us
 		} else { // done - start looping
@@ -401,7 +395,11 @@ var app = new Vue(
 		    this.course_list_selection%=(this.courses_generator ? this.courses_generator.data.length : 0);
 		}
 		this.fillSchedule();
-		document.getElementById("Range").max = this.courses_generator ? this.courses_generator.data.length-1 : 0;
+		var range = document.getElementById("Range");
+		range.max = this.courses_generator ? this.courses_generator.data.length-1 : 0;
+		range.value = this.course_list_selection;
+
+		button.innerText = (this.courses_generator ? this.courses_generator.done : false) ? "Loop" : "Next";
 	    },
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
@@ -761,6 +759,10 @@ var app = new Vue(
 		location.hash = this.generateHash();
 		this.changed = true;
 		this.justLoaded = false;
+		this.course_list_selection = 0;
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0; // fix render on auto bar
 		this.hideSearch(); // TODO: optimize
 		this.fillSchedule();
             },
@@ -775,6 +777,11 @@ var app = new Vue(
 		}).join();
 		return hash;
             },
+	    autoBar: function(){
+		var autoBar = document.getElementById("autoBar");
+		autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(this.courses[this.course])[0] != null ? "inline-block" : "none";
+		document.getElementById('nextButton').innerText='Next';
+	    },
 	    dayUpdate: function(){
 		var test = false;
 		if(this.mode == "Automatic"){
