@@ -2,8 +2,6 @@
 BUGS:
 I think everything dies when connection is lost during course retrieval
 
-in fillSchedule, don't just clear everything. Take stock of what there is to clear, then clear it and only it. this will remove flashes
-
 ADD:
 If we get a code 500, retry
 */
@@ -147,17 +145,15 @@ var app = new Vue(
 		    this.course_list_selection = referrer.value;
 		this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
 		var wrappers = document.getElementsByClassName("wrapperInternal");
-		// First, clear the board
-		for(var i=0; i < wrappers.length; ++i)
-		    while(wrappers[i].firstChild)
-			wrappers[i].removeChild(wrappers[i].firstChild);
+		var schedule = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
 		// Then, cycle through and build a divlist
 		var divTracker = [];
 		for(var i=0; i < wrappers.length; ++i){
 		    var wrapper = wrappers[i];
 		    var day = wrapper.getAttribute("data-day");
 		    var hour = wrapper.getAttribute("data-hour");
-		    var schedule = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+		    while(wrapper.firstChild) // clear
+			wrapper.removeChild(wrapper.firstChild);
 		    for(var j=0; j<schedule.length; ++j){
 			var course = schedule[j];
 			var courseHere = this.courseHere(day, hour, course);
@@ -580,12 +576,9 @@ var app = new Vue(
 		}
             },
             clear: function() {
-
-		if(this.changed) {
-                    if (!window.confirm("Are you sure you want to discard your changes?")) {
+		if(this.changed)
+                    if (!window.confirm("Are you sure you want to discard your changes?"))
 			return;
-                    }
-		}
 		document.getElementById("selectBox").value = "";
 		this.course = null;
 		this.selected = [];
@@ -593,6 +586,7 @@ var app = new Vue(
 		this.justLoaded = false;
 		this.updateSaved();
 		this.fillSchedule();
+		this.hideSearch();
             },
             webclasses: function(courses)
             {
@@ -696,7 +690,6 @@ var app = new Vue(
 				    for(var i=0; i<saves.children.length; ++i)
 					if(saves.children[i].classList.contains("selected"))
 					    app.load(saves.children[i].innerText);
-				    app.fillSearch();
 				    if(loadHash){ // loading from URL or save, get hash and parse it
 					var hashes = location.hash.slice(8).split(',');
 					app.selected = app.courses.filter(function(course){
@@ -704,6 +697,7 @@ var app = new Vue(
 					});
 				    }
 				    app.fillSchedule();
+				    app.fillSearch(); // in case there are courses rendered that need to be hidden
 				    document.getElementById("coursesBox").style.display = "";
 				    document.getElementById("loadingCourses").style.display = "none";
 				}
