@@ -596,9 +596,9 @@ var app = new Vue(
             },
             webclasses: function(courses)
             {
-		return courses.filter(function(course){
+		return courses ? courses.filter(function(course){
 		    return course && (course.meetingsFaculty.map(el => el.meetingTime.building == "ONLINE").reduce((a, b) => (a || b), false));
-		});
+		}) : [];
             },
             changedTerm: function(loadHash)
             {
