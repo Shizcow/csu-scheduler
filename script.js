@@ -79,6 +79,10 @@ window.addEventListener("keydown", function (e) { // remove app.course and re-re
     }
 })
 
+var appData = {
+    courses: [],
+    cache: []
+};
 
 var app = new Vue(
     {
@@ -148,7 +152,7 @@ var app = new Vue(
 		    this.course_list_selection = referrer.value;
 		this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
 		var wrappers = document.getElementsByClassName("wrapperInternal");
-		var schedule = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+		var schedule = this.autoConstruct(this.selected.concat(appData.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
 		// Then, cycle through and build a divlist
 		var divTracker = [];
 		for(var i=0; i < wrappers.length; ++i){
@@ -173,7 +177,7 @@ var app = new Vue(
 			    div.setAttribute("data-index", course.index);
 			    div.setAttribute("data-length", courseHere.length);
 			    div.setAttribute("data-top", courseHere.top);
-			    if(!app.autoInAlts(course, app.courses[app.course])) // run an update instantle - fixes flashes
+			    if(!app.autoInAlts(course, appData.courses[app.course])) // run an update instantle - fixes flashes
 				div.classList.add("selected");
 			    div.style.top = div.getAttribute("data-top") * 100 + '%';
 			    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
@@ -189,7 +193,7 @@ var app = new Vue(
 		var web = document.getElementById("web");
 		while(web.firstChild)
 		    web.removeChild(web.firstChild);
-		var schedule = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+		var schedule = this.autoConstruct(this.selected.concat(appData.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
 		var webClasses = this.webclasses(schedule);
 		webWrapper.style.display = webClasses.length ? "" : "none";
 		for(var j=0; j<webClasses.length; ++j){
@@ -205,7 +209,7 @@ var app = new Vue(
 			link.innerText = "Description";
 			div.appendChild(link)
 			div.setAttribute("data-index", course.index);
-			if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
+			if(!app.autoInAlts(course, appData.courses[app.course])) // run a single update instantly - fixes flashing in some cases
 			    div.classList.add("selected");
 			web.appendChild(div);
 			divTracker.push(div);
@@ -217,8 +221,8 @@ var app = new Vue(
 		    return function(){
 			for(var k=0; k<divs.length; ++k){
 			    var div = divs[k];
-			    var course = app.courses[div.getAttribute("data-index")];
-			    if(!app.autoInAlts(course, app.courses[app.course]))
+			    var course = appData.courses[div.getAttribute("data-index")];
+			    if(!app.autoInAlts(course, appData.courses[app.course]))
 				div.classList.add("selected");
 			    else
 				div.classList.remove("selected");
@@ -241,13 +245,13 @@ var app = new Vue(
 			    app.course = null;
 			    document.getElementById("selectBox").value = "";
 			}
-		    }(app.courses[divTracker[j].getAttribute("data-index")]);
+		    }(appData.courses[divTracker[j].getAttribute("data-index")]);
 		    divTracker[j].onmouseenter = function(course){
 			return function(){
 			    app.hovering = app.autoAndLabs(course);
 			    update();
 			}
-		    }(app.courses[divTracker[j].getAttribute("data-index")]);
+		    }(appData.courses[divTracker[j].getAttribute("data-index")]);
 		    divTracker[j].onmouseleave = function(){
 			return function(){
 			    app.hovering = [];
@@ -259,14 +263,14 @@ var app = new Vue(
 		this.autoBar();
 
 		//Deal with the "you can deselect" thing
-		document.getElementById("escTip").style.display = this.course != null && (this.closed || this.courses[this.course].seatsAvailable) ? "" : "none";
+		document.getElementById("escTip").style.display = this.course != null && (this.closed || appData.courses[this.course].seatsAvailable) ? "" : "none";
 	    },
 	    fillSearch: function(referrer) {
 		var selectBox = document.getElementById("selectBox");
 		var val = selectBox.value;
 		while(selectBox.lastChild.value != "")
 		    selectBox.removeChild(selectBox.lastChild);
-		var courses = this.autoFilter(this.courses, referrer);
+		var courses = this.autoFilter(appData.courses, referrer);
 		for(var i = 0; i < courses.length; i++)
 		    selectBox.appendChild(courses[i]);
 		selectBox.value = val;
@@ -277,7 +281,7 @@ var app = new Vue(
 		    this.closed = referrer.checked;
 		var options = document.getElementById("selectBox").children;
 		for(var i=1; i < options.length; ++i)
-		    options[i].style.display = this.filterSearch(this.courses[options[i].value]) ? "" : "none";
+		    options[i].style.display = this.filterSearch(appData.courses[options[i].value]) ? "" : "none";
 	    },
             filterSearch: function(course) {
 		if(this.selected.indexOf(course) !== -1) return false;
@@ -307,7 +311,7 @@ var app = new Vue(
             },
 	    autoFilter: function(courses, referrer){ // remove all consecutive duplicates - only in automatic mode
 		this.mode = referrer ? referrer.value : this.mode;
-		return this.mode == "Manual" ? this.courses_manual : this.courses_auto;
+		return this.mode == "Manual" ? appData.courses_manual : appData.courses_auto;
 	    },
 	    // check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
 	    autoInAlts: function(check_course, course_alts){ // pretty much just fixes a render bug
@@ -323,7 +327,7 @@ var app = new Vue(
 		    return []; // if there's one or zero, we don't even need to check
 		if(this.mode == "Manual")
 		    return [check_course]; // Manual mode - only hover on one section
-		return this.courses_generator ? this.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
+		return appData.courses_generator ? appData.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
 	    },
 	    // return a Lazy object which spits out valid schedules, and cache it so that Vue templating doesnt calculate it a million times
 	    autoConstruct: function(courses){
@@ -333,30 +337,30 @@ var app = new Vue(
 		courses = courses.filter(course => course.seatsAvailable || app.closed);
 		if(this.mode == "Manual"){
 		    if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
-			return this.courses_generator; // don't have to run the calculation for every hour in every day
+			return appData.courses_generator; // don't have to run the calculation for every hour in every day
 		    if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
-			if(this.courses_generator)
-			    if(this.courses_generator.get(this.course_list_selection))
-				courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
+			if(appData.courses_generator)
+			    if(appData.courses_generator.get(this.course_list_selection))
+				courses = appData.courses_generator.get(this.course_list_selection); // slight optimization for caching
 			this.course = courses.filter(function(course){
-			    return course.home == app.courses[app.course].home;
+			    return course.home == appData.courses[app.course].home;
 			})[0].index; // replace app.course with the proper one automatically assigned
 			document.getElementById("selectBox").value = this.course.toString();
 			//and fix a render bug
 		    }
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
-		    this.courses_generator = {get: function(i){return courses;}};
-		    return this.courses_generator;
+		    appData.courses_generator = {get: function(i){return courses;}};
+		    return appData.courses_generator;
 		}
 		//automatic generator
 		if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "") == this.savedCourseGenerator)
-		    return this.courses_generator; // don't have to run the calculation for every hour in every day
+		    return appData.courses_generator; // don't have to run the calculation for every hour in every day
 		if(this.savedCourseGenerator[0] == "M" && this.course){ // switching from manual to automatic - update app.course
-		    this.course = this.courses[this.course].home.index; // basically just a render bug
+		    this.course = appData.courses[this.course].home.index; // basically just a render bug
 		    document.getElementById("selectBox").value = this.course.toString();
 		}
 		this.course_list_selection = 0; // Reset on each new sched gen
-		this.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
+		appData.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
 		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
 		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
 			var comp_packs = prev_packs.filter(prev_pack => prev_pack.includes(course)); // all the pack(s) that are labs and not alts
@@ -386,7 +390,7 @@ var app = new Vue(
 		    return !schedule.filter(course => !course.seatsAvailable && !app.closed).length;
 		}).filter(this.schedCompat);
 		this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "");
-		return this.courses_generator;
+		return appData.courses_generator;
 	    },
 	    removeDuplicatesBy: function(keyFn, array) {
 		var mySet = new Set();
@@ -398,18 +402,18 @@ var app = new Vue(
 	    },
 	    //Generate the next valid schedule and apply it to the board, if possible
 	    genNext: function(button){
-		if(this.courses_generator && this.courses_generator.get(this.courses_generator.data ? this.courses_generator.data.length : 0)){ // see if there's more we haven't seen yet
-		    this.course_list_selection = (this.courses_generator.data ? this.courses_generator.data.length : 0)-1; // and show it to us
+		if(appData.courses_generator && appData.courses_generator.get(appData.courses_generator.data ? appData.courses_generator.data.length : 0)){ // see if there's more we haven't seen yet
+		    this.course_list_selection = (appData.courses_generator.data ? appData.courses_generator.data.length : 0)-1; // and show it to us
 		} else { // done - start looping
 		    this.course_list_selection++;
-		    this.course_list_selection%=(this.courses_generator ? this.courses_generator.data.length : 0);
+		    this.course_list_selection%=(appData.courses_generator ? appData.courses_generator.data.length : 0);
 		}
 		this.fillSchedule();
 		var range = document.getElementById("Range");
-		range.max = this.courses_generator ? this.courses_generator.data.length-1 : 0;
+		range.max = appData.courses_generator ? appData.courses_generator.data.length-1 : 0;
 		range.value = this.course_list_selection;
 
-		button.innerText = (this.courses_generator ? this.courses_generator.done : false) ? "Loop" : "Next";
+		button.innerText = (appData.courses_generator ? appData.courses_generator.done : false) ? "Loop" : "Next";
 	    },
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
@@ -549,7 +553,7 @@ var app = new Vue(
 			this.search = "";
 			this.term = this.terms[index];
 			var hashes = location.hash.slice(8).split(',');
-			this.selected = this.courses.filter(function(course){
+			this.selected = appData.courses.filter(function(course){
 			    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 			});
                     }
@@ -610,30 +614,32 @@ var app = new Vue(
 		this.search = "";
 		this.selected = [];	
 		this.course_list_selection = 0;
-		this.courses_generator = null;
+		appData.courses_generator = null;
 		this.saved_course_generator = "";
 		this.fillSchedule(); // show empty while loading
 		this.percent = "";
 
 		document.getElementById("coursesBox").style.display = "none";
 		document.getElementById("loadingCourses").style.display = "";
-		/*
-		var foundIdx = this.cache.map(courses => courses[0].term).findIndex(el => el==app.courses[0].term);
-		if(this.cache.map(courses => courses[0].term).includes(this.courses[0].term) > -1){ // term is in cache
-		    this.courses = this.cache[foundIndex];
+		
+		var foundIdx = appData.cache.map(courses => courses[0].term).findIndex(el => el == this.term.code);
+		if(foundIdx > -1){ // term is in cache
+		    appData.courses = appData.cache[foundIdx];
 		    this.genDivs();
-		} else { // term isn't in cache - load
-		    this.courses = [];
-		    this.fetchTerm(this.term.code, this.genDivs);
-		    }*/
-		this.fetchTerm(this.term.code, function(courses){
-		    app.courses = courses;
-		    app.genDivs();
-		    if(loadHash)
-			app.loadHash();
 		    app.fillSchedule();
 		    app.fillSearch();
-		});
+		} else { // term isn't in cache - load
+		    appData.courses = [];
+		    this.fetchTerm(this.term.code, function(courses){
+			appData.courses = courses;
+			appData.cache.push(courses);
+			app.genDivs();
+			if(loadHash)
+			    app.loadHash();
+			app.fillSchedule();
+			app.fillSearch();
+		    });
+		}
 	    },
 	    fetchTerm: function(term, callback = null){
 		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
@@ -695,7 +701,7 @@ var app = new Vue(
 		});
             },
 	    genDivs: function(){
-		courses_auto = app.courses.reduce(function(acc, cur){
+		courses_auto = appData.courses.reduce(function(acc, cur){
 		    if(acc.length > 0){
 			if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
 			    return acc.concat(cur); // add new
@@ -706,21 +712,21 @@ var app = new Vue(
 			return [cur]; // first iteration - set up accumulator
 		    }
 		}, []);
-		app.courses_manual = [];
-		for(var i = 0; i < app.courses.length; i++){
-		    var c = app.courses[i];
+		appData.courses_manual = [];
+		for(var i = 0; i < appData.courses.length; i++){
+		    var c = appData.courses[i];
 		    var el = document.createElement("option");
 		    el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
 		    el.value = c.index;
-		    app.courses_manual.push(el);
+		    appData.courses_manual.push(el);
 		}
-		app.courses_auto = [];
+		appData.courses_auto = [];
 		for(var i = 0; i < courses_auto.length; i++){
 		    var c = courses_auto[i];
 		    var el = document.createElement("option");
 		    el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
 		    el.value = c.index;
-		    app.courses_auto.push(el);
+		    appData.courses_auto.push(el);
 		}
 		var saves = document.getElementById("saves");
 		for(var i=0; i<saves.children.length; ++i)
@@ -731,7 +737,7 @@ var app = new Vue(
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
 		var hashes = location.hash.slice(8).split(',');
-		this.selected = this.courses.filter(function(course){
+		this.selected = appData.courses.filter(function(course){
 		    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 		});
 	    },
@@ -768,7 +774,7 @@ var app = new Vue(
 	    },
             click: function(course)
             {
-		if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
+		if (this.autoInAlts(appData.courses[this.course], course)) // needs to be added to selected
 		{
 		    this.course = null;
 		    document.getElementById("selectBox").value = "";
@@ -810,16 +816,16 @@ var app = new Vue(
             },
 	    autoBar: function(){
 		var autoBar = document.getElementById("autoBar");
-		autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(this.courses[this.course])[0] != null ? "inline-block" : "none";
+		autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(appData.courses[this.course])[0] != null ? "inline-block" : "none";
 		document.getElementById('nextButton').innerText='Next';
 	    },
 	    dayUpdate: function(){
 		var test = false;
 		if(this.mode == "Automatic"){
-		    if(this.courses_generator)
-			if(this.courses_generator.data){
-			    if(this.courses_generator.data[this.course_list_selection]){
-				test = this.courses_generator.data[this.course_list_selection].value;
+		    if(appData.courses_generator)
+			if(appData.courses_generator.data){
+			    if(appData.courses_generator.data[this.course_list_selection]){
+				test = appData.courses_generator.data[this.course_list_selection].value;
 				document.getElementById("noSchedAlign").style.display = "none";
 				if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
 				    for(var i=1; i<=5; ++i){
@@ -842,7 +848,7 @@ var app = new Vue(
 			    } // let it continue - will wipe saturdays & sundays
 			}
 		} else {
-		    test = this.selected.concat(this.courses[this.course]);
+		    test = this.selected.concat(appData.courses[this.course]);
 		    document.getElementById("noSchedAlign").style.display = "none";
 		    if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
 			for(var i=1; i<=5; ++i){
