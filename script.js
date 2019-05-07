@@ -1,4 +1,13 @@
-let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
+//ADD - CORS NOTI
+//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
+//ADD - session cache course loading
+//ADD - hold next button to fast generate courses
+//ADD - loading 0/xxx
+//BUG - Fall 2018 - ECE 450 - dupe lab
+//BUG - If change term while loading - abandon
+//ADD - older terms
+
+let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -98,6 +107,7 @@ var app = new Vue(
             showExport: false,
             description: false,
 	    percent: "",
+	    cache: [],
             safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1
 	},
 	mounted: function()
@@ -592,13 +602,12 @@ var app = new Vue(
 		    return course && (course.meetingsFaculty.map(el => el.meetingTime.building == "ONLINE").reduce((a, b) => (a || b), false));
 		}) : [];
             },
-            changedTerm: function(loadHash)
+            changedTerm: function(loadHash = false)
             {
 		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
 		document.getElementById("selectBox").value = "";
 		this.search = "";
-		this.courses = [];
 		this.selected = [];	
 		this.course_list_selection = 0;
 		this.courses_generator = null;
@@ -608,9 +617,27 @@ var app = new Vue(
 
 		document.getElementById("coursesBox").style.display = "none";
 		document.getElementById("loadingCourses").style.display = "";
-		
-		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + this.term.code + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
-		    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc"), null, function () { // we first do a short grab in order to get the max size
+		/*
+		var foundIdx = this.cache.map(courses => courses[0].term).findIndex(el => el==app.courses[0].term);
+		if(this.cache.map(courses => courses[0].term).includes(this.courses[0].term) > -1){ // term is in cache
+		    this.courses = this.cache[foundIndex];
+		    this.genDivs();
+		} else { // term isn't in cache - load
+		    this.courses = [];
+		    this.fetchTerm(this.term.code, this.genDivs);
+		    }*/
+		this.fetchTerm(this.term.code, function(courses){
+		    app.courses = courses;
+		    app.genDivs();
+		    if(loadHash)
+			app.loadHash();
+		    app.fillSchedule();
+		    app.fillSearch();
+		});
+	    },
+	    fetchTerm: function(term, callback = null){
+		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
+		    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + term + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc"), null, function () { // we first do a short grab in order to get the max size
 			let first_response = JSON.parse(this.responseText);
 			let max = first_response.totalCount;
 			let data = [first_response];
@@ -620,17 +647,18 @@ var app = new Vue(
 			let percentEnd = offsets[offsets.length-1]+chunk;
 			percentEnd = '/' + (percentEnd < max ? percentEnd : max).toString();
 			offsets.forEach(function(offset){
-			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + app.term.code + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
+			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + term + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
 				let response = JSON.parse(this.responseText);
 				data.push(response); // add to array in no particular order
 				max -= chunk; // signal completion
 				app.percent = data.reduce((acc, el) => acc+el.data.length, 0).toString() + percentEnd;
 				if(data[0].totalCount-(max-first_response.data.length) > test_percent_cap*(data[0].totalCount)/100){ // all are done
 				    data = data.sort((a, b) => a.pageOffset - b.pageOffset); // sort to proper order
+				    var courses = [];
 				    data.forEach(function(payload){ // itterate over all responses
-					app.courses = app.courses.concat(payload.data); // and add to courses
+					courses = courses.concat(payload.data); // and add to courses
 				    });
-				    app.courses = app.courses.reduce(function(acc, cur){ // post process in preparation for manual mode
+				    courses = courses.reduce(function(acc, cur){ // post process in preparation for manual mode
 					if(acc.length > 0){
 					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // lab
 						var i = acc.length-1;
@@ -655,55 +683,58 @@ var app = new Vue(
 					    return [cur];
 					}
 				    }, []);
-				    for(var i = 0; i< app.courses.length; ++i)
-					app.courses[i].index = i;
-				    courses_auto = app.courses.reduce(function(acc, cur){
-					if(acc.length > 0){
-					    if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
-						return acc.concat(cur); // add new
-					    } else {
-						return acc; // ignore duplicate
-					    }
-					} else {
-					    return [cur]; // first iteration - set up accumulator
-					}
-				    }, []);
-				    app.courses_manual = [];
-				    for(var i = 0; i < app.courses.length; i++){
-					var c = app.courses[i];
-					var el = document.createElement("option");
-					el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
-					el.value = c.index;
-					app.courses_manual.push(el);
-				    }
-				    app.courses_auto = [];
-				    for(var i = 0; i < courses_auto.length; i++){
-					var c = courses_auto[i];
-					var el = document.createElement("option");
-					el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
-					el.value = c.index;
-					app.courses_auto.push(el);
-				    }
-				    var saves = document.getElementById("saves");
-				    for(var i=0; i<saves.children.length; ++i)
-					if(saves.children[i].classList.contains("selected"))
-					    app.load(saves.children[i].innerText);
-				    if(loadHash){ // loading from URL or save, get hash and parse it
-					var hashes = location.hash.slice(8).split(',');
-					app.selected = app.courses.filter(function(course){
-					    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-					});
-				    }
-				    app.fillSchedule();
-				    app.fillSearch(); // in case there are courses rendered that need to be hidden
-				    document.getElementById("coursesBox").style.display = "";
-				    document.getElementById("loadingCourses").style.display = "none";
+				    for(var i = 0; i< courses.length; ++i)
+					courses[i].index = i;
+
+				    if(callback)
+					callback(courses);
 				}
 			    });
 			});
 		    });
 		});
             },
+	    genDivs: function(){
+		courses_auto = app.courses.reduce(function(acc, cur){
+		    if(acc.length > 0){
+			if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
+			    return acc.concat(cur); // add new
+			} else {
+			    return acc; // ignore duplicate
+			}
+		    } else {
+			return [cur]; // first iteration - set up accumulator
+		    }
+		}, []);
+		app.courses_manual = [];
+		for(var i = 0; i < app.courses.length; i++){
+		    var c = app.courses[i];
+		    var el = document.createElement("option");
+		    el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
+		    el.value = c.index;
+		    app.courses_manual.push(el);
+		}
+		app.courses_auto = [];
+		for(var i = 0; i < courses_auto.length; i++){
+		    var c = courses_auto[i];
+		    var el = document.createElement("option");
+		    el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
+		    el.value = c.index;
+		    app.courses_auto.push(el);
+		}
+		var saves = document.getElementById("saves");
+		for(var i=0; i<saves.children.length; ++i)
+		    if(saves.children[i].classList.contains("selected"))
+			app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidden
+		document.getElementById("coursesBox").style.display = "";
+		document.getElementById("loadingCourses").style.display = "none";
+	    },
+	    loadHash: function(){ // loading from URL or save, get hash and parse it
+		var hashes = location.hash.slice(8).split(',');
+		this.selected = this.courses.filter(function(course){
+		    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+		});
+	    },
 	    genFaculty: function(c)
 	    {
 		let out = ""
