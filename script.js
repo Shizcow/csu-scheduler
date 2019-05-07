@@ -104,7 +104,6 @@ var app = new Vue(
 	    savedCourseGenerator: "0",
 	    courses_generator: null,
             selected: [],
-            search: "",
             closed: false,
             changed: false,
             justLoaded: true,
@@ -129,6 +128,7 @@ var app = new Vue(
 		{
 		    app.term = app.terms[0];
 		}
+		app.updateTerms();
 		app.changedTerm(true);
 		if(localStorage.schedules) app.localStorage = JSON.parse(localStorage.schedules);
 		app.updateSaved();
@@ -280,19 +280,17 @@ var app = new Vue(
 		if(referrer)
 		    this.closed = referrer.checked;
 		var options = document.getElementById("selectBox").children;
+		var search = document.getElementById("searchBox").value.toLowerCase();
 		for(var i=1; i < options.length; ++i)
-		    options[i].style.display = this.filterSearch(appData.courses[options[i].value]) ? "" : "none";
+		    options[i].style.display = this.filterSearch(appData.courses[options[i].value], search) ? "" : "none";
 	    },
-            filterSearch: function(course) {
+            filterSearch: function(course, search) {
 		if(this.selected.indexOf(course) !== -1) return false;
 		if (!this.closed && !course.seatsAvailable) return false;
 
-		if(this.search) {
-                    var search = this.search.toLowerCase();
-		    search = document.getElementById("searchBox").value.toLowerCase();
+		if(search)
                     return (course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
-			course.courseTitle.toLowerCase().indexOf(search) > -1;
-		}
+		    course.courseTitle.toLowerCase().indexOf(search) > -1;
 		if(this.mode == "Automatic"){
 		    if(this.selected.reduce(function(acc, course){
 			return course ? acc.concat([course.home].concat(course.home.alts).concat(course.home.labs)) : acc;
@@ -550,7 +548,7 @@ var app = new Vue(
                     else {
 			this.course = null;
 			document.getElementById("selectBox").value = "";
-			this.search = "";
+			document.getElementById("searchBox").value = "";
 			this.term = this.terms[index];
 			var hashes = location.hash.slice(8).split(',');
 			this.selected = appData.courses.filter(function(course){
@@ -606,12 +604,19 @@ var app = new Vue(
 		    return course && (course.meetingsFaculty.map(el => el.meetingTime.building == "ONLINE").reduce((a, b) => (a || b), false));
 		}) : [];
             },
-            changedTerm: function(loadHash = false)
+            changedTerm: function(loadHash = false, referrer = null)
             {
+		if(referrer){
+		    if(referrer.firstChild.value == "") // clean up on first get
+			referrer.removeChild(referrer.firstChild);
+		    this.term = referrer.value;
+		}
+		if(!this.term)
+		    return; // empty
 		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
 		document.getElementById("selectBox").value = "";
-		this.search = "";
+		document.getElementById("searchBox").value = "";
 		this.selected = [];	
 		this.course_list_selection = 0;
 		appData.courses_generator = null;
@@ -622,7 +627,7 @@ var app = new Vue(
 		document.getElementById("coursesBox").style.display = "none";
 		document.getElementById("loadingCourses").style.display = "";
 		
-		var foundIdx = appData.cache.map(courses => courses[0].term).findIndex(el => el == this.term.code);
+		var foundIdx = appData.cache.map(courses => courses[0].term).findIndex(el => el == this.term);
 		if(foundIdx > -1){ // term is in cache
 		    appData.courses = appData.cache[foundIdx];
 		    this.genDivs();
@@ -630,7 +635,7 @@ var app = new Vue(
 		    app.fillSearch();
 		} else { // term isn't in cache - load
 		    appData.courses = [];
-		    this.fetchTerm(this.term.code, function(courses){
+		    this.fetchTerm(this.term, function(courses){
 			appData.courses = courses;
 			appData.cache.push(courses);
 			app.genDivs();
@@ -735,6 +740,19 @@ var app = new Vue(
 		document.getElementById("coursesBox").style.display = "";
 		document.getElementById("loadingCourses").style.display = "none";
 	    },
+	    updateTerms: function(){
+		var selectBox = document.getElementById("termSelect");
+		while(selectBox.lastChild.value != "")
+		    selectBox.removeChild(selectBox.lastChild);
+		for(var i = 0; i < this.terms.length; i++){
+		    var term = this.terms[i];
+		    var option = document.createElement("option");
+		    option.value = term.code;
+		    option.innerText = term.description;
+		    selectBox.appendChild(option);
+		}
+		selectBox.value = "";
+	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
 		var hashes = location.hash.slice(8).split(',');
 		this.selected = appData.courses.filter(function(course){
@@ -808,7 +826,7 @@ var app = new Vue(
 		return location.hash.match(/#\d+=[\d+,?]+/);
             },
             generateHash: function() {
-		var hash = this.term.code + "=";
+		var hash = this.term + "=";
 		hash += this.selected.map(function(s){
 		    return s.courseReferenceNumber;
 		}).join();

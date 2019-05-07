@@ -63,13 +63,16 @@
 	  <button id="nextButton" onclick="app.genNext(this);" style="width: 30%;float: right;"></button>
 	</div>
 	<span class="title">Term</span>
-        <select v-model="term" @change="changedTerm">
-          <option v-for="term in terms" :value="term" v-text="term.description"></option>
-        </select>
+        <select onchange="app.changedTerm(false, this)" id="termSelect">
+	  <option value="" selected>Select A Term</option>
+	  <!--
+          <option for="term in terms" value="term" text="term.description"></option>
+          -->
+	</select>
         <div id="coursesBox" style="display:none;">
           <span class="title">Courses</span>
-          <input id="searchBox" oninput="app.hideSearch()" v-model="search" placeholder="Search for a course..." style="width: 100%;">
-          <select id="selectBox" onchange="app.fillSchedule()" size="25" v-model="course">
+          <input id="searchBox" oninput="app.hideSearch()" placeholder="Search for a course..." style="width: 100%;">
+          <select id="selectBox" onchange="app.fillSchedule()" size="25">
 	    <option value="" selected disabled hidden>default</option>
 	    <!-- options are filled in automatically -->
           </select>
