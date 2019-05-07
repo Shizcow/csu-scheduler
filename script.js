@@ -122,14 +122,15 @@ var app = new Vue(
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.slice(1, 7))) > -1)
 		{
-		    app.term = app.terms[index];
+		    app.term = app.terms[index].code;
+		    app.updateTerms();
+		    app.changedTerm(true);
+		} else {
+		    app.term = app.terms[0].code;
+		    app.updateTerms();
+		    app.changedTerm(false);
 		}
-		else
-		{
-		    app.term = app.terms[0];
-		}
-		app.updateTerms();
-		app.changedTerm(true);
+		document.getElementById("termSelect").value = app.term;
 		if(localStorage.schedules) app.localStorage = JSON.parse(localStorage.schedules);
 		app.updateSaved();
 	    });
@@ -541,15 +542,17 @@ var app = new Vue(
 		location.hash = this.localStorage[schedule];
 		if ((index = this.terms.map(function(el){return el.code}).indexOf(location.hash.slice(1, 7))) > -1)
 		{
-                    if(this.term != this.terms[index]) {
-			this.term = this.terms[index];
+                    if(this.term != this.terms[index].code) {
+			this.term = this.terms[index].code;
+			this.updateTerms(true);
 			this.changedTerm(true);
                     }
                     else {
 			this.course = null;
 			document.getElementById("selectBox").value = "";
 			document.getElementById("searchBox").value = "";
-			this.term = this.terms[index];
+			this.term = this.terms[index].code;
+			this.updateTerms(true);
 			var hashes = location.hash.slice(8).split(',');
 			this.selected = appData.courses.filter(function(course){
 			    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
@@ -590,6 +593,7 @@ var app = new Vue(
                     if (!window.confirm("Are you sure you want to discard your changes?"))
 			return;
 		document.getElementById("selectBox").value = "";
+		location.hash = "";
 		this.course = null;
 		this.selected = [];
 		this.currentstorage = null;
@@ -740,9 +744,10 @@ var app = new Vue(
 		document.getElementById("coursesBox").style.display = "";
 		document.getElementById("loadingCourses").style.display = "none";
 	    },
-	    updateTerms: function(){
+	    updateTerms: function(valSwitch = false){
 		var selectBox = document.getElementById("termSelect");
-		while(selectBox.lastChild.value != "")
+		var val = valSwitch ? this.term : selectBox.value;
+		while(selectBox.lastChild)
 		    selectBox.removeChild(selectBox.lastChild);
 		for(var i = 0; i < this.terms.length; i++){
 		    var term = this.terms[i];
@@ -751,7 +756,7 @@ var app = new Vue(
 		    option.innerText = term.description;
 		    selectBox.appendChild(option);
 		}
-		selectBox.value = "";
+		selectBox.value = val;
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
 		var hashes = location.hash.slice(8).split(',');
