@@ -131,7 +131,8 @@ var app = new Vue(
 		    app.changedTerm(false);
 		}
 		document.getElementById("termSelect").value = app.term;
-		if(localStorage.schedules) app.localStorage = JSON.parse(localStorage.schedules);
+		if(localStorage.schedules)
+		    app.localStorage = JSON.parse(localStorage.schedules);
 		app.updateSaved();
 	    });
 	},
@@ -499,22 +500,23 @@ var app = new Vue(
 		    saves.appendChild(div);
 		}
 		var options = saves.children;
-		var update = function(divs){
-		    return function(){
-			for(var i=0; i<divs.length; ++i){
-			    var div = divs[i];
-			    if(app.currentstorage == div.innerText)
-				div.classList.add("selected");
-			    else
-				div.classList.remove("selected");
-			}
-		    };
-		}(options);
 		for(var i = 0; i<options.length; ++i)
-		    options[i].onclick = function(schedule){
-			return function(){app.load(schedule); update();}
-		    }(options[i].innerText);
-		update();
+		    options[i].onclick = function(reference){
+			return function(){ // force update
+			    var wrapper = reference.parentElement;
+			    for(var i = 0; i < wrapper.children.length; ++i)
+				wrapper.children[i].classList.remove("selected");
+			    reference.classList.add("selected");
+			    app.load(reference.innerText);
+			}
+		    }(options[i]);
+		for(var i=0; i<options.length; ++i){
+		    var option = options[i];
+		    if(app.currentstorage == option.innerText)
+			option.classList.add("selected");
+		    else
+			option.classList.remove("selected");
+		}
 	    },
             save: function() {
 		if(!this.currentstorage) {
@@ -540,19 +542,17 @@ var app = new Vue(
 		this.currentstorage = schedule;
 		this.changed = false;
 		location.hash = this.localStorage[schedule];
-		if ((index = this.terms.map(function(el){return el.code}).indexOf(location.hash.slice(1, 7))) > -1)
-		{
+		var currentTerm = location.hash.slice(1, 7);
+		if ((index = this.terms.map(term => term.code).indexOf(currentTerm)) > -1){ // if term is valid
                     if(this.term != this.terms[index].code) {
 			this.term = this.terms[index].code;
-			this.updateTerms(true);
+			this.updateTerms();
 			this.changedTerm(true);
-                    }
-                    else {
+                    } else {
 			this.course = null;
 			document.getElementById("selectBox").value = "";
 			document.getElementById("searchBox").value = "";
-			this.term = this.terms[index].code;
-			this.updateTerms(true);
+			this.updateTerms();
 			var hashes = location.hash.slice(8).split(',');
 			this.selected = appData.courses.filter(function(course){
 			    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
@@ -621,7 +621,7 @@ var app = new Vue(
 		this.course = null;
 		document.getElementById("selectBox").value = "";
 		document.getElementById("searchBox").value = "";
-		this.selected = [];	
+		this.selected = [];
 		this.course_list_selection = 0;
 		appData.courses_generator = null;
 		this.saved_course_generator = "";
@@ -630,7 +630,6 @@ var app = new Vue(
 
 		document.getElementById("coursesBox").style.display = "none";
 		document.getElementById("loadingCourses").style.display = "";
-		
 		var foundIdx = appData.cache.map(courses => courses[0].term).findIndex(el => el == this.term);
 		if(foundIdx > -1){ // term is in cache
 		    appData.courses = appData.cache[foundIdx];
@@ -709,8 +708,8 @@ var app = new Vue(
 		    });
 		});
             },
-	    genDivs: function(){
-		courses_auto = appData.courses.reduce(function(acc, cur){
+	    genDivs: function(loadSelect = true){
+		var courses_auto = appData.courses.reduce(function(acc, cur){
 		    if(acc.length > 0){
 			if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
 			    return acc.concat(cur); // add new
@@ -740,13 +739,12 @@ var app = new Vue(
 		var saves = document.getElementById("saves");
 		for(var i=0; i<saves.children.length; ++i)
 		    if(saves.children[i].classList.contains("selected"))
-			app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidden
+			app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidde
 		document.getElementById("coursesBox").style.display = "";
 		document.getElementById("loadingCourses").style.display = "none";
 	    },
-	    updateTerms: function(valSwitch = false){
+	    updateTerms: function(){
 		var selectBox = document.getElementById("termSelect");
-		var val = valSwitch ? this.term : selectBox.value;
 		while(selectBox.lastChild)
 		    selectBox.removeChild(selectBox.lastChild);
 		for(var i = 0; i < this.terms.length; i++){
@@ -756,7 +754,7 @@ var app = new Vue(
 		    option.innerText = term.description;
 		    selectBox.appendChild(option);
 		}
-		selectBox.value = val;
+		selectBox.value = this.term;
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
 		var hashes = location.hash.slice(8).split(',');
