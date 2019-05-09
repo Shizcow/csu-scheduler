@@ -106,7 +106,7 @@
 	<div id="saves">
 	</div>
 	<div class="floatRight">
-	  <div v-if="(justLoaded || changed()) && selected.length" class="option" @click="save">
+	  <div v-if="changed() && selected.length" class="option" @click="save">
 	    Save
 	  </div>
 	  <div v-if="changed() && currentstorage && selected.length" class="option" @click="discard">

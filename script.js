@@ -309,7 +309,6 @@ var app = new Vue(
 	    courses_generator: null,
             selected: [],
             closed: false,
-            justLoaded: true,
             showExport: false,
             description: false,
 	    percent: "",
@@ -706,11 +705,11 @@ var app = new Vue(
 		for(var i = 0; i<options.length; ++i)
 		    options[i].onclick = function(reference){
 			return function(){ // force update
-			    var wrapper = reference.parentElement;
+			    app.load(reference.innerText); // we need to update look after
+			    var wrapper = reference.parentElement; // because changed() looks at style
 			    for(var i = 0; i < wrapper.children.length; ++i)
 				wrapper.children[i].classList.remove("selected");
 			    reference.classList.add("selected");
-			    app.load(reference.innerText);
 			}
 		    }(options[i]);
 		for(var i=0; i<options.length; ++i){
@@ -736,7 +735,8 @@ var app = new Vue(
 		this.updateSaved();
             },
             load: function(schedule) {
-		if(this.changed() && this.selected.length) {
+		console.log(this.changed())
+		if(this.changed()) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
 			return;
                     }
@@ -756,7 +756,6 @@ var app = new Vue(
 			this.loadHash();
                     }
 		}
-		this.justLoaded = false;
 		this.fillSchedule();
             },
             discard: function() {
@@ -792,7 +791,6 @@ var app = new Vue(
 		this.course = null;
 		this.selected = [];
 		this.currentstorage = null;
-		this.justLoaded = false;
 		this.updateSaved();
 		this.fillSchedule();
 		this.hideSearch();
@@ -890,7 +888,7 @@ var app = new Vue(
 		var ret = true;
 		for(var i=0; i < saves.length; ++i)
 		    if(saves[i].classList.contains("selected"))
-			ret = this.localStorage[saves[i].innerText] != location.hash.split("#")[1]
+			ret = this.localStorage[saves[i].innerText] != this.generateHash();
 		return ret;
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
@@ -954,7 +952,6 @@ var app = new Vue(
 		}
 
 		location.hash = this.generateHash();
-		this.justLoaded = false;
 		this.course_list_selection = 0;
 		var range = document.getElementById('Range');
 		range.max = 0;
