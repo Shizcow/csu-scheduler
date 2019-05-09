@@ -224,7 +224,7 @@ class TermManager{ // pull data for a single term
 	//main_callback is what to do after the term is done loading. It's like an await
 	if(this.done){ // if it's already done, run the callback and exit
 	    if(main_callback)
-		main_callback();
+		main_callback(this.data);
 	    return;
 	}
 	if(this.headRequest){ // already started, but not finished. Just need to change the main_callback
@@ -246,11 +246,41 @@ class TermManager{ // pull data for a single term
 				    .sort((a, b) => a.pageOffset - b.pageOffset) // sort them all, because they probably won't load in order
 				    .reduce(function(acc, cur){ // and unwrap them all
 					return acc.concat(cur.data); // into one big array
-				    }, []);
+				    }, [])
+				//post processing
+				    .reduce(function(acc, cur){ // post process in preparation for manual mode
+					if(acc.length > 0){
+					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // lab
+						var i = acc.length-1;
+						for(; !acc[i].labs; --i); // back to home
+						cur.home = acc[i];
+						acc[i].labs = acc[i].labs.concat(cur);
+					    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
+						var i = acc.length-1;
+						for(; !acc[i].alts; --i); // back to home
+						cur.home = acc[i];
+						acc[i].alts = acc[i].alts.concat(cur);
+					    } else {
+						cur.alts = [];
+						cur.labs = [];
+						cur.home = cur;
+					    }
+					    return acc.concat(cur);
+					} else {
+					    cur.alts = [];
+					    cur.labs = [];
+					    cur.home = cur;
+					    return [cur];
+					}
+				    }, [])
+				    .map(function(course, i){
+					course.index = i;
+					return course
+				    });
 				TermManager_ref.done = true;
 				TermManager_ref.requests = []; // free up some memory
 				if(TermManager_ref.main_callback_wrapper.callback) // it's weird because we can't close in the function, we need to make sure it can change
-				    TermManager_ref.main_callback_wrapper.callback();
+				    TermManager_ref.main_callback_wrapper.callback(TermManager_ref.data);
 			    }
 			});
 		    });
@@ -369,7 +399,7 @@ window.addEventListener("keydown", function (e) { // remove app.course and re-re
 
 var appData = {
     courses: [],
-    cache: []
+    termCacher: new TermCacher()
 };
 
 var app = new Vue(
@@ -398,7 +428,6 @@ var app = new Vue(
             showExport: false,
             description: false,
 	    percent: "",
-	    cache: [],
             safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1
 	},
 	mounted: function()
@@ -918,84 +947,17 @@ var app = new Vue(
 
 		document.getElementById("coursesBox").style.display = "none";
 		document.getElementById("loadingCourses").style.display = "";
-		var foundIdx = appData.cache.map(courses => courses[0].term).findIndex(el => el == this.term);
-		if(foundIdx > -1){ // term is in cache
-		    appData.courses = appData.cache[foundIdx];
-		    this.genDivs();
-		    app.fillSchedule();
-		    app.fillSearch();
-		} else { // term isn't in cache - load
-		    appData.courses = [];
-		    this.fetchTerm(this.term, function(courses){
+		appData.termCacher.push(this.term, function(_loadHash){ // NOTE: not sure if this needs a closure
+		    return function(courses){
 			appData.courses = courses;
-			appData.cache.push(courses);
 			app.genDivs();
-			if(loadHash)
+			if(_loadHash)
 			    app.loadHash();
 			app.fillSchedule();
 			app.fillSearch();
-		    });
-		}
+		    }
+		}(loadHash));
 	    },
-	    fetchTerm: function(term, callback = null){
-		xhrzip("POST", server_cx("term/search?mode=search"), "term=" + term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=", function() { // This is needed to for cookie spoofing
-		    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + term + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc"), null, function () { // we first do a short grab in order to get the max size
-			let first_response = JSON.parse(this.responseText);
-			let max = first_response.totalCount;
-			let data = [first_response];
-			let offsets = [];
-			for(var i=first_response.data.length; i<test_percent_cap*(max-first_response.data.length)/100; i+=chunk)
-			    offsets.push(i); // generate array of all the needed request-offset values
-			let percentEnd = offsets[offsets.length-1]+chunk;
-			percentEnd = '/' + (percentEnd < max ? percentEnd : max).toString();
-			offsets.forEach(function(offset){
-			    xhrzip("GET", server_cx("searchResults/searchResults?txt_term=" + term + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + chunk.toString() + "&sortColumn=subjectDescription&sortDirection=asc"), null, function () {
-				let response = JSON.parse(this.responseText);
-				data.push(response); // add to array in no particular order
-				max -= chunk; // signal completion
-				app.percent = data.reduce((acc, el) => acc+el.data.length, 0).toString() + percentEnd;
-				if(data[0].totalCount-(max-first_response.data.length) > test_percent_cap*(data[0].totalCount)/100){ // all are done
-				    data = data.sort((a, b) => a.pageOffset - b.pageOffset); // sort to proper order
-				    var courses = [];
-				    data.forEach(function(payload){ // itterate over all responses
-					courses = courses.concat(payload.data); // and add to courses
-				    });
-				    courses = courses.reduce(function(acc, cur){ // post process in preparation for manual mode
-					if(acc.length > 0){
-					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // lab
-						var i = acc.length-1;
-						for(; !acc[i].labs; --i); // back to home
-						cur.home = acc[i];
-						acc[i].labs = acc[i].labs.concat(cur);
-					    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-						var i = acc.length-1;
-						for(; !acc[i].alts; --i); // back to home
-						cur.home = acc[i];
-						acc[i].alts = acc[i].alts.concat(cur);
-					    } else {
-						cur.alts = [];
-						cur.labs = [];
-						cur.home = cur;
-					    }
-					    return acc.concat(cur);
-					} else {
-					    cur.alts = [];
-					    cur.labs = [];
-					    cur.home = cur;
-					    return [cur];
-					}
-				    }, []);
-				    for(var i = 0; i< courses.length; ++i)
-					courses[i].index = i;
-
-				    if(callback)
-					callback(courses);
-				}
-			    });
-			});
-		    });
-		});
-            },
 	    genDivs: function(loadSelect = true){
 		var courses_auto = appData.courses.reduce(function(acc, cur){
 		    if(acc.length > 0){
