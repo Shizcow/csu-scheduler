@@ -4,8 +4,6 @@
 //ADD - loading 0/xxx
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
-//ADD - fix app.changed - turn it into a function
-//ADD - make genHash smart about the closed button
 
 //var courses = location.hash.split("=")[1].split("&")[0]; // gets course list from url
 // eg #201990
@@ -311,6 +309,7 @@ var app = new Vue(
             closed: false,
             showExport: false,
             description: false,
+	    loading: false,
 	    percent: "",
             safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1
 	},
@@ -705,10 +704,13 @@ var app = new Vue(
 		for(var i = 0; i<options.length; ++i)
 		    options[i].onclick = function(reference){
 			return function(){ // force update
+			    reference.classList.add("preselect");
 			    app.load(reference.innerText); // we need to update look after
 			    var wrapper = reference.parentElement; // because changed() looks at style
-			    for(var i = 0; i < wrapper.children.length; ++i)
+			    for(var i = 0; i < wrapper.children.length; ++i){
 				wrapper.children[i].classList.remove("selected");
+				wrapper.children[i].classList.remove("preselect");
+			    }
 			    reference.classList.add("selected");
 			}
 		    }(options[i]);
@@ -735,7 +737,6 @@ var app = new Vue(
 		this.updateSaved();
             },
             load: function(schedule) {
-		console.log(this.changed())
 		if(this.changed()) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
 			return;
@@ -883,12 +884,21 @@ var app = new Vue(
 		selectBox.value = this.term;
 	    },
 	    changed: function(){
-		//if, either NO SAVES ARE SELECTED, or WE HAVE CHANGED FROM THE SELECTED SAVE
+		if(!this.selected.length)
+		    return false;
 		var saves = document.getElementById("saves").children;
 		var ret = true;
+		var foundIdx = -1; // this has to be done manually because Dom Collections don't have it
 		for(var i=0; i < saves.length; ++i)
-		    if(saves[i].classList.contains("selected"))
-			ret = this.localStorage[saves[i].innerText] != this.generateHash();
+		    if(saves[i].classList.contains("selected")) // this will be BEFORE render change
+			foundIdx = i;
+		if(foundIdx > -1)
+		    ret = this.localStorage[saves[foundIdx].innerText] != this.generateHash();
+		//save coming from, vs actual classes on the board
+		else // edge case - if we're coming from no save selected and it happens to be the same
+		    for(var i=0; i < saves.length; ++i)
+			if(saves[i].classList.contains("preselect")) // this will be AFTER render change
+			    ret = this.localStorage[saves[i].innerText] != this.generateHash();
 		return ret;
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
