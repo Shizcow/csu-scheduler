@@ -6,7 +6,138 @@
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //BUG - If change term while loading - abandon
 //ADD - older terms
+//BUG - app.course gets fucky when you add courses that aren't the selected one
 
+/*
+CACHING REVAMP HERE WE GO
+How a term request is made:
+
+(heads)
+(data)
+(data)
+(data)
+ ....
+(data)
+
+Heads MUST be attached to a request!
+Ergo only one term can be loading at a time.
+An interruptable model would be as follows...
+
+cache = []
+requests = []
+done = false
+(heads)
+((data) -> cache.push; requests.remove(this)) -> requests.push
+((data) -> cache.push; requests.remove(this)) -> requests.push
+ ....
+((data) -> cache.push; requests.remove(this)) -> requests.push
+done = true
+
+where if its interrupted, we're left with a partially completed cache, and !done
+A multi-request would look as follows:
+
+cache1 = []
+done1 = false
+requests1 = []
+(heads1)
+((data) -> cache1.push; requests1.remove(this)) -> requests1.push
+((data) -> cache1.push; requests1.remove(this)) -> requests1.push
+INTERRUPT
+requests1.forEach(abandon)
+
+cache2 = []
+requests2 = []
+done2 = false
+(heads2)
+((data) -> cache2.push; requests2.remove(this)) -> requests2.push
+((data) -> cache2.push; requests2.remove(this)) -> requests2.push
+ ....
+((data) -> cache2.push; requests2.remove(this)) -> requests2.push
+done2 = true
+
+//on revisit of 1
+
+done1 = false, but cache1 isn't empty? continue
+requests1.forEach(send);
+done1 = true
+
+
+IMPORTANT PARTS:
+partial caches for every term
+a "done" field. Technically not needed? --- might be easier to use a getter
+a list of requests, so that they can be aborted / resumed at any moment
+
+function waits(x){
+  // need to make sync a util and direct to waits
+}
+
+function sync(x) { 
+  return new Promise((resolve, reject) => {
+    if(!go)
+        reject();
+	else
+	resolve(waits(x));
+    setTimeout(() => {
+        console.log("resolved:", x)
+        return x;
+    }, 1000);
+  });
+}
+var a;
+start = function(){
+  go = true;
+  return a = sync(1).then(value => sync(value+1), console.log).then(value => sync(value+1)).then(value => sync(value+1)).then(value => sync(value+1)).catch(()=>{});
+}
+
+stop = async function(){
+  go = false;
+  await a;
+  return async () => {};
+}
+start();
+stop().then(() => console.log("stopped"));
+*/
+/*
+class TermSearch{ // POSTS a search term to let us in
+    
+}
+
+class DataSearch{ // performs a single XML request and logs data
+    
+}
+
+class TermSearch{ // stitches many DataSearches together into a single term, can stop and start on demand
+    constructor(term){
+	this.term = term;
+	this.done = false;
+	this.cache = []; // filled with arrays of data in the form of cache = [data=[course={}...]...], upon completion will be sorted and placed into this.courses
+	this.courses = []; // filled only when all requests are met
+	this.requests = []; // holds all DataSearch objects, used for stopping and starting
+	this.headRequest = null; // in case we need to stop right away, might be a data request or a search term POST
+
+	//init requests
+	this.requests.fill();
+	this.start();
+    }
+    start(){
+	this.stop(); // clean everything
+	//run head requests
+	this.headRequest = new TermSearch(this.term); // ready new request
+	await this.headRequest.start(); // start it, but wait for it to finish
+	
+	//run data requests
+	for(i = 0; i < this.requests.length; ++i)
+	    this.requests[i].start();
+    }
+    stop(){
+	if(this.headRequest)
+	    this.headRequest.stop();
+	
+	for(i = 0; i < this.requests.length; ++i)
+	    this.requests[i].stop();
+    }
+}
+*/
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
@@ -15,8 +146,134 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 //300---> Finish: 38.30s, 35.46s, 38.66s = 37.473s avg ***
 //200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
 //100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
-Vue.use(VueResource);
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
+
+
+class Searcher{
+    constructor(term, offset = null, size = null){ // when offset == null or isn't provided, just prime
+	this.term = term;
+	this.data = [];
+	this.done = false;
+	this.offset = offset;
+	this.size = size;
+	this.xhr = null;
+    }
+    start(callback = null){
+	if(this.xhr || this.done) // don't restart if not needed
+	    return;
+	var url = "";
+	if(this.offset == null) // prime
+	    url = server_cx("term/search?mode=search");
+	else
+	    url = server_cx("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
+	this.xhr = new XMLHttpRequest();
+	this.xhr.onreadystatechange = function(ref){ // callback
+	    return function(){
+		if (this.readyState === 4 && this.status === 200){
+		    var response = JSON.parse(this.responseText);
+		    if(ref.offset != null) // else it's just a post
+			ref.data = response.data;
+		    if(callback)
+			callback(response);
+		    ref.done = true;
+		    ref.xhr = null;
+		    //({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
+		}
+		if(this.status != 200 && this.status != 0){
+		    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
+		    this.xhr = null; // I DONT KNOW WHAT TO DO HERE YET
+		}
+	    }
+	}(this);
+	this.xhr.open(this.offset == null ? "POST" : "GET", url); // local sync
+	this.xhr.withCredentials = true; // needed for auth cookies
+	if(this.offset == null)
+	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
+	this.xhr.send(this.offset == null ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
+    }
+    stop(){
+	if(!this.xhr || this.done) // can't stop what's not there to stop
+	    return;
+	this.xhr.abort();
+	this.xhr = null;
+    }
+}
+
+class TermManager{ // pull data for a single term
+    constructor(term){
+	this.term = term;
+	this.data = [];
+	this.done = false;
+	this.requests = [];
+	this.headRequest = null;
+    }
+    stop(){ // abort all requests and prime for a restart
+	if(this.done) // why stop something that's already done?
+	    return;
+	if(this.headRequest){
+	    this.headRequest.stop();
+	    this.headRequest = null; // in case we stopped during a head request
+	}
+	this.requests.forEach(function(request){
+	    request.stop(); // stop each one
+	});
+    }
+    start(bypass = false){ // construct all requests and send, or if already constructed just send
+	if(this.done || this.headRequest)
+	    return; // don't bother restarting what's already finished/started
+	var callback = function(TermManager_ref){ // set up callback, actual execution is after definition
+	    return function(ignored){ // this one is just needed to get cookies in line
+		if(TermManager_ref.data.length){ // we've already made some requests - just finish them
+		    TermManager_ref.headRequest = null;
+		    TermManager_ref.requests.forEach(function(request){
+			request.start(function(responseData){
+			    TermManager_ref.data.push(responseData); // add response to data...
+			    // and check if we're done
+			    if(TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
+				return acc + cur.data.length; // by summing them all up
+			    }, 0) >= test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+				// if so, process data and mark term complete
+				TermManager_ref.data = TermManager_ref.data // take fufilled requests
+				    .sort((a, b) => a.pageOffset - b.pageOffset) // sort them all, because they probably won't load in order
+				    .reduce(function(acc, cur){ // and unwrap them all
+					return acc.concat(cur.data); // into one big array
+				    }, []);
+				TermManager_ref.done = true;
+				TermManager_ref.requests = []; // free up some memory
+			    }
+			});
+		    });
+		} else { // first time requesting - do a small request first, then fill up
+		    TermManager_ref.headRequest = new Searcher(TermManager_ref.term, 0, 10);
+		    TermManager_ref.headRequest.start(function(responseData){
+			TermManager_ref.headRequest = null; // head requests are all done
+			TermManager_ref.data = [responseData]; // currently wrapped with extra info, will unwrap later
+			var min = responseData.data.length; // how many actually loaded with the first request
+			//NOTE: Yes, it's not always 10. The server seems to always honor larger requests (100+), but doesn't always give us the amount we ask for with smaller queries, so we have to check this
+			var max = responseData.totalCount; // how many courses are in the database
+			let offsets = []; // stores offset values for each subsequent required request
+			for(var i = min; i<test_percent_cap*max/100; i+=chunk)//NOTE: previously was using test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
+			    offsets.push(i); // fill offsets with integer values starting at min, offset by chunk size, and going up to only what we need to request
+			offsets.forEach(function(offset){ // construct all subsequent requests
+			    TermManager_ref.requests.push(new Searcher(TermManager_ref.term, offset, chunk));
+			});
+			TermManager_ref.start(true); // recurse into start. Now that requests is filled, it'll just start them all
+		    });
+		}
+	    }
+	}(this);
+	
+	if(bypass){ // recursing -- don't bother POSTing again
+	    callback(null);
+	} else { // not recursing -- POST and then run callback
+	    this.headRequest = new Searcher(this.term); // prime it
+	    this.headRequest.start(callback);
+	}
+    }
+}
+
+
+Vue.use(VueResource);
 
 let xhrzip = function(method, url, data, onstate){
     let xhr = new XMLHttpRequest(); // we need a new one every time in case we're doing async requests
@@ -52,7 +309,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
 		    return !course.home.alts.concat(course.home).includes(app.courses[app.course]) // remove pending
 		}
-		)}); // we need to do this here so it updates the url dynamically
+									    )}); // we need to do this here so it updates the url dynamically
             }
 	}
 	var data = this.data[i];
