@@ -206,6 +206,7 @@ class TermManager{ // pull data for a single term
 	this.done = false;
 	this.requests = [];
 	this.headRequest = null;
+	this.main_callback_wrapper = {callback: null};
     }
     stop(){ // abort all requests and prime for a restart
 	if(this.done) // why stop something that's already done?
@@ -218,9 +219,17 @@ class TermManager{ // pull data for a single term
 	    request.stop(); // stop each one
 	});
     }
-    start(bypass = false){ // construct all requests and send, or if already constructed just send
-	if(this.done || this.headRequest)
-	    return; // don't bother restarting what's already finished/started
+    start(main_callback, bypass = false){ // construct all requests and send, or if already constructed just send
+	this.main_callback_wrapper.callback = main_callback;
+	//main_callback is what to do after the term is done loading. It's like an await
+	if(this.done){ // if it's already done, run the callback and exit
+	    if(main_callback)
+		main_callback();
+	    return;
+	}
+	if(this.headRequest){ // already started, but not finished. Just need to change the main_callback
+	    return; // don't bother re-starting
+	}
 	var callback = function(TermManager_ref){ // set up callback, actual execution is after definition
 	    return function(ignored){ // this one is just needed to get cookies in line
 		if(TermManager_ref.data.length){ // we've already made some requests - just finish them
@@ -240,6 +249,8 @@ class TermManager{ // pull data for a single term
 				    }, []);
 				TermManager_ref.done = true;
 				TermManager_ref.requests = []; // free up some memory
+				if(TermManager_ref.main_callback_wrapper.callback) // it's weird because we can't close in the function, we need to make sure it can change
+				    TermManager_ref.main_callback_wrapper.callback();
 			    }
 			});
 		    });
@@ -257,7 +268,7 @@ class TermManager{ // pull data for a single term
 			offsets.forEach(function(offset){ // construct all subsequent requests
 			    TermManager_ref.requests.push(new Searcher(TermManager_ref.term, offset, chunk));
 			});
-			TermManager_ref.start(true); // recurse into start. Now that requests is filled, it'll just start them all
+			TermManager_ref.start(main_callback, true); // recurse into start. Now that requests is filled, it'll just start them all
 		    });
 		}
 	    }
@@ -269,6 +280,26 @@ class TermManager{ // pull data for a single term
 	    this.headRequest = new Searcher(this.term); // prime it
 	    this.headRequest.start(callback);
 	}
+    }
+}
+
+class TermCacher{ // manages a bunch of TermManagers, caches the results -- even partially loaded results
+    constructor(){
+	this.termManagers = [];
+    }
+    push(term, callback=null){ // start loading a term
+	//first, sift through termManagers and see if we've already got one loaded/loading
+	var index = this.termManagers.findIndex(termManager => termManager.term == term);
+	var activeManager = null;
+	if(index > -1) // there's one in there
+	    activeManager = this.termManagers.splice(index, 1)[0]; // remove the active manager
+	this.termManagers.forEach(function(termManager){ // stop all the (other) ones
+	    termManager.stop();
+	})
+	this.termManagers.push(index > -1 ? activeManager : new TermManager(term)); // re-add the old one
+	this.termManagers[this.termManagers.length-1].start(callback); // and start it
+	// doing it this way makes it so if there's already one in there, AND it's running, it isn't restarted
+	// however, this does stop any pending requests, even if the one we're looking for is already loaded
     }
 }
 
