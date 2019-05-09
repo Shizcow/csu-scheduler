@@ -76,7 +76,7 @@
 	    <option value="" selected disabled hidden>default</option>
 	    <!-- options are filled in automatically -->
           </select>
-          <input onclick="app.hideSearch(this); app.fillSchedule(this)" type="checkbox"> Closed
+          <input id="closedCheck" onclick="app.hideSearch(this); app.fillSchedule(this)" type="checkbox"> Closed
           <br>
           <span id="escTip" class="hint">*Press esc to cancel selection</span>
           
@@ -106,10 +106,10 @@
 	<div id="saves">
 	</div>
 	<div class="floatRight">
-	  <div v-if="(justLoaded || changed) && selected.length" class="option" @click="save">
+	  <div v-if="(justLoaded || changed()) && selected.length" class="option" @click="save">
 	    Save
 	  </div>
-	  <div v-if="changed && currentstorage && selected.length" class="option" @click="discard">
+	  <div v-if="changed() && currentstorage && selected.length" class="option" @click="discard">
 	    Discard Changes
 	  </div>
 	  <div v-if="currentstorage" class="option" @click="saveNew">

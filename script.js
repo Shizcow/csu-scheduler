@@ -1,143 +1,15 @@
 //ADD - CORS NOTI
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
-//ADD - session cache course loading
 //ADD - hold next button to fast generate courses
 //ADD - loading 0/xxx
 //BUG - Fall 2018 - ECE 450 - dupe lab
-//BUG - If change term while loading - abandon
 //ADD - older terms
-//BUG - app.course gets fucky when you add courses that aren't the selected one
+//ADD - fix app.changed - turn it into a function
+//ADD - make genHash smart about the closed button
 
-/*
-CACHING REVAMP HERE WE GO
-How a term request is made:
+//var courses = location.hash.split("=")[1].split("&")[0]; // gets course list from url
+// eg #201990
 
-(heads)
-(data)
-(data)
-(data)
- ....
-(data)
-
-Heads MUST be attached to a request!
-Ergo only one term can be loading at a time.
-An interruptable model would be as follows...
-
-cache = []
-requests = []
-done = false
-(heads)
-((data) -> cache.push; requests.remove(this)) -> requests.push
-((data) -> cache.push; requests.remove(this)) -> requests.push
- ....
-((data) -> cache.push; requests.remove(this)) -> requests.push
-done = true
-
-where if its interrupted, we're left with a partially completed cache, and !done
-A multi-request would look as follows:
-
-cache1 = []
-done1 = false
-requests1 = []
-(heads1)
-((data) -> cache1.push; requests1.remove(this)) -> requests1.push
-((data) -> cache1.push; requests1.remove(this)) -> requests1.push
-INTERRUPT
-requests1.forEach(abandon)
-
-cache2 = []
-requests2 = []
-done2 = false
-(heads2)
-((data) -> cache2.push; requests2.remove(this)) -> requests2.push
-((data) -> cache2.push; requests2.remove(this)) -> requests2.push
- ....
-((data) -> cache2.push; requests2.remove(this)) -> requests2.push
-done2 = true
-
-//on revisit of 1
-
-done1 = false, but cache1 isn't empty? continue
-requests1.forEach(send);
-done1 = true
-
-
-IMPORTANT PARTS:
-partial caches for every term
-a "done" field. Technically not needed? --- might be easier to use a getter
-a list of requests, so that they can be aborted / resumed at any moment
-
-function waits(x){
-  // need to make sync a util and direct to waits
-}
-
-function sync(x) { 
-  return new Promise((resolve, reject) => {
-    if(!go)
-        reject();
-	else
-	resolve(waits(x));
-    setTimeout(() => {
-        console.log("resolved:", x)
-        return x;
-    }, 1000);
-  });
-}
-var a;
-start = function(){
-  go = true;
-  return a = sync(1).then(value => sync(value+1), console.log).then(value => sync(value+1)).then(value => sync(value+1)).then(value => sync(value+1)).catch(()=>{});
-}
-
-stop = async function(){
-  go = false;
-  await a;
-  return async () => {};
-}
-start();
-stop().then(() => console.log("stopped"));
-*/
-/*
-class TermSearch{ // POSTS a search term to let us in
-    
-}
-
-class DataSearch{ // performs a single XML request and logs data
-    
-}
-
-class TermSearch{ // stitches many DataSearches together into a single term, can stop and start on demand
-    constructor(term){
-	this.term = term;
-	this.done = false;
-	this.cache = []; // filled with arrays of data in the form of cache = [data=[course={}...]...], upon completion will be sorted and placed into this.courses
-	this.courses = []; // filled only when all requests are met
-	this.requests = []; // holds all DataSearch objects, used for stopping and starting
-	this.headRequest = null; // in case we need to stop right away, might be a data request or a search term POST
-
-	//init requests
-	this.requests.fill();
-	this.start();
-    }
-    start(){
-	this.stop(); // clean everything
-	//run head requests
-	this.headRequest = new TermSearch(this.term); // ready new request
-	await this.headRequest.start(); // start it, but wait for it to finish
-	
-	//run data requests
-	for(i = 0; i < this.requests.length; ++i)
-	    this.requests[i].start();
-    }
-    stop(){
-	if(this.headRequest)
-	    this.headRequest.stop();
-	
-	for(i = 0; i < this.requests.length; ++i)
-	    this.requests[i].stop();
-    }
-}
-*/
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
@@ -149,7 +21,41 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 
+function postProcessCourses(courses){ // post process in preparation for automatic mode
+    return courses.reduce(function(acc, cur){
+	if(acc.length > 0){
+	    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // Set up labs
+		var i = acc.length-1;
+		for(; !acc[i].labs; --i); // back to home
+		cur.home = acc[i];
+		acc[i].labs = acc[i].labs.concat(cur);
+	    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
+		var i = acc.length-1;
+		for(; !acc[i].alts; --i); // back to home
+		cur.home = acc[i];
+		acc[i].alts = acc[i].alts.concat(cur);
+	    } else {
+		cur.alts = [];
+		cur.labs = [];
+		cur.home = cur;
+	    }
+	    return acc.concat(cur);
+	} else {
+	    cur.alts = [];
+	    cur.labs = [];
+	    cur.home = cur;
+	    return [cur];
+	}
+    }, [])
+	.map(function(course, i){
+	    course.index = i;
+	    return course
+	});
+}
+
 class Searcher{
+    // A wrapper to perform a single XMLHttpRequest
+    // Allows for stopping and starting of request
     constructor(term, offset = null, size = null){ // when offset == null or isn't provided, just prime
 	this.term = term;
 	this.data = [];
@@ -199,7 +105,11 @@ class Searcher{
     }
 }
 
-class TermManager{ // pull data for a single term
+class TermManager{
+    // A wrapper around many Searcher objects
+    // Performs many XMLHttpRequests for an entire term
+    // Allows for stopping, starting, and dynamic callbacks upon completion
+    // Caches partially completed results
     constructor(term){
 	this.term = term;
 	this.data = [];
@@ -242,41 +152,14 @@ class TermManager{ // pull data for a single term
 				return acc + cur.data.length; // by summing them all up
 			    }, 0) >= test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
 				// if so, process data and mark term complete
-				TermManager_ref.data = TermManager_ref.data // take fufilled requests
-				    .sort((a, b) => a.pageOffset - b.pageOffset) // sort them all, because they probably won't load in order
-				    .reduce(function(acc, cur){ // and unwrap them all
-					return acc.concat(cur.data); // into one big array
-				    }, [])
-				//post processing
-				    .reduce(function(acc, cur){ // post process in preparation for manual mode
-					if(acc.length > 0){
-					    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // lab
-						var i = acc.length-1;
-						for(; !acc[i].labs; --i); // back to home
-						cur.home = acc[i];
-						acc[i].labs = acc[i].labs.concat(cur);
-					    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-						var i = acc.length-1;
-						for(; !acc[i].alts; --i); // back to home
-						cur.home = acc[i];
-						acc[i].alts = acc[i].alts.concat(cur);
-					    } else {
-						cur.alts = [];
-						cur.labs = [];
-						cur.home = cur;
-					    }
-					    return acc.concat(cur);
-					} else {
-					    cur.alts = [];
-					    cur.labs = [];
-					    cur.home = cur;
-					    return [cur];
-					}
-				    }, [])
-				    .map(function(course, i){
-					course.index = i;
-					return course
-				    });
+				TermManager_ref.data = postProcessCourses(
+				    TermManager_ref.data // take fufilled requests
+					.sort((a, b) => a.pageOffset - b.pageOffset) // sort them all, because they probably won't load in order
+					.reduce(function(acc, cur){ // and unwrap them all
+					    return acc.concat(cur.data); // into one big array
+					}, [])
+				); // then post process them so automatic mode actually works
+				
 				TermManager_ref.done = true;
 				TermManager_ref.requests = []; // free up some memory
 				if(TermManager_ref.main_callback_wrapper.callback) // it's weird because we can't close in the function, we need to make sure it can change
@@ -313,7 +196,10 @@ class TermManager{ // pull data for a single term
     }
 }
 
-class TermCacher{ // manages a bunch of TermManagers, caches the results -- even partially loaded results
+class TermCacher{
+    // A wrapper around many TermManagers
+    // Caches results, complete and partial
+    // Allows for callbacks on completion, which are ignored if a different term is pushed
     constructor(){
 	this.termManagers = [];
     }
@@ -423,7 +309,6 @@ var app = new Vue(
 	    courses_generator: null,
             selected: [],
             closed: false,
-            changed: false,
             justLoaded: true,
             showExport: false,
             description: false,
@@ -437,8 +322,7 @@ var app = new Vue(
 	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
 		let response = JSON.parse(this.responseText);
 		app.terms = response;
-		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.slice(1, 7))) > -1)
-		{
+		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
 		    app.term = app.terms[index].code;
 		    app.updateTerms();
 		    app.changedTerm(true);
@@ -596,8 +480,10 @@ var app = new Vue(
 		this.hideSearch();
 	    },
 	    hideSearch: function(referrer) {
-		if(referrer)
+		if(referrer){
 		    this.closed = referrer.checked;
+		    location.hash = app.generateHash(); // update url for closed value
+		}
 		var options = document.getElementById("selectBox").children;
 		var search = document.getElementById("searchBox").value.toLowerCase();
 		for(var i=1; i < options.length; ++i)
@@ -847,17 +733,15 @@ var app = new Vue(
 		schedules[this.currentstorage] = this.generateHash();
 		localStorage.setItem('schedules', JSON.stringify(schedules));
 		this.localStorage = schedules;
-		this.changed = false;
 		this.updateSaved();
             },
             load: function(schedule) {
-		if(this.changed && this.selected.length) {
+		if(this.changed() && this.selected.length) {
                     if (!window.confirm("Are you sure you want to discard your changes?")) {
 			return;
                     }
 		}
 		this.currentstorage = schedule;
-		this.changed = false;
 		location.hash = this.localStorage[schedule];
 		var currentTerm = location.hash.slice(1, 7);
 		if ((index = this.terms.map(term => term.code).indexOf(currentTerm)) > -1){ // if term is valid
@@ -868,12 +752,8 @@ var app = new Vue(
                     } else {
 			this.course = null;
 			document.getElementById("selectBox").value = "";
-			document.getElementById("searchBox").value = "";
 			this.updateTerms();
-			var hashes = location.hash.slice(8).split(',');
-			this.selected = appData.courses.filter(function(course){
-			    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-			});
+			this.loadHash();
                     }
 		}
 		this.justLoaded = false;
@@ -883,7 +763,6 @@ var app = new Vue(
 		if (!window.confirm("Are you sure you want to discard your changes?")) {
                     return;
 		}
-		this.changed = false;
 		var schedule = this.currentstorage;
 		this.currentstorage = null;
 		this.load(schedule);
@@ -899,14 +778,13 @@ var app = new Vue(
                     delete schedules[this.currentstorage];
                     localStorage.setItem('schedules', JSON.stringify(schedules));
                     this.localStorage = schedules;
-                    this.changed = false;
                     this.clear();
 		    this.updateSaved();
 		    this.fillSchedule();
 		}
             },
             clear: function() {
-		if(this.changed)
+		if(this.changed())
                     if (!window.confirm("Are you sure you want to discard your changes?"))
 			return;
 		document.getElementById("selectBox").value = "";
@@ -1006,11 +884,22 @@ var app = new Vue(
 		}
 		selectBox.value = this.term;
 	    },
+	    changed: function(){
+		//if, either NO SAVES ARE SELECTED, or WE HAVE CHANGED FROM THE SELECTED SAVE
+		var saves = document.getElementById("saves").children;
+		var ret = true;
+		for(var i=0; i < saves.length; ++i)
+		    if(saves[i].classList.contains("selected"))
+			ret = this.localStorage[saves[i].innerText] != location.hash.split("#")[1]
+		return ret;
+	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
-		var hashes = location.hash.slice(8).split(',');
+		var hashes = location.hash.split("=")[1].split("&")[0].split(",");
 		this.selected = appData.courses.filter(function(course){
 		    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 		});
+		document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
+		this.closed = !!location.hash.split("&")[1];
 	    },
 	    genFaculty: function(c)
 	    {
@@ -1065,7 +954,6 @@ var app = new Vue(
 		}
 
 		location.hash = this.generateHash();
-		this.changed = true;
 		this.justLoaded = false;
 		this.course_list_selection = 0;
 		var range = document.getElementById('Range');
@@ -1083,6 +971,8 @@ var app = new Vue(
 		hash += this.selected.map(function(s){
 		    return s.courseReferenceNumber;
 		}).join();
+		if(this.closed)
+		    hash += "&C";
 		return hash;
             },
 	    autoBar: function(){
