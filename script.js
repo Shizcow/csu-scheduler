@@ -4,6 +4,7 @@
 //ADD - loading 0/xxx
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
+//BUG - if a course is loaded during a term load, it doesn't actually render in
 
 //var courses = location.hash.split("=")[1].split("&")[0]; // gets course list from url
 // eg #201990
@@ -532,8 +533,8 @@ var app = new Vue(
 	    },
 	    // return a Lazy object which spits out valid schedules, and cache it so that Vue templating doesnt calculate it a million times
 	    autoConstruct: function(courses){
-		if(courses[0] == null) return {get: function(i){return []}}; // no courses - go no further
-		if(courses.slice(-1)[0]==null) // remove null at end when no class is selected
+		if(courses[0] === undefined) return {get: function(i){return []}}; // no courses - go no further
+		if(courses.slice(-1)[0] === undefined) // remove empty at end when no class is selected
 		    courses.pop();
 		courses = courses.filter(course => course.seatsAvailable || app.closed);
 		if(this.mode == "Manual"){
@@ -549,6 +550,7 @@ var app = new Vue(
 			document.getElementById("selectBox").value = this.course.toString();
 			//and fix a render bug
 		    }
+		    console.log("help");
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
 		    appData.courses_generator = {get: function(i){return courses;}};
 		    return appData.courses_generator;
@@ -704,13 +706,17 @@ var app = new Vue(
 		for(var i = 0; i<options.length; ++i)
 		    options[i].onclick = function(reference){
 			return function(){ // force update
-			    reference.classList.add("preselect");
-			    app.load(reference.innerText); // we need to update look after
 			    var wrapper = reference.parentElement; // because changed() looks at style
-			    for(var i = 0; i < wrapper.children.length; ++i){
-				wrapper.children[i].classList.remove("selected");
+			    for(var i = 0; i < wrapper.children.length; ++i) // we need to do this twice in case load gets interrupted
 				wrapper.children[i].classList.remove("preselect");
-			    }
+			    reference.classList.add("preselect");
+			    var success = app.load(reference.innerText); // we need to update look after
+			    for(var i = 0; i < wrapper.children.length; ++i)
+				wrapper.children[i].classList.remove("preselect");
+			    if(!success)
+				return; // if user declines, forget about it
+			    for(var i = 0; i < wrapper.children.length; ++i)
+				wrapper.children[i].classList.remove("selected");
 			    reference.classList.add("selected");
 			}
 		    }(options[i]);
@@ -737,18 +743,17 @@ var app = new Vue(
 		this.updateSaved();
             },
             load: function(schedule) {
-		if(this.changed()) {
-                    if (!window.confirm("Are you sure you want to discard your changes?")) {
-			return;
-                    }
-		}
+		if(this.changed())
+                    if (!window.confirm("Are you sure you want to discard your changes?"))
+			return false;
 		this.currentstorage = schedule;
 		location.hash = this.localStorage[schedule];
-		var currentTerm = location.hash.slice(1, 7);
+		var currentTerm = location.hash.split("=")[0].substr(1);
 		if ((index = this.terms.map(term => term.code).indexOf(currentTerm)) > -1){ // if term is valid
                     if(this.term != this.terms[index].code) {
 			this.term = this.terms[index].code;
 			this.updateTerms();
+			console.log("E")
 			this.changedTerm(true);
                     } else {
 			this.course = null;
@@ -758,6 +763,7 @@ var app = new Vue(
                     }
 		}
 		this.fillSchedule();
+		return true;
             },
             discard: function() {
 		if (!window.confirm("Are you sure you want to discard your changes?")) {
@@ -811,6 +817,7 @@ var app = new Vue(
 		}
 		if(!this.term)
 		    return; // empty
+		console.log(this.term)
 		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
 		document.getElementById("selectBox").value = "";
@@ -818,7 +825,7 @@ var app = new Vue(
 		this.selected = [];
 		this.course_list_selection = 0;
 		appData.courses_generator = null;
-		this.saved_course_generator = "";
+		this.savedCourseGenerator = "";
 		this.fillSchedule(); // show empty while loading
 		this.percent = "";
 
@@ -828,8 +835,10 @@ var app = new Vue(
 		    return function(courses){
 			appData.courses = courses;
 			app.genDivs();
-			if(_loadHash)
+			if(_loadHash){
+			    console.log("load", location.hash)
 			    app.loadHash();
+			}
 			app.fillSchedule();
 			app.fillSearch();
 		    }
@@ -903,9 +912,11 @@ var app = new Vue(
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
 		var hashes = location.hash.split("=")[1].split("&")[0].split(",");
+		console.log("hashes", hashes)
 		this.selected = appData.courses.filter(function(course){
 		    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 		});
+		console.log(app.selected)
 		document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
 		this.closed = !!location.hash.split("&")[1];
 	    },
@@ -940,8 +951,7 @@ var app = new Vue(
 		var minute = time.substr(-2);
 		return parseFloat(time.substr(0, time.length-minute.length), 10)+parseFloat(minute)/60-8;
 	    },
-            click: function(course)
-            {
+            click: function(course){
 		if (this.autoInAlts(appData.courses[this.course], course)) // needs to be added to selected
 		{
 		    this.course = null;
@@ -969,15 +979,14 @@ var app = new Vue(
 		this.hideSearch(); // TODO: optimize
 		this.fillSchedule();
             },
-            hashExists: function()
-            {
+            hashExists: function(){
 		return location.hash.match(/#\d+=[\d+,?]+/);
             },
             generateHash: function() {
 		var hash = this.term + "=";
 		hash += this.selected.map(function(s){
 		    return s.courseReferenceNumber;
-		}).join();
+		}).sort((a, b) => parseInt(a)-parseInt(b)).join();
 		if(this.closed)
 		    hash += "&C";
 		return hash;
