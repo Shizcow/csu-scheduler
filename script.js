@@ -4,7 +4,6 @@
 //ADD - loading 0/xxx
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
-//TODO - Remove xhrzip and replace with Searcher
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -51,34 +50,46 @@ function postProcessCourses(courses){ // post process in preparation for automat
 class Searcher{
     // A wrapper to perform a single XMLHttpRequest
     // Allows for stopping and starting of request
-    constructor(term, offset = null, size = null){ // when offset == null or isn't provided, just prime
+    constructor(type, term = null, offset = null, size = null){ // when offset == null or isn't provided, just prime
 	this.term = term;
 	this.data = [];
 	this.done = false;
-	this.offset = offset;
+	this.offset = offset; // if type == desc, offset is interpreted as the course reference number
 	this.size = size;
 	this.xhr = null;
+	this.type = type;
     }
     start(callback = null){
 	if(this.xhr || this.done) // don't restart if not needed
 	    return;
 	var url = "";
-	if(this.offset == null) // prime
+	switch(this.type){
+	case "prime":
 	    url = server("term/search?mode=search");
-	else
+	    break;
+	case "courses":
 	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
+	    break;
+	case "terms":
+	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566");
+	    break;
+	case "desc":
+	    url = server("searchResults/getCourseDescription/?term="+ this.term + "&courseReferenceNumber=" + this.offset);
+	    break;
+	default:
+	    console.error("Invalid type in Searcher");
+	}
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
 		if (this.readyState === 4 && this.status === 200){
-		    var response = JSON.parse(this.responseText);
-		    if(ref.offset != null) // else it's just a post
+		    var response = ref.type == "desc" ? this.responseText : JSON.parse(this.responseText);
+		    if(ref.type != "prime") // else it's priming and just a post
 			ref.data = response.data;
 		    if(callback)
 			callback(response);
 		    ref.done = true;
 		    ref.xhr = null;
-		    //({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
 		}
 		if(this.status != 200 && this.status != 0){
 		    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
@@ -86,11 +97,11 @@ class Searcher{
 		}
 	    }
 	}(this);
-	this.xhr.open(this.offset == null ? "POST" : "GET", url); // local sync
+	this.xhr.open(this.type == "prime" ? "POST" : "GET", url); // local sync
 	this.xhr.withCredentials = true; // needed for auth cookies
 	if(this.offset == null)
 	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
-	this.xhr.send(this.offset == null ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
+	this.xhr.send(this.type == "prime" ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
     }
     stop(){
 	if(!this.xhr || this.done) // can't stop what's not there to stop
@@ -164,7 +175,7 @@ class TermManager{
 			});
 		    });
 		} else { // first time requesting - do a small request first, then fill up
-		    TermManager_ref.headRequest = new Searcher(TermManager_ref.term, 0, 10);
+		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
 		    TermManager_ref.headRequest.start(function(responseData){
 			TermManager_ref.headRequest = null; // head requests are all done
 			TermManager_ref.data = [responseData]; // currently wrapped with extra info, will unwrap later
@@ -175,7 +186,7 @@ class TermManager{
 			for(var i = min; i<test_percent_cap*max/100; i+=chunk)//NOTE: previously was using test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
 			    offsets.push(i); // fill offsets with integer values starting at min, offset by chunk size, and going up to only what we need to request
 			offsets.forEach(function(offset){ // construct all subsequent requests
-			    TermManager_ref.requests.push(new Searcher(TermManager_ref.term, offset, chunk));
+			    TermManager_ref.requests.push(new Searcher("courses", TermManager_ref.term, offset, chunk));
 			});
 			TermManager_ref.start(main_callback, true); // recurse into start. Now that requests is filled, it'll just start them all
 		    });
@@ -186,7 +197,7 @@ class TermManager{
 	if(bypass){ // recursing -- don't bother POSTing again
 	    callback(null);
 	} else { // not recursing -- POST and then run callback
-	    this.headRequest = new Searcher(this.term); // prime it
+	    this.headRequest = new Searcher("prime", this.term); // prime it
 	    this.headRequest.start(callback);
 	}
     }
@@ -215,22 +226,7 @@ class TermCacher{
     }
 }
 
-
 Vue.use(VueResource);
-
-let xhrzip = function(method, url, data, onstate){
-    let xhr = new XMLHttpRequest(); // we need a new one every time in case we're doing async requests
-    xhr.onreadystatechange = function(){ // callback
-	if (this.readyState === 4 && this.status === 200)
-	    ({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
-	if(this.status != 200 && this.status != 0)
-	    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
-    };
-    xhr.open(method, url);
-    xhr.withCredentials = true; // needed for auth cookies
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
-    xhr.send(data);
-}
 
 class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy class you can find online
     constructor(inputgen){
@@ -315,8 +311,7 @@ var app = new Vue(
 	{
             this.$el.style.display = 'block';
 	    document.getElementById("noSchedAlign").style.display = "none";
-	    xhrzip("GET", server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
-		let response = JSON.parse(this.responseText);
+	    (new Searcher("terms")).start(function(response){
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
 		    app.term = app.terms[index].code;
@@ -502,8 +497,8 @@ var app = new Vue(
             },
             fetchDescription: function(course) {
 		if(!course.description) {
-		    xhrzip("GET", server('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), null, function(){
-			Vue.set(course, 'description', this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
+		    (new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
+			Vue.set(course, 'description', response.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
 		    });
 		}
 		this.description = course;
