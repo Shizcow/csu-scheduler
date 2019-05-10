@@ -4,10 +4,7 @@
 //ADD - loading 0/xxx
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
-//BUG - if a course is loaded during a term load, it doesn't actually render in
-
-//var courses = location.hash.split("=")[1].split("&")[0]; // gets course list from url
-// eg #201990
+//TODO - Remove xhrzip and replace with Searcher
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -17,8 +14,7 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 //300---> Finish: 38.30s, 35.46s, 38.66s = 37.473s avg ***
 //200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
 //100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
-var server_cx = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
-
+var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
     return courses.reduce(function(acc, cur){
@@ -68,9 +64,9 @@ class Searcher{
 	    return;
 	var url = "";
 	if(this.offset == null) // prime
-	    url = server_cx("term/search?mode=search");
+	    url = server("term/search?mode=search");
 	else
-	    url = server_cx("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
+	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
@@ -120,6 +116,7 @@ class TermManager{
     stop(){ // abort all requests and prime for a restart
 	if(this.done) // why stop something that's already done?
 	    return;
+	this.main_callback_wrapper.callback = ()=>{};
 	if(this.headRequest){
 	    this.headRequest.stop();
 	    this.headRequest = null; // in case we stopped during a head request
@@ -318,7 +315,7 @@ var app = new Vue(
 	{
             this.$el.style.display = 'block';
 	    document.getElementById("noSchedAlign").style.display = "none";
-	    xhrzip("GET", server_cx("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
+	    xhrzip("GET", server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
 		let response = JSON.parse(this.responseText);
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
@@ -505,7 +502,7 @@ var app = new Vue(
             },
             fetchDescription: function(course) {
 		if(!course.description) {
-		    xhrzip("GET", server_cx('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), null, function(){
+		    xhrzip("GET", server('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), null, function(){
 			Vue.set(course, 'description', this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
 		    });
 		}
@@ -550,7 +547,6 @@ var app = new Vue(
 			document.getElementById("selectBox").value = this.course.toString();
 			//and fix a render bug
 		    }
-		    console.log("help");
 		    this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
 		    appData.courses_generator = {get: function(i){return courses;}};
 		    return appData.courses_generator;
@@ -621,7 +617,7 @@ var app = new Vue(
 	    //Generates a Cartesian Product with given dimensions
 	    //Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
 	    cartesianProduct: function*(dimensions){
-		if(dimensions.length <= 1){// no need to calculate for 1 length lists (0 too just in case) - just yield each schedule
+		if(dimensions.length <= 1){// no need to calculate for 1 length lists (0 neither) - just yield each schedule
 		    for(var i = 0; i<dimensions[0].length; ++i)
 			yield [dimensions[0][i]]; // wrap each course as its own schedule
 		    return; // generators are weird
@@ -753,7 +749,6 @@ var app = new Vue(
                     if(this.term != this.terms[index].code) {
 			this.term = this.terms[index].code;
 			this.updateTerms();
-			console.log("E")
 			this.changedTerm(true);
                     } else {
 			this.course = null;
@@ -766,9 +761,9 @@ var app = new Vue(
 		return true;
             },
             discard: function() {
-		if (!window.confirm("Are you sure you want to discard your changes?")) {
-                    return;
-		}
+		if(this.changed())
+		    if (!window.confirm("Are you sure you want to discard your changes?"))
+			return;
 		var schedule = this.currentstorage;
 		this.currentstorage = null;
 		this.load(schedule);
@@ -792,7 +787,7 @@ var app = new Vue(
             clear: function() {
 		if(this.changed())
                     if (!window.confirm("Are you sure you want to discard your changes?"))
-			return;
+			return false;
 		document.getElementById("selectBox").value = "";
 		location.hash = "";
 		this.course = null;
@@ -801,6 +796,7 @@ var app = new Vue(
 		this.updateSaved();
 		this.fillSchedule();
 		this.hideSearch();
+		return true;
             },
             webclasses: function(courses)
             {
@@ -810,6 +806,11 @@ var app = new Vue(
             },
             changedTerm: function(loadHash = false, referrer = null)
             {
+		if(this.currentstorage && loadHash !== true)
+		    if(!this.clear()){ // user declined - fix selection box then return
+			document.getElementById("termSelect").value = this.term;
+			return;
+		    }
 		if(referrer){
 		    if(referrer.firstChild.value == "") // clean up on first get
 			referrer.removeChild(referrer.firstChild);
@@ -817,8 +818,6 @@ var app = new Vue(
 		}
 		if(!this.term)
 		    return; // empty
-		console.log(this.term)
-		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
 		document.getElementById("selectBox").value = "";
 		document.getElementById("searchBox").value = "";
@@ -835,10 +834,8 @@ var app = new Vue(
 		    return function(courses){
 			appData.courses = courses;
 			app.genDivs();
-			if(_loadHash){
-			    console.log("load", location.hash)
+			if(_loadHash)
 			    app.loadHash();
-			}
 			app.fillSchedule();
 			app.fillSearch();
 		    }
@@ -872,10 +869,11 @@ var app = new Vue(
 		    el.value = c.index;
 		    appData.courses_auto.push(el);
 		}
+		/*
 		var saves = document.getElementById("saves");
 		for(var i=0; i<saves.children.length; ++i)
-		    if(saves.children[i].classList.contains("selected"))
-			app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidde
+		    if(saves.children[i].classList.contains("preselect"))
+			app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidde*/
 		document.getElementById("coursesBox").style.display = "";
 		document.getElementById("loadingCourses").style.display = "none";
 	    },
@@ -912,11 +910,9 @@ var app = new Vue(
 	    },
 	    loadHash: function(){ // loading from URL or save, get hash and parse it
 		var hashes = location.hash.split("=")[1].split("&")[0].split(",");
-		console.log("hashes", hashes)
 		this.selected = appData.courses.filter(function(course){
 		    return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 		});
-		console.log(app.selected)
 		document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
 		this.closed = !!location.hash.split("&")[1];
 	    },
