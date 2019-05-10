@@ -761,9 +761,9 @@ var app = new Vue(
 		return true;
             },
             discard: function() {
-		if (!window.confirm("Are you sure you want to discard your changes?")) {
-                    return;
-		}
+		if(this.changed())
+		    if (!window.confirm("Are you sure you want to discard your changes?"))
+			return;
 		var schedule = this.currentstorage;
 		this.currentstorage = null;
 		this.load(schedule);
@@ -787,7 +787,7 @@ var app = new Vue(
             clear: function() {
 		if(this.changed())
                     if (!window.confirm("Are you sure you want to discard your changes?"))
-			return;
+			return false;
 		document.getElementById("selectBox").value = "";
 		location.hash = "";
 		this.course = null;
@@ -796,6 +796,7 @@ var app = new Vue(
 		this.updateSaved();
 		this.fillSchedule();
 		this.hideSearch();
+		return true;
             },
             webclasses: function(courses)
             {
@@ -805,6 +806,11 @@ var app = new Vue(
             },
             changedTerm: function(loadHash = false, referrer = null)
             {
+		if(this.currentstorage && loadHash !== true)
+		    if(!this.clear()){ // user declined - fix selection box then return
+			document.getElementById("termSelect").value = this.term;
+			return;
+		    }
 		if(referrer){
 		    if(referrer.firstChild.value == "") // clean up on first get
 			referrer.removeChild(referrer.firstChild);
@@ -812,7 +818,6 @@ var app = new Vue(
 		}
 		if(!this.term)
 		    return; // empty
-		if(this.currentstorage && loadHash !== true) this.clear();
 		this.course = null;
 		document.getElementById("selectBox").value = "";
 		document.getElementById("searchBox").value = "";
