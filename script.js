@@ -4,6 +4,8 @@
 //ADD - older terms
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
+//ADD - do something with refreshes on active plans?
+//BUG - when discarding changes, courses_list_selection needs to be refreshed and updated graphically
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
