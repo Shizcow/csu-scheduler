@@ -1,10 +1,11 @@
-//ADD - CORS NOTI
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - hold next button to fast generate courses
 //ADD - loading 0/xxx
-//BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
-//TODO - Remove xhrzip and replace with Searcher
+//ADD - notes that can be saved with schedules
+//ADD - dark theme
+//ADD - do something with refreshes on active plans?
+//BUG - when discarding changes, courses_list_selection needs to be refreshed and updated graphically
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -17,32 +18,46 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
-    return courses.reduce(function(acc, cur){
-	if(acc.length > 0){
-	    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // Set up labs
-		var i = acc.length-1;
-		for(; !acc[i].labs; --i); // back to home
-		cur.home = acc[i];
-		acc[i].labs = acc[i].labs.concat(cur);
-	    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-		var i = acc.length-1;
-		for(; !acc[i].alts; --i); // back to home
-		cur.home = acc[i];
-		acc[i].alts = acc[i].alts.concat(cur);
-	    } else {
-		cur.alts = [];
-		cur.labs = [];
-		cur.home = cur;
+    return courses
+	.filter(function(course){ // step 0 - only deal with courses that can be shown on the board - will ask around about the "ghost courses" and why they are even there - example is MATH 369 "EX"
+	    return course.meetingsFaculty.reduce(function(acc, cur){
+		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur.meetingTime[_cur], false);
+	    }, false);
+	})
+	.reduce(function(acc, cur){ // first collect all courses into lists of same subjectCourse (ECE101)
+	    if(acc.length > 0){ // this is done in case courses are stored in a weird order
+		if(acc[acc.length-1][0].subjectCourse == cur.subjectCourse) // compare to previous packet
+		    acc[acc.length-1].push(cur); // push to last packet where it's the same
+		else
+		    acc.push([cur]); // or set up a new packet
+		return acc;
+	    } else { // set up the first one
+		return [[cur]];
 	    }
-	    return acc.concat(cur);
-	} else {
-	    cur.alts = [];
-	    cur.labs = [];
-	    cur.home = cur;
-	    return [cur];
-	}
-    }, [])
-	.map(function(course, i){
+	}, [])
+	.map(function(packet){ // process each packet
+	    //the processing goes as follows - one of each type of scheduleTypeDescription needs to be applied
+	    //this can be one Lecture, one Lab, and one Recitation
+	    //or, in cases like ECE 450, one lab (no Lectures)
+	    //in more exotic cases, I'm really just waiting for edge cases to pop up ¯\_(ツ)_/¯
+	    //alts show up in the form of alts:[typePacks:[courses...]...]
+	    //automatic mode will only look at alts, and pick one from each type - won't look at main course
+	    packet[0].home = packet[0];
+	    packet[0].alts = [[packet[0]]]; // set up first one
+	    for(var i=1; i<packet.length; ++i){ // start at the second one
+		packet[i].home = packet[0]; // set the home - used for referencing alts
+		var foundIndex = packet[0].alts.findIndex(typePack => typePack[0].scheduleTypeDescription == packet[i].scheduleTypeDescription);
+		if(foundIndex > -1) // there exists a typePack in alts which has the same type as packet[i]
+		    packet[0].alts[foundIndex].push(packet[i]); // add to revalent typePack
+		else // the type of packet[i] is new to typePack
+		    packet[0].alts.push([packet[i]]); // add as a new typePack
+	    }
+	    return packet;
+	})
+	.reduce(function(acc, cur){ // then unwrap packets into a big course list
+	    return acc.concat(cur); // [prev...] + ...[packet contents] = [prev..., packet contents]
+	}, [])
+	.map(function(course, i){ // and add indices
 	    course.index = i;
 	    return course
 	});
@@ -51,46 +66,67 @@ function postProcessCourses(courses){ // post process in preparation for automat
 class Searcher{
     // A wrapper to perform a single XMLHttpRequest
     // Allows for stopping and starting of request
-    constructor(term, offset = null, size = null){ // when offset == null or isn't provided, just prime
+    constructor(type, term = null, offset = null, size = null){ // when offset == null or isn't provided, just prime
 	this.term = term;
 	this.data = [];
 	this.done = false;
-	this.offset = offset;
+	this.offset = offset; // if type == desc, offset is interpreted as the course reference number
 	this.size = size;
 	this.xhr = null;
+	this.type = type;
     }
     start(callback = null){
 	if(this.xhr || this.done) // don't restart if not needed
 	    return;
 	var url = "";
-	if(this.offset == null) // prime
+	switch(this.type){
+	case "prime":
 	    url = server("term/search?mode=search");
-	else
+	    break;
+	case "courses":
 	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
+	    break;
+	case "terms":
+	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566");
+	    break;
+	case "desc":
+	    url = server("searchResults/getCourseDescription/?term="+ this.term + "&courseReferenceNumber=" + this.offset);
+	case "test":
+	    url = server();
+	    break;
+	default:
+	    console.error("Invalid type in Searcher");
+	}
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
+		if(ref.type == "test" && this.readyState === 4 && this.status === 0){
+		    console.log("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
+		    if(callback)
+			callback(response);
+		}
+		if(ref.type == "test")
+		    return; // forget about everything else if it's just a test
 		if (this.readyState === 4 && this.status === 200){
-		    var response = JSON.parse(this.responseText);
-		    if(ref.offset != null) // else it's just a post
+		    var response = ref.type == "desc" ? this.responseText : JSON.parse(this.responseText);
+		    if(ref.type != "prime") // else it's priming and just a post
 			ref.data = response.data;
 		    if(callback)
 			callback(response);
 		    ref.done = true;
 		    ref.xhr = null;
-		    //({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
 		}
-		if(this.status != 200 && this.status != 0){
+		else if(this.status != 200 && this.status != 0){
 		    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
 		    this.xhr = null; // I DONT KNOW WHAT TO DO HERE YET
 		}
 	    }
 	}(this);
-	this.xhr.open(this.offset == null ? "POST" : "GET", url); // local sync
+	this.xhr.open(this.type == "prime" ? "POST" : "GET", url); // local sync
 	this.xhr.withCredentials = true; // needed for auth cookies
-	if(this.offset == null)
+	if(this.type == "prime")
 	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
-	this.xhr.send(this.offset == null ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
+	this.xhr.send(this.type == "prime" ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
     }
     stop(){
 	if(!this.xhr || this.done) // can't stop what's not there to stop
@@ -164,7 +200,7 @@ class TermManager{
 			});
 		    });
 		} else { // first time requesting - do a small request first, then fill up
-		    TermManager_ref.headRequest = new Searcher(TermManager_ref.term, 0, 10);
+		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
 		    TermManager_ref.headRequest.start(function(responseData){
 			TermManager_ref.headRequest = null; // head requests are all done
 			TermManager_ref.data = [responseData]; // currently wrapped with extra info, will unwrap later
@@ -175,7 +211,7 @@ class TermManager{
 			for(var i = min; i<test_percent_cap*max/100; i+=chunk)//NOTE: previously was using test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
 			    offsets.push(i); // fill offsets with integer values starting at min, offset by chunk size, and going up to only what we need to request
 			offsets.forEach(function(offset){ // construct all subsequent requests
-			    TermManager_ref.requests.push(new Searcher(TermManager_ref.term, offset, chunk));
+			    TermManager_ref.requests.push(new Searcher("courses", TermManager_ref.term, offset, chunk));
 			});
 			TermManager_ref.start(main_callback, true); // recurse into start. Now that requests is filled, it'll just start them all
 		    });
@@ -186,7 +222,7 @@ class TermManager{
 	if(bypass){ // recursing -- don't bother POSTing again
 	    callback(null);
 	} else { // not recursing -- POST and then run callback
-	    this.headRequest = new Searcher(this.term); // prime it
+	    this.headRequest = new Searcher("prime", this.term); // prime it
 	    this.headRequest.start(callback);
 	}
     }
@@ -215,22 +251,7 @@ class TermCacher{
     }
 }
 
-
 Vue.use(VueResource);
-
-let xhrzip = function(method, url, data, onstate){
-    let xhr = new XMLHttpRequest(); // we need a new one every time in case we're doing async requests
-    xhr.onreadystatechange = function(){ // callback
-	if (this.readyState === 4 && this.status === 200)
-	    ({responseText: this.responseText, core: onstate}).core(); // this just makes callback look and feel like normal, but always checks for readyness - mostly a convienence thing
-	if(this.status != 200 && this.status != 0)
-	    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
-    };
-    xhr.open(method, url);
-    xhr.withCredentials = true; // needed for auth cookies
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
-    xhr.send(data);
-}
 
 class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy class you can find online
     constructor(inputgen){
@@ -250,9 +271,10 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 		return acc && cur_filter(tmp.value);
 	    }, true)){
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
-		    return !course.home.alts.concat(course.home).includes(app.courses[app.course]) // remove pending
-		}
-									    )}); // we need to do this here so it updates the url dynamically
+		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
+			return acc.concat(cur); // where cur is a typePack
+		    }, []).includes(app.courses[app.course]) // remove pending selection
+		})}); // we need to do this here so it updates the url dynamically
             }
 	}
 	var data = this.data[i];
@@ -315,8 +337,13 @@ var app = new Vue(
 	{
             this.$el.style.display = 'block';
 	    document.getElementById("noSchedAlign").style.display = "none";
-	    xhrzip("GET", server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566"), null, function() {
-		let response = JSON.parse(this.responseText);
+	    //check CORS
+	    (new Searcher("test")).start(function(ignored){
+		document.getElementById("app").style.display = "none";
+		document.getElementById("loading").style.display = "none";
+		document.getElementById("cors").style.display = "";
+	    });
+	    (new Searcher("terms")).start(function(response){
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
 		    app.term = app.terms[index].code;
@@ -333,19 +360,20 @@ var app = new Vue(
 		app.updateSaved();
 	    });
 	},
-	computed:
-	{
-            totalCredits: function()
-            {
-		return this.selected.map(function(c){
-		    return (c.scheduleTypeDescription == "Laboratory" || c.scheduleTypeDescription == "Recitation") ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? c.creditHourLow : c.creditHourHigh ? c.creditHourHigh : 0;
-		}).concat(0).reduce(function(a, b){
-		    return a + b;
-		});
-            },
-	},
 	methods:
 	{
+	    totalCredits: function(){
+		return this.selected.reduce(function(acc, cur){
+		    return acc+app.creditsOf(cur);
+		}, 0);
+	    },
+	    creditsOf: function(course){
+		if(course.creditHours != undefined)
+		    return course.creditHours;
+		if(course.creditHourLow != undefined)
+		    return course.creditHourLow;
+		return course.creditHourHigh;
+	    },
 	    fillSchedule: function(referrer) {
 		if(referrer)
 		    this.course_list_selection = referrer.value;
@@ -366,7 +394,7 @@ var app = new Vue(
 			if(course && courseHere){
 			    var div = document.createElement("div");
 			    div.className = "item";
-			    var creditText = ((course.scheduleTypeDescription == "Laboratory" || course.scheduleTypeDescription == "Recitation") ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
+			    var creditText = this.creditsOf(course);			    
 			    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			    var link = document.createElement("a");
 			    link.className = "link";
@@ -400,7 +428,7 @@ var app = new Vue(
 		    if(course){
 			var div = document.createElement("div");
 			div.className = "item";
-			var creditText = ((course.scheduleTypeDescription == "Laboratory" || course.scheduleTypeDescription == "Recitation") ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
+			var creditText = this.creditsOf(course);
 			div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			var link = document.createElement("a");
 			link.className = "link";
@@ -494,7 +522,9 @@ var app = new Vue(
 		    course.courseTitle.toLowerCase().indexOf(search) > -1;
 		if(this.mode == "Automatic"){
 		    if(this.selected.reduce(function(acc, course){
-			return course ? acc.concat([course.home].concat(course.home.alts).concat(course.home.labs)) : acc;
+			return course ? acc.concat(course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
+			    return acc.concat(cur); // where cur is a typePack
+			}, [])) : acc;
 		    }, []).includes(course))
 			return false;
 		}
@@ -502,8 +532,8 @@ var app = new Vue(
             },
             fetchDescription: function(course) {
 		if(!course.description) {
-		    xhrzip("GET", server('searchResults/getCourseDescription/?term=' + course.term.toString() + '&courseReferenceNumber=' + course.courseReferenceNumber.toString()), null, function(){
-			Vue.set(course, 'description', this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
+		    (new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
+			Vue.set(course, 'description', response.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
 		    });
 		}
 		this.description = course;
@@ -520,8 +550,8 @@ var app = new Vue(
 		    return check_course == course_alts;
 		return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
 	    },
-	    // grab the course, and pair it with any labs if available (and in auto). Determines hover style
-	    autoAndLabs: function(check_course){ // pretty much just fixes a render bug
+	    // grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
+	    autoAndLabs: function(check_course){
 		if(check_course == null)
 		    return []; // if there's one or zero, we don't even need to check
 		if(this.mode == "Manual")
@@ -559,31 +589,18 @@ var app = new Vue(
 		    document.getElementById("selectBox").value = this.course.toString();
 		}
 		this.course_list_selection = 0; // Reset on each new sched gen
-		appData.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
-		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
-		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
-			var comp_packs = prev_packs.filter(prev_pack => prev_pack.includes(course)); // all the pack(s) that are labs and not alts
-			if(comp_packs.length){ // course is a lab of a previous
-			    comp_packs.forEach(function(comp_pack){
-				acc = acc.filter(pack => pack[0] != comp_pack[0]); // remove the old lab pack(s)
-			    });
-			    acc.push([course].concat(course.home.labs.filter(c => c!=course))); // and replace with the new ones, w/ course first this time
-			}
-			// else it's an alt. Ignore for duplicate's sake
-		    } else { // course is brand new
-			acc.push(course.home.alts.filter(c => c!=course)); // add alts (minus active)
-			if(!course.home.labs.length){
-			    acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);
-			} else { // need to add labs manually
-			    if(course.home.labs.includes(course)){
-				acc[acc.length-1] = [course.home].concat(acc[acc.length-1]);
-				acc.push([course].concat(course.home.labs.filter(c => c!=course)));
-			    } else {
-				acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);	
-				acc.push(course.home.labs);		    
-			    }
-			}
-		    }
+		appData.courses_generator = new Lazy(this.cartesianProduct(this.removeDuplicatesBy(course => course.home, courses).reduce(function(acc, course){ // expands courses into all alt lists
+		    course.home.alts.forEach(function(typePack){ // move in every typePack
+			//first, we need to check if we need to move any courses to the front of their typePack
+			//this makes auto<->manual switches behave as expected
+			courses.forEach(function(compareCourse){
+			    if(typePack.includes(compareCourse)){
+				typePack = typePack.filter(c => c!=compareCourse); // remove course
+				typePack.unshift(compareCourse); // then re-add it to front
+			    }	
+			})
+			acc.push(typePack);
+		    });
 		    return acc;
 		}, []))).filter(function(schedule){
 		    return !schedule.filter(course => !course.seatsAvailable && !app.closed).length;
