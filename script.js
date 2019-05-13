@@ -353,19 +353,20 @@ var app = new Vue(
 		app.updateSaved();
 	    });
 	},
-	computed:
-	{
-            totalCredits: function()
-            {
-		return this.selected.map(function(c){
-		    return (c.scheduleTypeDescription == "Laboratory" || c.scheduleTypeDescription == "Recitation") ? 0 : c.creditHours ? c.creditHours : c.creditHourLow ? c.creditHourLow : c.creditHourHigh ? c.creditHourHigh : 0;
-		}).concat(0).reduce(function(a, b){
-		    return a + b;
-		});
-            },
-	},
 	methods:
 	{
+	    totalCredits: function(){
+		return this.selected.reduce(function(acc, cur){
+		    return acc+app.creditsOf(cur);
+		}, 0);
+	    },
+	    creditsOf: function(course){
+		if(course.creditHours != undefined)
+		    return course.creditHours;
+		if(course.creditHourLow != undefined)
+		    return course.creditHourLow;
+		return course.creditHourHigh;
+	    },
 	    fillSchedule: function(referrer) {
 		if(referrer)
 		    this.course_list_selection = referrer.value;
@@ -386,7 +387,7 @@ var app = new Vue(
 			if(course && courseHere){
 			    var div = document.createElement("div");
 			    div.className = "item";
-			    var creditText = ((course.scheduleTypeDescription == "Laboratory" || course.scheduleTypeDescription == "Recitation") ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
+			    var creditText = this.creditsOf(course);			    
 			    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			    var link = document.createElement("a");
 			    link.className = "link";
@@ -420,7 +421,7 @@ var app = new Vue(
 		    if(course){
 			var div = document.createElement("div");
 			div.className = "item";
-			var creditText = ((course.scheduleTypeDescription == "Laboratory" || course.scheduleTypeDescription == "Recitation") ? 0 : course.creditHours ? course.creditHours : course.creditHourLow ? (course.creditHourHigh ? course.creditHourLow.toString() + '-' + course.creditHourHigh.toString() : course.creditHourLow) : course.creditHourHigh ? course.creditHourHigh : 0);
+			var creditText = this.creditsOf(course);
 			div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			var link = document.createElement("a");
 			link.className = "link";
