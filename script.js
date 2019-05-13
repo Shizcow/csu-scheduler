@@ -4,7 +4,6 @@
 //ADD - older terms
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
-//BUG - fix total credits calculation  - ECE 450 messes with it
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -17,17 +16,23 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
-    return courses.reduce(function(acc, cur){ // first collect all courses into lists of same subjectCourse (ECE101)
-	if(acc.length > 0){ // this is done in case courses are stored in a weird order
-	    if(acc[acc.length-1][0].subjectCourse == cur.subjectCourse) // compare to previous packet
-		acc[acc.length-1].push(cur); // push to last packet where it's the same
-	    else
-		acc.push([cur]); // or set up a new packet
-	    return acc;
-	} else { // set up the first one
-	    return [[cur]];
-	}
-    }, [])
+    return courses
+	.filter(function(course){ // step 0 - only deal with courses that can be shown on the board - will ask around about the "ghost courses" and why they are even there - example is MATH 369 "EX"
+	    return course.meetingsFaculty.reduce(function(acc, cur){
+		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur.meetingTime[_cur], false);
+	    }, false);
+	})
+	.reduce(function(acc, cur){ // first collect all courses into lists of same subjectCourse (ECE101)
+	    if(acc.length > 0){ // this is done in case courses are stored in a weird order
+		if(acc[acc.length-1][0].subjectCourse == cur.subjectCourse) // compare to previous packet
+		    acc[acc.length-1].push(cur); // push to last packet where it's the same
+		else
+		    acc.push([cur]); // or set up a new packet
+		return acc;
+	    } else { // set up the first one
+		return [[cur]];
+	    }
+	}, [])
 	.map(function(packet){ // process each packet
 	    //the processing goes as follows - one of each type of scheduleTypeDescription needs to be applied
 	    //this can be one Lecture, one Lab, and one Recitation
