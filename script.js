@@ -1,9 +1,9 @@
-//ADD - CORS NOTI
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - hold next button to fast generate courses
 //ADD - loading 0/xxx
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
+//ADD - notes that can be saved with schedules
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -75,6 +75,8 @@ class Searcher{
 	    break;
 	case "desc":
 	    url = server("searchResults/getCourseDescription/?term="+ this.term + "&courseReferenceNumber=" + this.offset);
+	case "test":
+	    url = server();
 	    break;
 	default:
 	    console.error("Invalid type in Searcher");
@@ -82,6 +84,13 @@ class Searcher{
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
+		if(ref.type == "test" && this.readyState === 4 && this.status === 0){
+		    console.log("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
+		    if(callback)
+			callback(response);
+		}
+		if(ref.type == "test")
+		    return; // forget about everything else if it's just a test
 		if (this.readyState === 4 && this.status === 200){
 		    var response = ref.type == "desc" ? this.responseText : JSON.parse(this.responseText);
 		    if(ref.type != "prime") // else it's priming and just a post
@@ -91,7 +100,7 @@ class Searcher{
 		    ref.done = true;
 		    ref.xhr = null;
 		}
-		if(this.status != 200 && this.status != 0){
+		else if(this.status != 200 && this.status != 0){
 		    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
 		    this.xhr = null; // I DONT KNOW WHAT TO DO HERE YET
 		}
@@ -99,7 +108,7 @@ class Searcher{
 	}(this);
 	this.xhr.open(this.type == "prime" ? "POST" : "GET", url); // local sync
 	this.xhr.withCredentials = true; // needed for auth cookies
-	if(this.offset == null)
+	if(this.type == "prime")
 	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
 	this.xhr.send(this.type == "prime" ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
     }
@@ -311,6 +320,12 @@ var app = new Vue(
 	{
             this.$el.style.display = 'block';
 	    document.getElementById("noSchedAlign").style.display = "none";
+	    //check CORS
+	    (new Searcher("test")).start(function(ignored){
+		document.getElementById("app").style.display = "none";
+		document.getElementById("loading").style.display = "none";
+		document.getElementById("cors").style.display = "";
+	    });
 	    (new Searcher("terms")).start(function(response){
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
