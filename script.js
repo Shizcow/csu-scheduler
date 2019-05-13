@@ -1,10 +1,10 @@
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - hold next button to fast generate courses
 //ADD - loading 0/xxx
-//BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
+//BUG - fix total credits calculation  - ECE 450 messes with it
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -264,9 +264,10 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 		return acc && cur_filter(tmp.value);
 	    }, true)){
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
-		    return !course.home.alts.concat(course.home).includes(app.courses[app.course]) // remove pending
-		}
-									    )}); // we need to do this here so it updates the url dynamically
+		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
+			return acc.concat(cur); // where cur is a typePack
+		    }, []).includes(app.courses[app.course]) // remove pending selection
+		})}); // we need to do this here so it updates the url dynamically
             }
 	}
 	var data = this.data[i];
@@ -513,7 +514,9 @@ var app = new Vue(
 		    course.courseTitle.toLowerCase().indexOf(search) > -1;
 		if(this.mode == "Automatic"){
 		    if(this.selected.reduce(function(acc, course){
-			return course ? acc.concat([course.home].concat(course.home.alts).concat(course.home.labs)) : acc;
+			return course ? acc.concat(course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
+			    return acc.concat(cur); // where cur is a typePack
+			}, [])) : acc;
 		    }, []).includes(course))
 			return false;
 		}
@@ -539,8 +542,8 @@ var app = new Vue(
 		    return check_course == course_alts;
 		return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
 	    },
-	    // grab the course, and pair it with any labs if available (and in auto). Determines hover style
-	    autoAndLabs: function(check_course){ // pretty much just fixes a render bug
+	    // grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
+	    autoAndLabs: function(check_course){
 		if(check_course == null)
 		    return []; // if there's one or zero, we don't even need to check
 		if(this.mode == "Manual")
