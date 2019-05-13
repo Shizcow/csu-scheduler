@@ -4,6 +4,7 @@
 //BUG - Fall 2018 - ECE 450 - dupe lab
 //ADD - older terms
 //ADD - notes that can be saved with schedules
+//ADD - dark theme
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -16,32 +17,40 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
-    return courses.reduce(function(acc, cur){
-	if(acc.length > 0){
-	    if(acc[acc.length-1].subjectCourse == cur.subjectCourse && (cur.scheduleTypeDescription == "Laboratory" || cur.scheduleTypeDescription == "Recitation")){ // Set up labs
-		var i = acc.length-1;
-		for(; !acc[i].labs; --i); // back to home
-		cur.home = acc[i];
-		acc[i].labs = acc[i].labs.concat(cur);
-	    } else if(acc[acc.length-1].subjectCourse == cur.subjectCourse){ // alt
-		var i = acc.length-1;
-		for(; !acc[i].alts; --i); // back to home
-		cur.home = acc[i];
-		acc[i].alts = acc[i].alts.concat(cur);
-	    } else {
-		cur.alts = [];
-		cur.labs = [];
-		cur.home = cur;
-	    }
-	    return acc.concat(cur);
-	} else {
-	    cur.alts = [];
-	    cur.labs = [];
-	    cur.home = cur;
-	    return [cur];
+    return courses.reduce(function(acc, cur){ // first collect all courses into lists of same subjectCourse (ECE101)
+	if(acc.length > 0){ // this is done in case courses are stored in a weird order
+	    if(acc[acc.length-1][0].subjectCourse == cur.subjectCourse) // compare to previous packet
+		acc[acc.length-1].push(cur); // push to last packet where it's the same
+	    else
+		acc.push([cur]); // or set up a new packet
+	    return acc;
+	} else { // set up the first one
+	    return [[cur]];
 	}
     }, [])
-	.map(function(course, i){
+	.map(function(packet){ // process each packet
+	    //the processing goes as follows - one of each type of scheduleTypeDescription needs to be applied
+	    //this can be one Lecture, one Lab, and one Recitation
+	    //or, in cases like ECE 450, one lab (no Lectures)
+	    //in more exotic cases, I'm really just waiting for edge cases to pop up ¯\_(ツ)_/¯
+	    //alts show up in the form of alts:[typePacks:[courses...]...]
+	    //automatic mode will only look at alts, and pick one from each type - won't look at main course
+	    packet[0].home = packet[0];
+	    packet[0].alts = [[packet[0]]]; // set up first one
+	    for(var i=1; i<packet.length; ++i){ // start at the second one
+		packet[i].home = packet[0]; // set the home - used for referencing alts
+		var foundIndex = packet[0].alts.findIndex(typePack => typePack[0].scheduleTypeDescription == packet[i].scheduleTypeDescription);
+		if(foundIndex > -1) // there exists a typePack in alts which has the same type as packet[i]
+		    packet[0].alts[foundIndex].push(packet[i]); // add to revalent typePack
+		else // the type of packet[i] is new to typePack
+		    packet[0].alts.push([packet[i]]); // add as a new typePack
+	    }
+	    return packet;
+	})
+	.reduce(function(acc, cur){ // then unwrap packets into a big course list
+	    return acc.concat(cur); // [prev...] + ...[packet contents] = [prev..., packet contents]
+	}, [])
+	.map(function(course, i){ // and add indices
 	    course.index = i;
 	    return course
 	});
@@ -569,31 +578,18 @@ var app = new Vue(
 		    document.getElementById("selectBox").value = this.course.toString();
 		}
 		this.course_list_selection = 0; // Reset on each new sched gen
-		appData.courses_generator = new Lazy(this.cartesianProduct(courses.reduce(function(acc, course){
-		    var prev_packs = acc.filter(pack => pack[0].home == course.home); // populated with any packs which course is a part of
-		    if(prev_packs.length){ // course is either an alt or a lab of a previous course
-			var comp_packs = prev_packs.filter(prev_pack => prev_pack.includes(course)); // all the pack(s) that are labs and not alts
-			if(comp_packs.length){ // course is a lab of a previous
-			    comp_packs.forEach(function(comp_pack){
-				acc = acc.filter(pack => pack[0] != comp_pack[0]); // remove the old lab pack(s)
-			    });
-			    acc.push([course].concat(course.home.labs.filter(c => c!=course))); // and replace with the new ones, w/ course first this time
-			}
-			// else it's an alt. Ignore for duplicate's sake
-		    } else { // course is brand new
-			acc.push(course.home.alts.filter(c => c!=course)); // add alts (minus active)
-			if(!course.home.labs.length){
-			    acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);
-			} else { // need to add labs manually
-			    if(course.home.labs.includes(course)){
-				acc[acc.length-1] = [course.home].concat(acc[acc.length-1]);
-				acc.push([course].concat(course.home.labs.filter(c => c!=course)));
-			    } else {
-				acc[acc.length-1] = (course == course.home ? [course] : [course, course.home]).concat(acc[acc.length-1]);	
-				acc.push(course.home.labs);		    
-			    }
-			}
-		    }
+		appData.courses_generator = new Lazy(this.cartesianProduct(this.removeDuplicatesBy(course => course.home, courses).reduce(function(acc, course){ // expands courses into all alt lists
+		    course.home.alts.forEach(function(typePack){ // move in every typePack
+			//first, we need to check if we need to move any courses to the front of their typePack
+			//this makes auto<->manual switches behave as expected
+			courses.forEach(function(compareCourse){
+			    if(typePack.includes(compareCourse)){
+				typePack = typePack.filter(c => c!=compareCourse); // remove course
+				typePack.unshift(compareCourse); // then re-add it to front
+			    }	
+			})
+			acc.push(typePack);
+		    });
 		    return acc;
 		}, []))).filter(function(schedule){
 		    return !schedule.filter(course => !course.seatsAvailable && !app.closed).length;
