@@ -850,13 +850,13 @@ var app = new Vue(
                     delete schedules[this.currentstorage];
                     localStorage.setItem('schedules', JSON.stringify(schedules));
                     this.localStorage = schedules;
-                    this.clear();
+                    this.clear(true);
 		    this.updateSaved();
 		    this.fillSchedule();
 		}
             },
-            clear: function() {
-		if(this.changed())
+            clear: function(bypass = false) {
+		if(!bypass && this.changed())
                     if (!window.confirm("Are you sure you want to discard your changes?"))
 			return false;
 		document.getElementById("selectBox").value = "";
@@ -883,6 +883,11 @@ var app = new Vue(
             },
             changedTerm: function(loadHash = false, referrer = null)
             {
+		if(!loadHash && referrer && this.changed())
+                    if (!window.confirm("Are you sure you want to discard your changes?")){
+			document.getElementById("termSelect").value = this.term;
+			return false;
+		    }
 		if(this.currentstorage && loadHash !== true)
 		    if(!this.clear()){ // user declined - fix selection box then return
 			document.getElementById("termSelect").value = this.term;

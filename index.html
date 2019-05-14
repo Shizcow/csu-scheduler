@@ -14,7 +14,7 @@
       I can see you're locked out of the CSU systems. Unfortunately, there isn't anything I the developer can do about this. This is because CSU won't recognize this website as friendly.<br>
       <b>In order to use this tool, please download and use a CORS-everywhere extension</b> and refresh. This intercepts data coming from CSU's servers and makes your browser think CSU trusts us, so that your browser doesn't lock you out. Here are a few I recommend:<br>
       <a href="https://addons.mozilla.org/en-US/firefox/addon/cors-everywhere/">Firefox</a><br>
-      <a href="https://chrome.google.com/webstore/detail/allow-control-allow-origi/nlfbmbojpeacfghkpbjhddihlkkiljbi?hl=en">Chrome</a><br>
+      For Chrome, it's a bit more envolved. See <a href="https://www.codevoila.com/post/75/how-to-disable-same-origin-policy-in-chrome">this</a> for more details.
       <br>
       NOTE: it is technically unsafe to browse with CORS-everywhere enabled. Please, disable it when not using this tool.<br>
       <b>If you'd like to use this tool without needing an extension, go bother CSU (I'll get an email later) and tell them you like this tool and want to see it used freeley.</b>
@@ -70,10 +70,11 @@
 	<br>
         <input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(appData.courses[app.course])).get(0); app.fillSchedule();"> Automatic
 	<br>
-	<div id="autoBar" style="display: none;">
+	<div id="autoBar" style="display: none; width: 100%;">
 	  <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
 	  <button id="nextButton" style="width: 30%;float: right;"></button>
 	</div>
+	<br>
 	<span class="title">Term</span>
         <select onchange="app.changedTerm(false, this)" id="termSelect">
 	  <option value="" selected hidden disabled></option>
