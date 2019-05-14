@@ -102,7 +102,7 @@ class Searcher{
 	    openMethod = "POST";
 	    break;
 	case "test":
-	    url = server();
+	    url = server("");
 	    break;
 	default:
 	    console.error("Invalid type in Searcher");
