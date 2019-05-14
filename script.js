@@ -1,11 +1,7 @@
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
-//ADD - hold next button to fast generate courses
-//ADD - loading 0/xxx
-//ADD - older terms
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
-//BUG - when discarding changes, courses_list_selection needs to be refreshed and updated graphically
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -79,18 +75,25 @@ class Searcher{
 	if(this.xhr || this.done) // don't restart if not needed
 	    return;
 	var url = "";
+	var sendData = null;
+	var openMethod = "GET";
 	switch(this.type){
 	case "prime":
 	    url = server("term/search?mode=search");
+	    sendData = "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
+	    openMethod = "POST";
 	    break;
 	case "courses":
 	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
 	    break;
 	case "terms":
-	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566");
+	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566");
 	    break;
 	case "desc":
-	    url = server("searchResults/getCourseDescription/?term="+ this.term + "&courseReferenceNumber=" + this.offset);
+	    url = server("searchResults/getCourseDescription");
+	    sendData = "term=" + this.term + "&courseReferenceNumber=" + this.offset;
+	    openMethod = "POST";
+	    break;
 	case "test":
 	    url = server();
 	    break;
@@ -108,7 +111,7 @@ class Searcher{
 		if(ref.type == "test")
 		    return; // forget about everything else if it's just a test
 		if (this.readyState === 4 && this.status === 200){
-		    var response = ref.type == "desc" ? this.responseText : JSON.parse(this.responseText);
+		    var response = ref.type == "desc" ? this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim() : JSON.parse(this.responseText);
 		    if(ref.type != "prime") // else it's priming and just a post
 			ref.data = response.data;
 		    if(callback)
@@ -122,11 +125,11 @@ class Searcher{
 		}
 	    }
 	}(this);
-	this.xhr.open(this.type == "prime" ? "POST" : "GET", url); // local sync
+	this.xhr.open(openMethod, url); // local sync
 	this.xhr.withCredentials = true; // needed for auth cookies
-	if(this.type == "prime")
-	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
-	this.xhr.send(this.type == "prime" ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
+	if(openMethod == "POST")
+	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data - posts and descriptions
+	this.xhr.send(sendData);
     }
     stop(){
 	if(!this.xhr || this.done) // can't stop what's not there to stop
@@ -175,14 +178,24 @@ class TermManager{
 	var callback = function(TermManager_ref){ // set up callback, actual execution is after definition
 	    return function(ignored){ // this one is just needed to get cookies in line
 		if(TermManager_ref.data.length){ // we've already made some requests - just finish them
+		    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded so far
+			return acc + cur.data.length; // by summing them all up
+		    }, 0);
+		    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
+		    app.updatePercent();
 		    TermManager_ref.headRequest = null;
 		    TermManager_ref.requests.forEach(function(request){
-			request.start(function(responseData){
+			request.start(function(responseData){ // individual callbacks
 			    TermManager_ref.data.push(responseData); // add response to data...
 			    // and check if we're done
-			    if(TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
+			    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
 				return acc + cur.data.length; // by summing them all up
-			    }, 0) >= test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+			    }, 0);
+			    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
+			    app.updatePercent();
+			    if(loadedAmount >= test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+				app.percent += "\nProcessng courses...";
+				app.updatePercent();
 				// if so, process data and mark term complete
 				TermManager_ref.data = postProcessCourses(
 				    TermManager_ref.data // take fufilled requests
@@ -200,6 +213,8 @@ class TermManager{
 			});
 		    });
 		} else { // first time requesting - do a small request first, then fill up
+		    app.percent = "0/?";
+		    app.updatePercent();
 		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
 		    TermManager_ref.headRequest.start(function(responseData){
 			TermManager_ref.headRequest = null; // head requests are all done
@@ -207,6 +222,8 @@ class TermManager{
 			var min = responseData.data.length; // how many actually loaded with the first request
 			//NOTE: Yes, it's not always 10. The server seems to always honor larger requests (100+), but doesn't always give us the amount we ask for with smaller queries, so we have to check this
 			var max = responseData.totalCount; // how many courses are in the database
+			app.percent = min.toString() + "/" + max.toString();
+			app.updatePercent();
 			let offsets = []; // stores offset values for each subsequent required request
 			for(var i = min; i<test_percent_cap*max/100; i+=chunk)//NOTE: previously was using test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
 			    offsets.push(i); // fill offsets with integer values starting at min, offset by chunk size, and going up to only what we need to request
@@ -273,7 +290,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
 		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
 			return acc.concat(cur); // where cur is a typePack
-		    }, []).includes(app.courses[app.course]) // remove pending selection
+		    }, []).includes(appData.courses[app.course]) // remove pending selection
 		})}); // we need to do this here so it updates the url dynamically
             }
 	}
@@ -303,6 +320,7 @@ window.addEventListener("keydown", function (e) { // remove app.course and re-re
 
 var appData = {
     courses: [],
+    courses_generator: null,
     termCacher: new TermCacher()
 };
 
@@ -324,7 +342,6 @@ var app = new Vue(
 	    courses_list: [],
 	    course_list_selection: 0,
 	    savedCourseGenerator: "0",
-	    courses_generator: null,
             selected: [],
             closed: false,
             showExport: false,
@@ -359,6 +376,33 @@ var app = new Vue(
 		    app.localStorage = JSON.parse(localStorage.schedules);
 		app.updateSaved();
 	    });
+
+
+	    // set up genNext / loop button longpress controls
+	    var button = document.querySelector("#nextButton");
+	    // Listening for the mouse and touch events    
+	    button.addEventListener("mousedown", pressingDown, false);
+	    button.addEventListener("mouseup", notPressingDown, false);
+	    button.addEventListener("mouseleave", notPressingDown, false);
+	    
+	    button.addEventListener("touchstart", pressingDown, false);
+	    button.addEventListener("touchend", notPressingDown, false);
+
+	    var waiter = null;
+	    function pressingDown(e) {
+		app.genNext(button);
+		waiter = setTimeout(doSomething, 750);
+	    }
+	    
+	    function notPressingDown(e) {
+		clearTimeout(waiter);
+		waiter = null;
+	    }
+	    
+	    function doSomething(e) {
+		app.genNext(button);
+		waiter = setTimeout(doSomething, 50);
+	    }
 	},
 	methods:
 	{
@@ -516,24 +560,24 @@ var app = new Vue(
             filterSearch: function(course, search) {
 		if(this.selected.indexOf(course) !== -1) return false;
 		if (!this.closed && !course.seatsAvailable) return false;
-
-		if(search)
-                    return (course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
-		    course.courseTitle.toLowerCase().indexOf(search) > -1;
+		
+		if(search && !((course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
+			      course.courseTitle.toLowerCase().indexOf(search) > -1)) // not found in search
+		    return false; // this is done first because it's faster than constructing alts list
+		
 		if(this.mode == "Automatic"){
-		    if(this.selected.reduce(function(acc, course){
-			return course ? acc.concat(course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
-			    return acc.concat(cur); // where cur is a typePack
-			}, [])) : acc;
-		    }, []).includes(course))
+		    if(course.home.alts.reduce(function(acc_list, cur){ // look all of course alts
+			return acc_list.concat(cur); // where cur is a typePack
+		    }, []).some(alt => this.selected.includes(alt))) // and check if any overlap with selected
 			return false;
 		}
+		
 		return true;
             },
             fetchDescription: function(course) {
-		if(!course.description) {
+		if(!course.description){
 		    (new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
-			Vue.set(course, 'description', response.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
+			Vue.set(course, 'description', response);
 		    });
 		}
 		this.description = course;
@@ -589,6 +633,9 @@ var app = new Vue(
 		    document.getElementById("selectBox").value = this.course.toString();
 		}
 		this.course_list_selection = 0; // Reset on each new sched gen
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0; // and reset render
 		appData.courses_generator = new Lazy(this.cartesianProduct(this.removeDuplicatesBy(course => course.home, courses).reduce(function(acc, course){ // expands courses into all alt lists
 		    course.home.alts.forEach(function(typePack){ // move in every typePack
 			//first, we need to check if we need to move any courses to the front of their typePack
@@ -806,6 +853,12 @@ var app = new Vue(
                     if (!window.confirm("Are you sure you want to discard your changes?"))
 			return false;
 		document.getElementById("selectBox").value = "";
+		this.course_list_selection = 0;
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0;
+		appData.courses_generator = null;
+		this.savedCourseGenerator = "";
 		location.hash = "";
 		this.course = null;
 		this.selected = [];
@@ -840,6 +893,9 @@ var app = new Vue(
 		document.getElementById("searchBox").value = "";
 		this.selected = [];
 		this.course_list_selection = 0;
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0;
 		appData.courses_generator = null;
 		this.savedCourseGenerator = "";
 		this.fillSchedule(); // show empty while loading
@@ -1008,6 +1064,9 @@ var app = new Vue(
 		var autoBar = document.getElementById("autoBar");
 		autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(appData.courses[this.course])[0] != null ? "inline-block" : "none";
 		document.getElementById('nextButton').innerText='Next';
+	    },
+	    updatePercent: function(){
+		document.getElementById("loadingCourses").innerText = "Loading Courses... " + this.percent;
 	    },
 	    dayUpdate: function(){
 		var test = false;

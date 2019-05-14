@@ -72,7 +72,7 @@
 	<br>
 	<div id="autoBar" style="display: none;">
 	  <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
-	  <button id="nextButton" onclick="app.genNext(this);" style="width: 30%;float: right;"></button>
+	  <button id="nextButton" onmousedown="app.genNext(this);" style="width: 30%;float: right;"></button>
 	</div>
 	<span class="title">Term</span>
         <select onchange="app.changedTerm(false, this)" id="termSelect">
