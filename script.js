@@ -15,12 +15,19 @@ var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegi
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
     return courses
-	.filter(function(course){ // step 0 - only deal with courses that can be shown on the board - will ask around about the "ghost courses" and why they are even there - example is MATH 369 "EX"
+	.filter(function(course){ // only deal with courses that can be shown on the board - will ask around about the "ghost courses" and why they are even there - example is MATH 369 "EX"
 	    return course.meetingsFaculty.reduce(function(acc, cur){
 		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur.meetingTime[_cur], false);
 	    }, false);
 	})
-	.reduce(function(acc, cur){ // first collect all courses into lists of same subjectCourse (ECE101)
+	.map(function(course){ // fix honors vs non-honors courses
+	    // this fixes a bug where autoConstruct would
+            // assume we want both normal and Honors courses like strict co-reqs (similar to Labs and Recs)
+	    if(course.scheduleTypeDescription.includes("Honors "))
+		course.scheduleTypeDescription = course.scheduleTypeDescription.split("Honors ")[1];
+	    return course;
+	})
+	.reduce(function(acc, cur){ // collect all courses into lists of same subjectCourse (ECE101)
 	    if(acc.length > 0){ // this is done in case courses are stored in a weird order
 		if(acc[acc.length-1][0].subjectCourse == cur.subjectCourse) // compare to previous packet
 		    acc[acc.length-1].push(cur); // push to last packet where it's the same
@@ -53,9 +60,9 @@ function postProcessCourses(courses){ // post process in preparation for automat
 	.reduce(function(acc, cur){ // then unwrap packets into a big course list
 	    return acc.concat(cur); // [prev...] + ...[packet contents] = [prev..., packet contents]
 	}, [])
-	.map(function(course, i){ // and add indices
+	.map(function(course, i){ // and add indices and fix scheduleTypeDescriptors
 	    course.index = i;
-	    return course
+	    return course;
 	});
 }
 
