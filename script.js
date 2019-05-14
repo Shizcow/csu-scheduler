@@ -5,7 +5,6 @@
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
-//BUG - when discarding changes, courses_list_selection needs to be refreshed and updated graphically
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -589,6 +588,9 @@ var app = new Vue(
 		    document.getElementById("selectBox").value = this.course.toString();
 		}
 		this.course_list_selection = 0; // Reset on each new sched gen
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0; // and reset render
 		appData.courses_generator = new Lazy(this.cartesianProduct(this.removeDuplicatesBy(course => course.home, courses).reduce(function(acc, course){ // expands courses into all alt lists
 		    course.home.alts.forEach(function(typePack){ // move in every typePack
 			//first, we need to check if we need to move any courses to the front of their typePack
@@ -806,6 +808,12 @@ var app = new Vue(
                     if (!window.confirm("Are you sure you want to discard your changes?"))
 			return false;
 		document.getElementById("selectBox").value = "";
+		this.course_list_selection = 0;
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0;
+		appData.courses_generator = null;
+		this.savedCourseGenerator = "";
 		location.hash = "";
 		this.course = null;
 		this.selected = [];
@@ -840,6 +848,9 @@ var app = new Vue(
 		document.getElementById("searchBox").value = "";
 		this.selected = [];
 		this.course_list_selection = 0;
+		var range = document.getElementById('Range');
+		range.max = 0;
+		range.value = 0;
 		appData.courses_generator = null;
 		this.savedCourseGenerator = "";
 		this.fillSchedule(); // show empty while loading
