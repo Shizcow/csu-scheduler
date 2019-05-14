@@ -1,4 +1,3 @@
-//ADD - loading 0/xxx
 //ADD - older terms
 
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
@@ -181,14 +180,24 @@ class TermManager{
 	var callback = function(TermManager_ref){ // set up callback, actual execution is after definition
 	    return function(ignored){ // this one is just needed to get cookies in line
 		if(TermManager_ref.data.length){ // we've already made some requests - just finish them
+		    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded so far
+			return acc + cur.data.length; // by summing them all up
+		    }, 0);
+		    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
+		    app.updatePercent();
 		    TermManager_ref.headRequest = null;
 		    TermManager_ref.requests.forEach(function(request){
-			request.start(function(responseData){
+			request.start(function(responseData){ // individual callbacks
 			    TermManager_ref.data.push(responseData); // add response to data...
 			    // and check if we're done
-			    if(TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
+			    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
 				return acc + cur.data.length; // by summing them all up
-			    }, 0) >= test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+			    }, 0);
+			    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
+			    app.updatePercent();
+			    if(loadedAmount >= test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+				app.percent += "\nProcessng courses...";
+				app.updatePercent();
 				// if so, process data and mark term complete
 				TermManager_ref.data = postProcessCourses(
 				    TermManager_ref.data // take fufilled requests
@@ -206,6 +215,8 @@ class TermManager{
 			});
 		    });
 		} else { // first time requesting - do a small request first, then fill up
+		    app.percent = "0/?";
+		    app.updatePercent();
 		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
 		    TermManager_ref.headRequest.start(function(responseData){
 			TermManager_ref.headRequest = null; // head requests are all done
@@ -213,6 +224,8 @@ class TermManager{
 			var min = responseData.data.length; // how many actually loaded with the first request
 			//NOTE: Yes, it's not always 10. The server seems to always honor larger requests (100+), but doesn't always give us the amount we ask for with smaller queries, so we have to check this
 			var max = responseData.totalCount; // how many courses are in the database
+			app.percent = min.toString() + "/" + max.toString();
+			app.updatePercent();
 			let offsets = []; // stores offset values for each subsequent required request
 			for(var i = min; i<test_percent_cap*max/100; i+=chunk)//NOTE: previously was using test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
 			    offsets.push(i); // fill offsets with integer values starting at min, offset by chunk size, and going up to only what we need to request
@@ -1053,6 +1066,9 @@ var app = new Vue(
 		var autoBar = document.getElementById("autoBar");
 		autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(appData.courses[this.course])[0] != null ? "inline-block" : "none";
 		document.getElementById('nextButton').innerText='Next';
+	    },
+	    updatePercent: function(){
+		document.getElementById("loadingCourses").innerText = "Loading Courses... " + this.percent;
 	    },
 	    dayUpdate: function(){
 		var test = false;
