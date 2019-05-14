@@ -1,7 +1,8 @@
-//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - hold next button to fast generate courses
 //ADD - loading 0/xxx
 //ADD - older terms
+
+//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
@@ -78,9 +79,13 @@ class Searcher{
 	if(this.xhr || this.done) // don't restart if not needed
 	    return;
 	var url = "";
+	var sendData = null;
+	var openMethod = "GET";
 	switch(this.type){
 	case "prime":
 	    url = server("term/search?mode=search");
+	    sendData = "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
+	    openMethod = "POST";
 	    break;
 	case "courses":
 	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
@@ -89,7 +94,10 @@ class Searcher{
 	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566");
 	    break;
 	case "desc":
-	    url = server("searchResults/getCourseDescription/?term="+ this.term + "&courseReferenceNumber=" + this.offset);
+	    url = server("searchResults/getCourseDescription");
+	    sendData = "term=" + this.term + "&courseReferenceNumber=" + this.offset;
+	    openMethod = "POST";
+	    break;
 	case "test":
 	    url = server();
 	    break;
@@ -107,7 +115,7 @@ class Searcher{
 		if(ref.type == "test")
 		    return; // forget about everything else if it's just a test
 		if (this.readyState === 4 && this.status === 200){
-		    var response = ref.type == "desc" ? this.responseText : JSON.parse(this.responseText);
+		    var response = ref.type == "desc" ? this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim() : JSON.parse(this.responseText);
 		    if(ref.type != "prime") // else it's priming and just a post
 			ref.data = response.data;
 		    if(callback)
@@ -121,11 +129,11 @@ class Searcher{
 		}
 	    }
 	}(this);
-	this.xhr.open(this.type == "prime" ? "POST" : "GET", url); // local sync
+	this.xhr.open(openMethod, url); // local sync
 	this.xhr.withCredentials = true; // needed for auth cookies
-	if(this.type == "prime")
-	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data
-	this.xhr.send(this.type == "prime" ? "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=" : null);
+	if(openMethod == "POST")
+	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data - posts and descriptions
+	this.xhr.send(sendData);
     }
     stop(){
 	if(!this.xhr || this.done) // can't stop what's not there to stop
@@ -530,9 +538,9 @@ var app = new Vue(
 		return true;
             },
             fetchDescription: function(course) {
-		if(!course.description) {
+		if(!course.description){
 		    (new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
-			Vue.set(course, 'description', response.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim());
+			Vue.set(course, 'description', response);
 		    });
 		}
 		this.description = course;
