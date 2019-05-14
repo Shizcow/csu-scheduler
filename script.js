@@ -1,5 +1,3 @@
-//ADD - older terms
-
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
@@ -89,7 +87,7 @@ class Searcher{
 	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
 	    break;
 	case "terms":
-	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=10&_=1554348528566");
+	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566");
 	    break;
 	case "desc":
 	    url = server("searchResults/getCourseDescription");
