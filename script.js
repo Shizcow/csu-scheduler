@@ -1,4 +1,3 @@
-//ADD - hold next button to fast generate courses
 //ADD - loading 0/xxx
 //ADD - older terms
 
@@ -280,7 +279,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
 		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
 			return acc.concat(cur); // where cur is a typePack
-		    }, []).includes(app.courses[app.course]) // remove pending selection
+		    }, []).includes(appData.courses[app.course]) // remove pending selection
 		})}); // we need to do this here so it updates the url dynamically
             }
 	}
@@ -310,6 +309,7 @@ window.addEventListener("keydown", function (e) { // remove app.course and re-re
 
 var appData = {
     courses: [],
+    courses_generator: null,
     termCacher: new TermCacher()
 };
 
@@ -331,7 +331,6 @@ var app = new Vue(
 	    courses_list: [],
 	    course_list_selection: 0,
 	    savedCourseGenerator: "0",
-	    courses_generator: null,
             selected: [],
             closed: false,
             showExport: false,
@@ -366,6 +365,33 @@ var app = new Vue(
 		    app.localStorage = JSON.parse(localStorage.schedules);
 		app.updateSaved();
 	    });
+
+
+	    // set up genNext / loop button longpress controls
+	    var button = document.querySelector("#nextButton");
+	    // Listening for the mouse and touch events    
+	    button.addEventListener("mousedown", pressingDown, false);
+	    button.addEventListener("mouseup", notPressingDown, false);
+	    button.addEventListener("mouseleave", notPressingDown, false);
+	    
+	    button.addEventListener("touchstart", pressingDown, false);
+	    button.addEventListener("touchend", notPressingDown, false);
+
+	    var waiter = null;
+	    function pressingDown(e) {
+		app.genNext(button);
+		waiter = setTimeout(doSomething, 750);
+	    }
+	    
+	    function notPressingDown(e) {
+		clearTimeout(waiter);
+		waiter = null;
+	    }
+	    
+	    function doSomething(e) {
+		app.genNext(button);
+		waiter = setTimeout(doSomething, 50);
+	    }
 	},
 	methods:
 	{
@@ -523,18 +549,18 @@ var app = new Vue(
             filterSearch: function(course, search) {
 		if(this.selected.indexOf(course) !== -1) return false;
 		if (!this.closed && !course.seatsAvailable) return false;
-
-		if(search)
-                    return (course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
-		    course.courseTitle.toLowerCase().indexOf(search) > -1;
+		
+		if(search && !((course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
+			      course.courseTitle.toLowerCase().indexOf(search) > -1)) // not found in search
+		    return false; // this is done first because it's faster than constructing alts list
+		
 		if(this.mode == "Automatic"){
-		    if(this.selected.reduce(function(acc, course){
-			return course ? acc.concat(course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
-			    return acc.concat(cur); // where cur is a typePack
-			}, [])) : acc;
-		    }, []).includes(course))
+		    if(course.home.alts.reduce(function(acc_list, cur){ // look all of course alts
+			return acc_list.concat(cur); // where cur is a typePack
+		    }, []).some(alt => this.selected.includes(alt))) // and check if any overlap with selected
 			return false;
 		}
+		
 		return true;
             },
             fetchDescription: function(course) {
