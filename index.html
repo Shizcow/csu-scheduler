@@ -149,11 +149,11 @@
 	</div>
       </div>
       
-      <div class="description" name="description" v-if="description" @click="($event.target.attributes.name == undefined) ? null : description = null">
+      <div id="description" class="description" name="description" onclick="if(window.event.target === this){this.style.display = 'none';}" style="display:none">
 	<div class="wrapper">
-	  <strong>{{ description.subject }} {{ description.courseNumber }}:</strong><br><br>
-	  <span v-if="!description.description">Fetching description...</span>
-	  <span v-else style="white-space: pre-wrap;">{{ description.description }}</span>
+	  <strong id="description-strong"></strong><br><br>
+	  <span id="description-fetch">Fetching description...</span>
+	  <span id="description-show" style="white-space: pre-wrap;"></span>
 	</div>
       </div>
     </div>

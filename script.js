@@ -352,7 +352,6 @@ var app = new Vue(
 	    savedCourseGenerator: "0",
             selected: [],
             closed: false,
-            description: false,
 	    loading: false,
 	    percent: "",
             safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1
@@ -485,7 +484,9 @@ var app = new Vue(
 			div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			var link = document.createElement("a");
 			link.className = "link";
-			link.onclick = function(){app.fetchDescription(course);};
+			link.onclick = function(c){ // we need to close this in, else it looks at the last
+			    return function(){app.fetchDescription(c);}; // value of course to be updated
+			}(course);
 			link.innerText = "Description";
 			div.appendChild(link)
 			div.setAttribute("data-index", course.index);
@@ -585,13 +586,24 @@ var app = new Vue(
 		return true;
             },
             fetchDescription: function(course) {
-		console.log(course.courseNumber);
+		document.getElementById("description-fetch").style.display = "";
+		document.getElementById("description-show").style.display = "none";
+		document.getElementById("description").style.display = "";
+		document.getElementById("description-strong").innerText = course.subject + " " + course.courseNumber + ":";
+		var updater = function(text){
+		    var show = document.getElementById("description-show");
+		    show.innerText = text;
+		    show.style.display = "";
+		    document.getElementById("description-fetch").style.display = "none";
+		}
 		if(!course.description){
 		    (new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
-			Vue.set(course, 'description', response);
+			updater(response);
+			course.description = response;
 		    });
+		} else {
+		    updater(course.description);
 		}
-		this.description = course;
             },
 	    autoFilter: function(courses, referrer){ // remove all consecutive duplicates - only in automatic mode
 		this.mode = referrer ? referrer.value : this.mode;
