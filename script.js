@@ -449,7 +449,9 @@ var app = new Vue(
 			    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
 			    var link = document.createElement("a");
 			    link.className = "link";
-			    link.onclick = function(){app.fetchDescription(course);};
+			    link.onclick = function(c){ // we need to close this in, else it looks at the last
+				return function(){app.fetchDescription(c);}; // value of course to be updated
+			    }(course);
 			    link.innerText = "Description";
 			    div.appendChild(link)
 			    div.setAttribute("data-index", course.index);
@@ -583,6 +585,7 @@ var app = new Vue(
 		return true;
             },
             fetchDescription: function(course) {
+		console.log(course.courseNumber);
 		if(!course.description){
 		    (new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
 			Vue.set(course, 'description', response);
