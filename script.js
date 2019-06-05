@@ -4,7 +4,7 @@
 //ADD - do something with refreshes on active plans?
 //ADD - click-drag rearange saves
 
-let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
