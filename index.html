@@ -119,34 +119,36 @@
 	<div id="saves">
 	</div>
 	<div class="floatRight">
-	  <div v-if="changed() && selected.length" class="option" @click="save">
+	  <div id="marker-save" class="option" onclick="app.save();" style="display:none">
 	    Save
 	  </div>
-	  <div v-if="changed() && currentstorage && selected.length" class="option" @click="discard">
+	  <div id="marker-discard" class="option" onclick="app.discard();" style="display:none">
 	    Discard Changes
 	  </div>
-	  <div v-if="currentstorage" class="option" @click="saveNew">
+	  <div id="marker-saveAsNew" class="option" onclick="app.saveNew();" style="display:none">
 	    Save as New
 	  </div>
-	  <div v-if="currentstorage" class="option" @click="deleteSchedule">
+	  <div id="marker-delete" class="option" onclick="app.deleteSchedule();" style="display:none">
 	    Delete
 	  </div>
-	  <div v-if="selected.length" class="option" @click="showExport = true">
+	  <div id="marker-export" class="option" onclick="app.showExport();" style="display:none">
 	    Export
 	  </div>
-	  <div v-if="selected.length" class="option" @click="clear">
+	  <div id="marker-new" class="option" onclick="app.clear();" style="display:none">
 	    New
 	  </div>
 	</div>
       </div>
-      <div class="export" name="export" v-if="showExport" @click="showExport = $event.target.attributes.name == undefined">
+      
+      <div id="export" class="export" name="export" onclick="if(window.event.target === this){this.style.display = 'none';}" style="display:none">
 	<div class="wrapper">
 	  Share link:<br>
-	  <input type="text" :value="'file:///home/notroot/Desktop/csuscheduler/index.html' + getHash()"><br><br>
+	  <input type="text" id="export-link"><br><br>
 	  Course List:<br>
-	  <textarea v-text="selected.map(function(c) { return c.courseReferenceNumber + ': ' + c.subject + ' ' + c.courseNumber }).join('\n')"></textarea>
+	  <textarea id="export-text"></textarea>
 	</div>
       </div>
+      
       <div class="description" name="description" v-if="description" @click="($event.target.attributes.name == undefined) ? null : description = null">
 	<div class="wrapper">
 	  <strong>{{ description.subject }} {{ description.courseNumber }}:</strong><br><br>

@@ -2,8 +2,9 @@
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
+//ADD - click-drag rearange saves
 
-let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 1; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -351,7 +352,6 @@ var app = new Vue(
 	    savedCourseGenerator: "0",
             selected: [],
             closed: false,
-            showExport: false,
             description: false,
 	    loading: false,
 	    percent: "",
@@ -539,6 +539,7 @@ var app = new Vue(
 		}
 		this.dayUpdate();
 		this.autoBar();
+		this.saveMarker();
 
 		//Deal with the "you can deselect" thing
 		document.getElementById("escTip").style.display = this.course != null && (this.closed || appData.courses[this.course].seatsAvailable) ? "" : "none";
@@ -748,6 +749,14 @@ var app = new Vue(
             getHash: function() {
 		return location.hash;
             },
+	    saveMarker: function() {
+		document.getElementById("marker-save").style.display = this.changed() && this.selected.length ? "" : "none";
+		document.getElementById("marker-discard").style.display = this.changed() && this.currentstorage && this.selected.length ? "" : "none";
+		document.getElementById("marker-saveAsNew").style.display = this.currentstorage ? "" : "none";
+		document.getElementById("marker-delete").style.display = this.currentstorage ? "" : "none";
+		document.getElementById("marker-export").style.display = this.selected.length ? "" : "none";
+		document.getElementById("marker-new").style.display = this.selected.length ? "" : "none";
+	    },
 	    updateSaved: function() {
 		if(!this.localStorage)
 		    return;
@@ -794,6 +803,7 @@ var app = new Vue(
 		    else
 			option.classList.remove("selected");
 		}
+		this.saveMarker();
 	    },
             save: function() {
 		if(!this.currentstorage) {
@@ -881,6 +891,11 @@ var app = new Vue(
 		    return course && (course.meetingsFaculty.map(el => el.meetingTime.building == "ONLINE").reduce((a, b) => (a || b), false));
 		}) : [];
             },
+	    showExport: function(){
+		document.getElementById("export").style.display = "";
+		document.getElementById("export-link").value = location.href;
+		document.getElementById("export-text").value = this.selected.map(function(c) { return c.courseReferenceNumber + ': ' + c.subject + ' ' + c.courseNumber }).join('\n');
+	    },
             changedTerm: function(loadHash = false, referrer = null)
             {
 		if(!loadHash && referrer && this.changed())
