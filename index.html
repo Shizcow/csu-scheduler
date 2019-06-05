@@ -46,7 +46,7 @@
           </thead>
           <tbody id="schedTbody">
 	    <!--
-            <tr v-once for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
+            <tr once for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
               <td text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
               <td for="day in daylist(true)" class="block">
                 <div class="wrapper">
@@ -94,14 +94,16 @@
           <span id="escTip" class="hint">*Press esc to cancel selection</span>
           
           <br><br>
-          
-          <span class="title">Total Credits:</span> {{ totalCredits() }}<br><br>
 
+	  <div>
+            <span class="title">Total Credits:</span>
+	    <span id="credits"></span><br><br>
+	  </div>
           <div id="webWrapper" style="display:none;">
             <span class="title">Web Classes</span>
             <div class="selectedList" id="web">
 	      <!-- autofilled in fillSchedule
-		  <div v-for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
+		  <div for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
 		    {data...}
 		  </div>
 		  -->

@@ -540,9 +540,11 @@ var app = new Vue(
 			}
 		    }();
 		}
-		this.dayUpdate();
+		
+		this.dayUpdate(); // and all the other stuff
 		this.autoBar();
 		this.saveMarker();
+		this.updateCredits();
 
 		//Deal with the "you can deselect" thing
 		document.getElementById("escTip").style.display = this.course != null && (this.closed || appData.courses[this.course].seatsAvailable) ? "" : "none";
@@ -764,6 +766,9 @@ var app = new Vue(
             getHash: function() {
 		return location.hash;
             },
+	    updateCredits: function() {
+		document.getElementById("credits").innerText = this.totalCredits();
+	    },
 	    saveMarker: function() {
 		document.getElementById("marker-save").style.display = this.changed() && this.selected.length ? "" : "none";
 		document.getElementById("marker-discard").style.display = this.changed() && this.currentstorage && this.selected.length ? "" : "none";
