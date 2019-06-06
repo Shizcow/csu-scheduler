@@ -811,6 +811,7 @@ var app =
 			for(var i = 0; i < wrapper.children.length; ++i)
 			    wrapper.children[i].classList.remove("selected");
 			reference.classList.add("selected");
+			app.saveMarker();
 		    }
 		}(options[i]);
 	    for(var i=0; i<options.length; ++i){
@@ -856,8 +857,8 @@ var app =
 		    this.loadHash();
                 }
 	    }
-	    this.fillSchedule();
 	    this.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
+	    this.fillSchedule();
 	    return true;
         },
         discard: function() {
@@ -952,13 +953,13 @@ var app =
 	    document.getElementById("loadingCourses").style.display = "";
 	    app.termCacher.push(this.term, function(_loadHash){ // NOTE: not sure if this needs a closure
 		return function(courses){
+		    app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 		    app.courses = courses;
 		    app.genDivs();
 		    if(_loadHash)
 			app.loadHash();
 		    app.fillSchedule();
 		    app.fillSearch();
-		    app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 		}
 	    }(loadHash));
 	},
