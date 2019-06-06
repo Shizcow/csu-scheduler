@@ -1,4 +1,4 @@
-//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
+2//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - notes that can be saved with schedules
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
@@ -111,10 +111,16 @@ class Searcher{
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
-		if(ref.type == "test" && this.readyState === 4 && this.status === 0){
+		if(ref.type == "test" && this.readyState === 4 && this.status === 0){ // test failed
 		    console.log("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
 		    if(callback)
-			callback(response);
+			callback(false);
+		    return;
+		}
+		if(ref.type == "test" && this.readyState === 4){ // test was successful
+		    if(callback)
+			callback(true);
+		    return;
 		}
 		if(ref.type == "test")
 		    return; // forget about everything else if it's just a test
@@ -351,10 +357,14 @@ var app =
 	{
 	    document.getElementById("noSchedAlign").style.display = "none";
 	    //check CORS
-	    (new Searcher("test")).start(function(ignored){
-		document.getElementById("app").style.display = "none";
-		document.getElementById("loading").style.display = "none";
-		document.getElementById("cors").style.display = "";
+	    (new Searcher("test")).start(function(success){
+		if(success){
+		    document.getElementById("loading").style.display = "none";
+		    document.getElementById("main").style.display = "";
+		} else {
+		    document.getElementById("loading").style.display = "none";
+		    document.getElementById("cors").style.display = "";
+		}
 	    });
 	    (new Searcher("terms")).start(function(response){
 		app.terms = response;
