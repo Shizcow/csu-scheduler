@@ -70,7 +70,7 @@
 	<br>
 	<input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();"> Automatic
 	<br>
-	<div id="autoBar" style="display: none; width: 100%;">
+	<div id="autoBar" style="display:none;" style="width: 100%;">
 	  <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
 	  <button id="nextButton" style="width: 30%;float: right;"></button>
 	</div>
@@ -102,7 +102,7 @@
 
 	  
           <span class="title">Notes:</span>
-	  <textarea id="notes" style="width:100%;resize:none;overflow:hidden;min-height:50px;" onkeyup="app.updateNotes(this);">
+	  <textarea id="notes" onkeyup="app.updateNotes(this);">
 
 	  </textarea>
 	  
@@ -128,28 +128,28 @@
 	<div id="saves">
 	</div>
 	<div class="floatRight">
-	  <div id="marker-save" class="option" onclick="app.save();" style="display:none">
+	  <div id="marker-save" class="option" style="display:none;" onclick="app.save();">
 	    Save
 	  </div>
-	  <div id="marker-discard" class="option" onclick="app.discard();" style="display:none">
+	  <div id="marker-discard" class="option " style="display:none;" onclick="app.discard();">
 	    Discard Changes
 	  </div>
-	  <div id="marker-saveAsNew" class="option" onclick="app.saveNew();" style="display:none">
+	  <div id="marker-saveAsNew" class="option " style="display:none;" onclick="app.saveNew();">
 	    Save as New
 	  </div>
-	  <div id="marker-delete" class="option" onclick="app.deleteSchedule();" style="display:none">
+	  <div id="marker-delete" class="option " style="display:none;" onclick="app.deleteSchedule();">
 	    Delete
 	  </div>
-	  <div id="marker-export" class="option" onclick="app.showExport();" style="display:none">
+	  <div id="marker-export" class="option " style="display:none;" onclick="app.showExport();">
 	    Export
 	  </div>
-	  <div id="marker-new" class="option" onclick="app.clear();" style="display:none">
+	  <div id="marker-new" class="option " style="display:none;" onclick="app.clear();">
 	    New
 	  </div>
 	</div>
       </div>
       
-      <div id="export" class="export" name="export" onclick="if(window.event.target === this){this.style.display = 'none';}" style="display:none">
+      <div id="export" class="export " style="display:none;" name="export" onclick="if(window.event.target === this){this.style.display = 'none';}">
 	<div class="wrapper">
 	  Share link:<br>
 	  <input type="text" id="export-link"><br><br>
@@ -158,7 +158,7 @@
 	</div>
       </div>
       
-      <div id="description" class="description" name="description" onclick="if(window.event.target === this){this.style.display = 'none';}" style="display:none">
+      <div id="description" class="description " style="display:none;" name="description" onclick="if(window.event.target === this){this.style.display = 'none';}">
 	<div class="wrapper">
 	  <strong id="description-strong"></strong><br><br>
 	  <span id="description-fetch">Fetching description...</span>
