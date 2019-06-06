@@ -63,7 +63,7 @@
       </div>
 
       <div class="right">
-	<img src="logo.jpg" style="width:100%"/><br><br>
+	<img src="logo.jpg" style="width:100%"/>
 	<span class="title">Mode</span>
 	<br>
 	<input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();" checked="checked"> Manual
@@ -99,6 +99,13 @@
             <span class="title">Total Credits:</span>
 	    <span id="credits"></span><br><br>
 	  </div>
+
+	  
+          <span class="title">Notes:</span>
+	  <textarea id="notes" style="width:100%;resize:none;overflow:hidden;min-height:50px;" onkeyup="app.updateNotes(this);">
+
+	  </textarea>
+	  
           <div id="webWrapper" style="display:none;">
             <span class="title">Web Classes</span>
             <div class="selectedList" id="web">

@@ -1,5 +1,4 @@
 2//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
-//ADD - notes that can be saved with schedules
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
 //ADD - click-drag rearange saves
@@ -311,7 +310,7 @@ class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy c
 	    return false; // no valid schedules
 	if(set || this.data.length != 1) // set selected on either a click, or on a autobar change
 	    app.selected = data.selected; // update selected on click
-	location.hash = app.generateHash(); // update url
+	location.hash = app.generateHash(false); // update url
         return data.value;
     }
     filter(filter_fun){
@@ -561,7 +560,7 @@ var app =
 	hideSearch: function(referrer) {
 	    if(referrer){
 		this.closed = referrer.checked;
-		location.hash = app.generateHash(); // update url for closed value
+		location.hash = app.generateHash(false); // update url for closed value
 	    }
 	    var options = document.getElementById("selectBox").children;
 	    var search = document.getElementById("searchBox").value.toLowerCase();
@@ -832,7 +831,7 @@ var app =
 	    
 	    if(!localStorage.schedules) localStorage.setItem('schedules', JSON.stringify({}));
 	    var schedules = JSON.parse(localStorage.schedules);
-	    schedules[this.currentstorage] = this.generateHash();
+	    schedules[this.currentstorage] = this.generateHash(true);
 	    localStorage.setItem('schedules', JSON.stringify(schedules));
 	    this.localStorage = schedules;
 	    this.updateSaved();
@@ -842,9 +841,10 @@ var app =
                 if (!window.confirm("Are you sure you want to discard your changes?"))
 		    return false;
 	    this.currentstorage = schedule;
-	    location.hash = this.localStorage[schedule];
+	    document.getElementById("notes").value = this.localStorage[schedule].split("+")[1];
+	    location.hash = this.localStorage[schedule].split("+")[0];
 	    var currentTerm = location.hash.split("=")[0].substr(1);
-	    if ((index = this.terms.map(term => term.code).indexOf(currentTerm)) > -1){ // if term is valid
+	    if ((index = this.terms.map(term => term.code).indexOf(currentTerm)) > -1){ // make sure term is valid
                 if(this.term != this.terms[index].code) {
 		    this.term = this.terms[index].code;
 		    this.updateTerms();
@@ -857,6 +857,7 @@ var app =
                 }
 	    }
 	    this.fillSchedule();
+	    this.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 	    return true;
         },
         discard: function() {
@@ -895,6 +896,7 @@ var app =
 	    app.courses_generator = null;
 	    this.savedCourseGenerator = "";
 	    location.hash = "";
+	    document.getElementById("notes").value = "";
 	    this.course = null;
 	    this.selected = [];
 	    this.currentstorage = null;
@@ -956,6 +958,7 @@ var app =
 			app.loadHash();
 		    app.fillSchedule();
 		    app.fillSearch();
+		    app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 		}
 	    }(loadHash));
 	},
@@ -1018,12 +1021,12 @@ var app =
 		if(saves[i].classList.contains("selected")) // this will be BEFORE render change
 		    foundIdx = i;
 	    if(foundIdx > -1)
-		ret = this.localStorage[saves[foundIdx].innerText] != this.generateHash();
+		ret = this.localStorage[saves[foundIdx].innerText] != this.generateHash(true);
 	    //save coming from, vs actual classes on the board
 	    else // edge case - if we're coming from no save selected and it happens to be the same
 		for(var i=0; i < saves.length; ++i)
 		    if(saves[i].classList.contains("preselect")) // this will be AFTER render change
-			ret = this.localStorage[saves[i].innerText] != this.generateHash();
+			ret = this.localStorage[saves[i].innerText] != this.generateHash(true);
 	    return ret;
 	},
 	loadHash: function(){ // loading from URL or save, get hash and parse it
@@ -1085,7 +1088,7 @@ var app =
                 this.hovering = [];
 	    }
 
-	    location.hash = this.generateHash();
+	    location.hash = this.generateHash(false);
 	    this.course_list_selection = 0;
 	    var range = document.getElementById('Range');
 	    range.max = 0;
@@ -1096,13 +1099,15 @@ var app =
         hashExists: function(){
 	    return location.hash.match(/#\d+=[\d+,?]+/);
         },
-        generateHash: function() {
+        generateHash: function(includeNotes) {
 	    var hash = this.term + "=";
 	    hash += this.selected.map(function(s){
 		return s.courseReferenceNumber;
 	    }).sort((a, b) => parseInt(a)-parseInt(b)).join();
 	    if(this.closed)
 		hash += "&C";
+	    if(includeNotes === true)
+		hash += "+" + document.getElementById("notes").value;
 	    return hash;
         },
 	autoBar: function(){
@@ -1112,6 +1117,11 @@ var app =
 	},
 	updatePercent: function(){
 	    document.getElementById("loadingCourses").innerText = "Loading Courses... " + this.percent;
+	},
+	updateNotes: function(noteBox){
+	    noteBox.style.height='25px';
+	    noteBox.style.height=(noteBox.scrollHeight+25)+'px';
+	    this.saveMarker();
 	},
 	dayUpdate: function(){
 	    var test = false;
