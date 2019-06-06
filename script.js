@@ -1,4 +1,4 @@
-2//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
+//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
 //ADD - click-drag rearange saves
