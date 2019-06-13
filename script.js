@@ -1,9 +1,7 @@
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - dark theme
-//ADD - do something with refreshes on active plans?
-//ADD - click-drag rearange saves
 
-let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 10; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -12,6 +10,91 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 //200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
 //100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
 var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
+
+let animator = {
+    element: undefined,
+    down: function(ref){ // used as onmousedown = animator.down(element);
+	return function(element){
+	    return function(e){
+		window.addEventListener('selectstart', animator.disableSelect); // don't question the weird closure
+		ref.element = element;
+		ref.element.style.position = "relative";
+		ref.startX = e.clientX;
+		ref.startY = e.clientY;
+		ref.startCenterX = ref.element.offsetLeft + ref.element.offsetWidth / 2;
+		ref.startCenterY = ref.element.offsetTop + ref.element.offsetHeight / 2;
+	    }
+	}
+    }(this),
+    move: function(e){
+	if(this.element !== undefined){
+	    this.element.style.top = (e.clientY - this.startY).toString() + "px";
+	    this.element.style.left = (e.clientX - this.startX).toString() + "px";
+
+	    let centerX = this.element.offsetLeft + this.element.offsetWidth / 2;
+	    if(this.element.nextSibling){
+		let centerX_next = this.element.nextSibling.offsetLeft + this.element.nextSibling.offsetWidth / 2;
+		if(centerX > centerX_next){
+		    this.element.parentNode.insertBefore(this.element.nextSibling, this.element);
+		    this.startX += (centerX-this.startCenterX)
+		    this.startCenterX = centerX;
+		    this.element.style.left = (e.clientX - this.startX).toString() + "px";
+		}
+	    }
+	    if(this.element.previousSibling){
+		let centerX_last = this.element.previousSibling.offsetLeft + this.element.previousSibling.offsetWidth / 2;
+		if(centerX < centerX_last){
+		    this.element.parentNode.insertBefore(this.element, this.element.previousSibling);
+		    this.startX += (centerX-this.startCenterX)
+		    this.startCenterX = centerX;
+		    this.element.style.left = (e.clientX - this.startX).toString() + "px";
+		}
+	    }
+	}
+    },
+    up: function(e){
+	if(this.element !== undefined){
+	    window.removeEventListener('selectstart', animator.disableSelect);
+	    this.element.style.top = "auto";
+	    this.element.style.left = "auto";
+	    this.element.style.position = "static";
+
+	    if(Math.abs(e.clientX - this.startX) > 5 || Math.abs(e.clientY - this.startY) > 5){
+		//rearrange localStorage and then app.localStorage
+		var entries = Object.entries(JSON.parse(localStorage.schedules)); // [[name, hash], ...]
+		var order = this.element.parentNode.children;
+		var builder = [];
+		for(var i=0; i<order.length; ++i)
+		    builder.push(entries.filter(e => e[0] == order[i].innerText)[0]); // no two saves share a name
+		localStorage.schedules = JSON.stringify(Object.fromEntries(builder));
+		app.localStorage = JSON.parse(localStorage.schedules);
+	    } else { // normal click
+		var wrapper = this.element.parentElement; // because changed() looks at style
+		for(var i = 0; i < wrapper.children.length; ++i) // we need to do this twice in case load gets interrupted
+		    wrapper.children[i].classList.remove("preselect");
+		this.element.classList.add("preselect");
+		var success = app.load(this.element.innerText); // we need to update look after
+		for(var i = 0; i < wrapper.children.length; ++i)
+		    wrapper.children[i].classList.remove("preselect");
+		if(success){ // else user declined
+		    for(var i = 0; i < wrapper.children.length; ++i)
+			wrapper.children[i].classList.remove("selected");
+		    this.element.classList.add("selected");
+		    app.saveMarker();
+		}
+	    }
+	    
+	    this.element = undefined;
+	}
+    },
+    disableSelect: function(event){
+	event.preventDefault();
+    }
+};
+
+window.onmouseup = animator.up; // we need to go off the window in case user moves too fast where mouse isn't...
+window.onmousemove = animator.move; // ...on element for one frame
+
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
     return courses
@@ -352,8 +435,7 @@ var app =
 	loading: false,
 	percent: "",
         safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1,
-	mounted: function()
-	{
+	mounted: function(){
 	    document.getElementById("noSchedAlign").style.display = "none";
 	    //check CORS
 	    (new Searcher("test")).start(function(success){
@@ -365,12 +447,12 @@ var app =
 		    document.getElementById("cors").style.display = "";
 		}
 	    });
-	    (new Searcher("terms")).start(function(response){
+	    (new Searcher("terms")).start(function(response){ // grab terms
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
 		    app.term = app.terms[index].code;
 		    app.updateTerms();
-		    app.changedTerm(true);
+		    app.changedTerm("first");
 		} else {
 		    app.term = app.terms[0].code;
 		    app.updateTerms();
@@ -760,9 +842,6 @@ var app =
 		      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime)|| // beginning time of b is within a
 		      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime) ) // end       time of b is within a
 	},
-        getHash: function() {
-	    return location.hash;
-        },
 	updateCredits: function() {
 	    document.getElementById("credits").innerText = this.totalCredits();
 	},
@@ -791,29 +870,14 @@ var app =
 	    }
 	    for(var i=0; i<schedules.length; ++i){
 		var div = document.createElement("div");
-		div.className = "option";
+		div.className = "option draggable";
 		div.innerText = schedules[i];
 		saves.appendChild(div);
 	    }
 	    var options = saves.children;
-	    for(var i = 0; i<options.length; ++i)
-		options[i].onclick = function(reference){
-		    return function(){ // force update
-			var wrapper = reference.parentElement; // because changed() looks at style
-			for(var i = 0; i < wrapper.children.length; ++i) // we need to do this twice in case load gets interrupted
-			    wrapper.children[i].classList.remove("preselect");
-			reference.classList.add("preselect");
-			var success = app.load(reference.innerText); // we need to update look after
-			for(var i = 0; i < wrapper.children.length; ++i)
-			    wrapper.children[i].classList.remove("preselect");
-			if(!success)
-			    return; // if user declines, forget about it
-			for(var i = 0; i < wrapper.children.length; ++i)
-			    wrapper.children[i].classList.remove("selected");
-			reference.classList.add("selected");
-			app.saveMarker();
-		    }
-		}(options[i]);
+	    for(var i = 0; i<options.length; ++i){
+		options[i].onmousedown = animator.down(options[i]);
+	    }
 	    for(var i=0; i<options.length; ++i){
 		var option = options[i];
 		if(app.currentstorage == option.innerText)
@@ -835,6 +899,8 @@ var app =
 	    schedules[this.currentstorage] = this.generateHash(true);
 	    localStorage.setItem('schedules', JSON.stringify(schedules));
 	    this.localStorage = schedules;
+	    localStorage.setItem('lastSaved', this.generateHash(false) + "!" + this.currentstorage);
+	    
 	    this.updateSaved();
         },
         load: function(schedule) {
@@ -859,6 +925,7 @@ var app =
 	    }
 	    this.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 	    this.fillSchedule();
+	    localStorage.setItem('lastSaved', this.generateHash(false) + "!" + this.currentstorage);
 	    return true;
         },
         discard: function() {
@@ -868,9 +935,9 @@ var app =
 	    var schedule = this.currentstorage;
 	    this.currentstorage = null;
 	    this.load(schedule);
+	    localStorage.setItem('lastSaved', JSON.stringify({}));
         },
         saveNew: function() {
-
 	    this.currentstorage = null;
 	    this.save();
         },
@@ -883,6 +950,7 @@ var app =
                 this.clear(true);
 		this.updateSaved();
 		this.fillSchedule();
+		localStorage.setItem('lastSaved', JSON.stringify({}));
 	    }
         },
         clear: function(bypass = false) {
@@ -904,6 +972,7 @@ var app =
 	    this.updateSaved();
 	    this.fillSchedule();
 	    this.hideSearch();
+	    localStorage.setItem('lastSaved', JSON.stringify({}));
 	    return true;
         },
         webclasses: function(courses)
@@ -924,7 +993,7 @@ var app =
 		    document.getElementById("termSelect").value = this.term;
 		    return false;
 		}
-	    if(this.currentstorage && loadHash !== true)
+	    if(this.currentstorage && loadHash != true)
 		if(!this.clear()){ // user declined - fix selection box then return
 		    document.getElementById("termSelect").value = this.term;
 		    return;
@@ -957,7 +1026,7 @@ var app =
 		    app.courses = courses;
 		    app.genDivs();
 		    if(_loadHash)
-			app.loadHash();
+			app.loadHash(_loadHash === "first");
 		    app.fillSchedule();
 		    app.fillSearch();
 		}
@@ -991,11 +1060,6 @@ var app =
 		el.value = c.index;
 		app.courses_auto.push(el);
 	    }
-	    /*
-	      var saves = document.getElementById("saves");
-	      for(var i=0; i<saves.children.length; ++i)
-	      if(saves.children[i].classList.contains("preselect"))
-	      app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidde*/
 	    document.getElementById("coursesBox").style.display = "";
 	    document.getElementById("loadingCourses").style.display = "none";
 	},
@@ -1030,13 +1094,27 @@ var app =
 			ret = this.localStorage[saves[i].innerText] != this.generateHash(true);
 	    return ret;
 	},
-	loadHash: function(){ // loading from URL or save, get hash and parse it
+	loadHash: function(first){ // loading from URL or save, get hash and parse it
 	    var hashes = location.hash.split("=")[1].split("&")[0].split(",");
 	    this.selected = app.courses.filter(function(course){
 		return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 	    });
 	    document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
 	    this.closed = !!location.hash.split("&")[1];
+	    if(first){ // loading hash from URL - check if there's a save which matches, and if so select it
+		// this will choose the firstmost schedule that matches
+		var possible = [];
+		for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
+		    if(this.localStorage[saves[i].innerText].split("+")[0] == location.hash.split("#")[1])
+			possible.push(saves[i]);
+		var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
+		    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
+		});
+		if(!possible.length)
+		    return; // no matches - new schedule
+		(lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
+		app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
+	    }
 	},
 	genFaculty: function(c)
 	{
