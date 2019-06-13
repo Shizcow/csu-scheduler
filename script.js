@@ -1,7 +1,16 @@
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - dark theme
-//ADD - do something with refreshes on active plans?
-//ADD - click-drag rearange saves
+
+let test_percent_cap = 10; // takes a long time to load on 100%, consider 1% for testing
+let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
+//These values have been found from tested on my machine. Feel free to test yourself
+//500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
+//400---> Finish: 44.52s, 40.94s, 37.04s = 40.826s avg
+//300---> Finish: 38.30s, 35.46s, 38.66s = 37.473s avg ***
+//200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
+//100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
+var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
+
 let animator = {
     element: undefined,
     down: function(ref){ // used as onmousedown = animator.down(element);
@@ -86,16 +95,6 @@ let animator = {
 window.onmouseup = animator.up; // we need to go off the window in case user moves too fast where mouse isn't...
 window.onmousemove = animator.move; // ...on element for one frame
 
-
-let test_percent_cap = 10; // takes a long time to load on 100%, consider 1% for testing
-let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
-//These values have been found from tested on my machine. Feel free to test yourself
-//500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
-//400---> Finish: 44.52s, 40.94s, 37.04s = 40.826s avg
-//300---> Finish: 38.30s, 35.46s, 38.66s = 37.473s avg ***
-//200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
-//100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
-var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
     return courses
@@ -436,8 +435,7 @@ var app =
 	loading: false,
 	percent: "",
         safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1,
-	mounted: function()
-	{
+	mounted: function(){
 	    document.getElementById("noSchedAlign").style.display = "none";
 	    //check CORS
 	    (new Searcher("test")).start(function(success){
@@ -449,12 +447,12 @@ var app =
 		    document.getElementById("cors").style.display = "";
 		}
 	    });
-	    (new Searcher("terms")).start(function(response){
+	    (new Searcher("terms")).start(function(response){ // grab terms
 		app.terms = response;
 		if (app.hashExists() && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
 		    app.term = app.terms[index].code;
 		    app.updateTerms();
-		    app.changedTerm(true);
+		    app.changedTerm("first");
 		} else {
 		    app.term = app.terms[0].code;
 		    app.updateTerms();
@@ -844,9 +842,6 @@ var app =
 		      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime)|| // beginning time of b is within a
 		      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime) ) // end       time of b is within a
 	},
-        getHash: function() {
-	    return location.hash;
-        },
 	updateCredits: function() {
 	    document.getElementById("credits").innerText = this.totalCredits();
 	},
@@ -904,6 +899,8 @@ var app =
 	    schedules[this.currentstorage] = this.generateHash(true);
 	    localStorage.setItem('schedules', JSON.stringify(schedules));
 	    this.localStorage = schedules;
+	    localStorage.setItem('lastSaved', this.generateHash(false) + "!" + this.currentstorage);
+	    
 	    this.updateSaved();
         },
         load: function(schedule) {
@@ -928,6 +925,7 @@ var app =
 	    }
 	    this.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 	    this.fillSchedule();
+	    localStorage.setItem('lastSaved', this.generateHash(false) + "!" + this.currentstorage);
 	    return true;
         },
         discard: function() {
@@ -937,9 +935,9 @@ var app =
 	    var schedule = this.currentstorage;
 	    this.currentstorage = null;
 	    this.load(schedule);
+	    localStorage.setItem('lastSaved', JSON.stringify({}));
         },
         saveNew: function() {
-
 	    this.currentstorage = null;
 	    this.save();
         },
@@ -952,6 +950,7 @@ var app =
                 this.clear(true);
 		this.updateSaved();
 		this.fillSchedule();
+		localStorage.setItem('lastSaved', JSON.stringify({}));
 	    }
         },
         clear: function(bypass = false) {
@@ -973,6 +972,7 @@ var app =
 	    this.updateSaved();
 	    this.fillSchedule();
 	    this.hideSearch();
+	    localStorage.setItem('lastSaved', JSON.stringify({}));
 	    return true;
         },
         webclasses: function(courses)
@@ -993,7 +993,7 @@ var app =
 		    document.getElementById("termSelect").value = this.term;
 		    return false;
 		}
-	    if(this.currentstorage && loadHash !== true)
+	    if(this.currentstorage && loadHash != true)
 		if(!this.clear()){ // user declined - fix selection box then return
 		    document.getElementById("termSelect").value = this.term;
 		    return;
@@ -1026,7 +1026,7 @@ var app =
 		    app.courses = courses;
 		    app.genDivs();
 		    if(_loadHash)
-			app.loadHash();
+			app.loadHash(_loadHash === "first");
 		    app.fillSchedule();
 		    app.fillSearch();
 		}
@@ -1060,11 +1060,6 @@ var app =
 		el.value = c.index;
 		app.courses_auto.push(el);
 	    }
-	    /*
-	      var saves = document.getElementById("saves");
-	      for(var i=0; i<saves.children.length; ++i)
-	      if(saves.children[i].classList.contains("preselect"))
-	      app.load(saves.children[i].innerText); // in case there are courses rendered that need to be hidde*/
 	    document.getElementById("coursesBox").style.display = "";
 	    document.getElementById("loadingCourses").style.display = "none";
 	},
@@ -1099,13 +1094,27 @@ var app =
 			ret = this.localStorage[saves[i].innerText] != this.generateHash(true);
 	    return ret;
 	},
-	loadHash: function(){ // loading from URL or save, get hash and parse it
+	loadHash: function(first){ // loading from URL or save, get hash and parse it
 	    var hashes = location.hash.split("=")[1].split("&")[0].split(",");
 	    this.selected = app.courses.filter(function(course){
 		return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
 	    });
 	    document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
 	    this.closed = !!location.hash.split("&")[1];
+	    if(first){ // loading hash from URL - check if there's a save which matches, and if so select it
+		// this will choose the firstmost schedule that matches
+		var possible = [];
+		for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
+		    if(this.localStorage[saves[i].innerText].split("+")[0] == location.hash.split("#")[1])
+			possible.push(saves[i]);
+		var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
+		    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
+		});
+		if(!possible.length)
+		    return; // no matches - new schedule
+		(lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
+		app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
+	    }
 	},
 	genFaculty: function(c)
 	{
