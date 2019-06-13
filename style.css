@@ -180,6 +180,7 @@ table .item.selected.hovering {
 
 #saves {
     float: left;
+    position: relative;
 }
 
 .hint {

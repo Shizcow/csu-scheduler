@@ -2,8 +2,92 @@
 //ADD - dark theme
 //ADD - do something with refreshes on active plans?
 //ADD - click-drag rearange saves
+let animator = {
+    element: undefined,
+    down: function(ref){ // used as onmousedown = animator.down(element);
+	return function(element){
+	    return function(e){
+		window.addEventListener('selectstart', animator.disableSelect); // don't question the weird closure
+		ref.element = element;
+		ref.element.style.position = "relative";
+		ref.startX = e.clientX;
+		ref.startY = e.clientY;
+		ref.startCenterX = ref.element.offsetLeft + ref.element.offsetWidth / 2;
+		ref.startCenterY = ref.element.offsetTop + ref.element.offsetHeight / 2;
+	    }
+	}
+    }(this),
+    move: function(e){
+	if(this.element !== undefined){
+	    this.element.style.top = (e.clientY - this.startY).toString() + "px";
+	    this.element.style.left = (e.clientX - this.startX).toString() + "px";
 
-let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
+	    let centerX = this.element.offsetLeft + this.element.offsetWidth / 2;
+	    if(this.element.nextSibling){
+		let centerX_next = this.element.nextSibling.offsetLeft + this.element.nextSibling.offsetWidth / 2;
+		if(centerX > centerX_next){
+		    this.element.parentNode.insertBefore(this.element.nextSibling, this.element);
+		    this.startX += (centerX-this.startCenterX)
+		    this.startCenterX = centerX;
+		    this.element.style.left = (e.clientX - this.startX).toString() + "px";
+		}
+	    }
+	    if(this.element.previousSibling){
+		let centerX_last = this.element.previousSibling.offsetLeft + this.element.previousSibling.offsetWidth / 2;
+		if(centerX < centerX_last){
+		    this.element.parentNode.insertBefore(this.element, this.element.previousSibling);
+		    this.startX += (centerX-this.startCenterX)
+		    this.startCenterX = centerX;
+		    this.element.style.left = (e.clientX - this.startX).toString() + "px";
+		}
+	    }
+	}
+    },
+    up: function(e){
+	if(this.element !== undefined){
+	    window.removeEventListener('selectstart', animator.disableSelect);
+	    this.element.style.top = "auto";
+	    this.element.style.left = "auto";
+	    this.element.style.position = "static";
+
+	    if(Math.abs(e.clientX - this.startX) > 5 || Math.abs(e.clientY - this.startY) > 5){
+		//rearrange localStorage and then app.localStorage
+		var entries = Object.entries(JSON.parse(localStorage.schedules)); // [[name, hash], ...]
+		var order = this.element.parentNode.children;
+		var builder = [];
+		for(var i=0; i<order.length; ++i)
+		    builder.push(entries.filter(e => e[0] == order[i].innerText)[0]); // no two saves share a name
+		localStorage.schedules = JSON.stringify(Object.fromEntries(builder));
+		app.localStorage = JSON.parse(localStorage.schedules);
+	    } else { // normal click
+		var wrapper = this.element.parentElement; // because changed() looks at style
+		for(var i = 0; i < wrapper.children.length; ++i) // we need to do this twice in case load gets interrupted
+		    wrapper.children[i].classList.remove("preselect");
+		this.element.classList.add("preselect");
+		var success = app.load(this.element.innerText); // we need to update look after
+		for(var i = 0; i < wrapper.children.length; ++i)
+		    wrapper.children[i].classList.remove("preselect");
+		if(success){ // else user declined
+		    for(var i = 0; i < wrapper.children.length; ++i)
+			wrapper.children[i].classList.remove("selected");
+		    this.element.classList.add("selected");
+		    app.saveMarker();
+		}
+	    }
+	    
+	    this.element = undefined;
+	}
+    },
+    disableSelect: function(event){
+	event.preventDefault();
+    }
+};
+
+window.onmouseup = animator.up; // we need to go off the window in case user moves too fast where mouse isn't...
+window.onmousemove = animator.move; // ...on element for one frame
+
+
+let test_percent_cap = 10; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -791,29 +875,14 @@ var app =
 	    }
 	    for(var i=0; i<schedules.length; ++i){
 		var div = document.createElement("div");
-		div.className = "option";
+		div.className = "option draggable";
 		div.innerText = schedules[i];
 		saves.appendChild(div);
 	    }
 	    var options = saves.children;
-	    for(var i = 0; i<options.length; ++i)
-		options[i].onclick = function(reference){
-		    return function(){ // force update
-			var wrapper = reference.parentElement; // because changed() looks at style
-			for(var i = 0; i < wrapper.children.length; ++i) // we need to do this twice in case load gets interrupted
-			    wrapper.children[i].classList.remove("preselect");
-			reference.classList.add("preselect");
-			var success = app.load(reference.innerText); // we need to update look after
-			for(var i = 0; i < wrapper.children.length; ++i)
-			    wrapper.children[i].classList.remove("preselect");
-			if(!success)
-			    return; // if user declines, forget about it
-			for(var i = 0; i < wrapper.children.length; ++i)
-			    wrapper.children[i].classList.remove("selected");
-			reference.classList.add("selected");
-			app.saveMarker();
-		    }
-		}(options[i]);
+	    for(var i = 0; i<options.length; ++i){
+		options[i].onmousedown = animator.down(options[i]);
+	    }
 	    for(var i=0; i<options.length; ++i){
 		var option = options[i];
 		if(app.currentstorage == option.innerText)
