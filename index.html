@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <title>CSU Scheduler - Course Scheduler for Colorado State University</title>
     <meta name="description" content="Course Scheduler for Colorado State University. Create, save, share, and export all your schedule combinations.">
-    <link rel="stylesheet" href="./style_layout.css">
-    <link rel="stylesheet" href="./style_light.css">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style_dark.css">
   </head>
   <body>
     <div id="loading">
@@ -36,7 +36,7 @@
 	    </div>
 	  </div>
 	</div>
-	<table>
+	<table id="weekTable">
           <thead>
             <tr id="schedThead">
               <td class="time"></td>
@@ -64,7 +64,7 @@
       </div>
 
       <div class="right">
-	<img src="logo.jpg" style="width:100%"/>
+	<img src="logo.png" style="width:100%"/>
 	<span class="title">Mode</span>
 	<br>
 	<input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();" checked="checked"> Manual
