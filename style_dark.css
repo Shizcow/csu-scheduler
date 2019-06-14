@@ -81,7 +81,7 @@ table .item.selected.hovering, .selectedList div.selected:hover {
     background: #555555;
 }
 
-.export textarea, .export input, .right select, #searchBox, #selectBox>option, #notes {
+.export textarea, .export input, .right select, #searchBox, #selectBox>option, #notes, #nextButton {
     background: #f6f3e8;
     color: #242424;
 }
