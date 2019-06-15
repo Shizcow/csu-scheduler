@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <title>CSU Scheduler - Course Scheduler for Colorado State University</title>
     <meta name="description" content="Course Scheduler for Colorado State University. Create, save, share, and export all your schedule combinations.">
-    <link rel="stylesheet" href="./style.css">
-    <link rel="stylesheet" href="./style_dark.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_dark.css">
   </head>
   <body>
     <div id="loading">
@@ -39,7 +39,12 @@
 	<table id="weekTable">
           <thead>
             <tr id="schedThead">
-              <td class="time"></td>
+              <td class="time">
+		<label id="switch">
+		  <input onclick="change_style(this);" type="checkbox" id="styleSlider" checked>
+		  <span class="slider round"></span>
+		</label>
+	      </td>
 	      <!--
 		  <td for="day in daylist(false)" text="day"></td>
 		  -->

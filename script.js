@@ -1,7 +1,7 @@
 //ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
 //ADD - dark theme
 
-let test_percent_cap = 10; // takes a long time to load on 100%, consider 1% for testing
+let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
 //500---> Finish: 46.84s, 49.08s, 42.61s = 46.176s avg
@@ -10,6 +10,10 @@ let chunk = 300; // 500 is the largest the server will honor, but fastest seems 
 //200---> Finish: 42.70s, 43.13s, 38.08s = 41.303s avg
 //100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
 var server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
+
+let change_style = function(slider){
+    document.styleSheets[1].disabled = !(slider ? slider : document.getElementById("styleSlider")).checked;
+}
 
 let animator = {
     element: undefined,
@@ -436,6 +440,9 @@ var app =
 	percent: "",
         safari: navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1,
 	mounted: function(){
+	    //style first
+	    change_style();
+	    
 	    document.getElementById("noSchedAlign").style.display = "none";
 	    //check CORS
 	    (new Searcher("test")).start(function(success){
