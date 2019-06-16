@@ -444,6 +444,9 @@ var app = {
 	var styleSlider = document.getElementById("styleSlider");
 	styleSlider.checked = localStorage.darkMode == "true";
 	change_style(styleSlider);
+
+	//then auto mode in radio selection is cached
+	this.mode = document.getElementById("Manual").checked ? "Manual" : "Automatic";
 	
 	document.getElementById("noSchedAlign").style.display = "none";
 	//check CORS
@@ -1157,12 +1160,16 @@ var app = {
 	return parseFloat(time.substr(0, time.length-minute.length), 10)+parseFloat(minute)/60-8;
     },
     click: function(course){
-	if (this.autoInAlts(app.courses[this.course], course)) // needs to be added to selected
+	if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
 	{
-	    this.course = null;
 	    document.getElementById("selectBox").value = "";
-	    this.selected.push(course);
-	    if(this.mode == "Automatic"){
+	    if(this.mode == "Manual"){
+		this.course = null;
+		this.selected.push(course);
+	    } else {
+		var intended = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.course_list_selection).filter(c => this.autoInAlts(this.courses[this.course], c))
+		this.course = null;
+		intended.forEach(c => app.selected.push(c));
 		this.savedCourseGenerator = "A";
 		this.autoConstruct(this.selected).get(this.course_list_selection, true); // force url update & selected update
 	    }
