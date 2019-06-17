@@ -1,4 +1,4 @@
-//ADD - strip down unwanted data to save on memory
+//ADD - waitlist
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -99,6 +99,24 @@ let animator = {
 window.onmouseup = animator.up; // we need to go off the window in case user moves too fast where mouse isn't...
 window.onmousemove = animator.move; // ...on element for one frame
 
+// pre process courses are they're coming in, strip down data for lower memory usage
+// memory won't actually look to be less until the garbage collector runs, which usually takes a few seconds
+// acts on var contents like a reference in C
+function preProcessDataPack(data){ 
+    data.data.forEach(function(course){
+	// strip out useless info by building a new course and subbing that in
+	["campusDescription", "creditHourIndicator", "crossList", "crossListAvailable", "crossListCapacity",
+	 "crossListCount", "enrollment", "id", "isSectionLinked", "linkIdentifier", "openSection", "partOfTerm",
+	 "reservedSeatSummary", "subjectDescription", "termDesc"].forEach(function(key){
+	     delete course[key];
+	 });
+	course.meetingsFaculty.forEach(function(meeting){
+	    ["category", "class", "courseReferenceNumber", "faculty", "term"].forEach(function(key){
+		delete meeting[key];
+	    });
+	});
+    });
+}
 
 function postProcessCourses(courses){ // post process in preparation for automatic mode
     return courses
@@ -286,6 +304,7 @@ class TermManager{
 		    TermManager_ref.headRequest = null;
 		    TermManager_ref.requests.forEach(function(request){
 			request.start(function(responseData){ // individual callbacks
+			    preProcessDataPack(responseData);
 			    TermManager_ref.data.push(responseData); // add response to data...
 			    // and check if we're done
 			    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
@@ -340,6 +359,7 @@ class TermManager{
 		    app.updatePercent();
 		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
 		    TermManager_ref.headRequest.start(function(responseData){
+			preProcessDataPack(responseData);
 			TermManager_ref.headRequest = null; // head requests are all done
 			TermManager_ref.data = [responseData]; // currently wrapped with extra info, will unwrap later
 			var min = responseData.data.length; // how many actually loaded with the first request
