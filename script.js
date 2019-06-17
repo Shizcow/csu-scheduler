@@ -1,4 +1,4 @@
-//ADD - if there's a saved schedule in another term, save that term's classes in session storage, and preload when available?
+//ADD - strip down unwanted data to save on memory
 
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
@@ -310,6 +310,28 @@ class TermManager{
 				// finally ready to run the callback. Probably for updating UI
 				if(TermManager_ref.main_callback_wrapper.callback) // it's weird because we can't close in the function, we need to make sure it can change
 				    TermManager_ref.main_callback_wrapper.callback(TermManager_ref.data);
+				
+				// if we get here, we automatically know there are no other term requests running
+				// so instead of having down time, start looking for other terms to load
+				// we'll only work on loading the terms that are sitting in saves because
+				// those are most likely to be looked at
+				// we won't just load all terms because that's a good bit of data
+				var saves = document.getElementById("saves").children;
+				var saveTerms = [];
+				// look through each save and grab their terms
+				for(var i=0; i<saves.length; ++i)
+				    saveTerms.push(app.localStorage[saves[i].innerText].split("=")[0]);
+				// then look through loaded terms and grab their terms
+				var completedTerms = app.termCacher.termManagers.filter(manager => manager.done).map(manager => manager.term);
+				// then find the first save term that doesn't have a fully loaded term
+				for(var i=0; i<saveTerms.length; ++i){
+				    if(!completedTerms.find(term => term == saveTerms[i])){
+					// and if we find one, start loading it in the background
+					app.termCacher.push(saveTerms[i], null);
+					return;
+				    }
+				}
+				// if we reach here, all of our saves are loaded
 			    }
 			});
 		    });
