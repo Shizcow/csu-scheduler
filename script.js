@@ -255,7 +255,7 @@ class TermManager{
     stop(){ // abort all requests and prime for a restart
 	if(this.done) // why stop something that's already done?
 	    return;
-	this.main_callback_wrapper.callback = ()=>{};
+	this.main_callback_wrapper.callback = null;
 	if(this.headRequest){
 	    this.headRequest.stop();
 	    this.headRequest = null; // in case we stopped during a head request
@@ -307,6 +307,7 @@ class TermManager{
 				
 				TermManager_ref.done = true;
 				TermManager_ref.requests = []; // free up some memory
+				// finally ready to run the callback. Probably for updating UI
 				if(TermManager_ref.main_callback_wrapper.callback) // it's weird because we can't close in the function, we need to make sure it can change
 				    TermManager_ref.main_callback_wrapper.callback(TermManager_ref.data);
 			    }
@@ -355,16 +356,30 @@ class TermCacher{
     push(term, callback=null){ // start loading a term
 	//first, sift through termManagers and see if we've already got one loaded/loading
 	var index = this.termManagers.findIndex(termManager => termManager.term == term);
+	if(index > -1 && this.termManagers[index].done){ // if it's already done
+	    // make sure no others are running, but if they are just let them finish to only cache, not run callback
+	    this.termManagers.forEach(function(termManager){
+		termManager.main_callback_wrapper.callback = null;
+	    });
+	    // then run callback for the completed term
+	    // following line is same as callback(this.termManagers[index].data) but safer
+	    this.termManagers[index].start(callback);
+	    return;
+	    // we check first in case term is already cached. This way, if another term is loading in and a new
+	    // request is made for an already loaded term, we don't bother stopping the one loading and let it
+	    // keep loading in the background for a fast switch down the road
+	}
+	// If we get here, we know we need to start/resume a request, and thus end the other requests
 	var activeManager = null;
-	if(index > -1) // there's one in there
-	    activeManager = this.termManagers.splice(index, 1)[0]; // remove the active manager
+	if(index > -1) // signaling a resume (instead of a cold start)
+	    activeManager = this.termManagers.splice(index, 1)[0]; // remove the active one without stopping it
 	this.termManagers.forEach(function(termManager){ // stop all the (other) ones
 	    termManager.stop();
 	})
-	this.termManagers.push(index > -1 ? activeManager : new TermManager(term)); // re-add the old one
+	// then resume/start the target manager
+	// if it's already in there, we removed it earlier. Just add it back and update the callback
+	this.termManagers.push(index > -1 ? activeManager : new TermManager(term));
 	this.termManagers[this.termManagers.length-1].start(callback); // and start it
-	// doing it this way makes it so if there's already one in there, AND it's running, it isn't restarted
-	// however, this does stop any pending requests, even if the one we're looking for is already loaded
     }
 }
 
@@ -1032,8 +1047,10 @@ var app = {
 
 	document.getElementById("coursesBox").style.display = "none";
 	document.getElementById("loadingCourses").style.display = "";
-	app.termCacher.push(this.term, function(_loadHash){ // NOTE: not sure if this needs a closure
+	//request new term to be loaded, and on success update UI
+	app.termCacher.push(this.term, function(_loadHash){
 	    return function(courses){
+		// update UI
 		app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
 		app.courses = courses;
 		app.genDivs();
