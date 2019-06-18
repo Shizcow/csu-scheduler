@@ -503,8 +503,10 @@ var app = {
 	styleSlider.checked = localStorage.darkMode == "true";
 	change_style(styleSlider);
 
-	//then auto mode in radio selection is cached
+	//then auto mode in radio selection is cached - similar for closed
 	this.mode = document.getElementById("Manual").checked ? "Manual" : "Automatic";
+	this.closed = Boolean(location.hash.split("&")[1]);
+	document.getElementById("closedCheck").checked = this.closed;
 	
 	document.getElementById("noSchedAlign").style.display = "none";
 	//check CORS
