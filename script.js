@@ -100,9 +100,9 @@ window.onmouseup = animator.up; // we need to go off the window in case user mov
 window.onmousemove = animator.move; // ...on element for one frame
 
 // pre process courses are they're coming in, strip down data for lower memory usage
-// memory won't actually look to be less until the garbage collector runs, which usually takes a few seconds
+// js engine usually takes a few seconds to catch up with all the deallocation, thus memory usage takes ~10s to lower
 // acts on var contents like a reference in C
-function preProcessDataPack(data){ 
+function preProcessDataPack(data){
     data.data.forEach(function(course){
 	// strip out useless info by building a new course and subbing that in
 	["campusDescription", "creditHourIndicator", "crossList", "crossListAvailable", "crossListCapacity",
@@ -215,6 +215,8 @@ class Searcher{
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
+		if(this.readyState == 4)
+		    ref.xhr = null;
 		if(ref.type == "test" && this.readyState === 4 && this.status === 0){ // test failed
 		    console.log("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
 		    if(callback)
@@ -236,10 +238,10 @@ class Searcher{
 			callback(response);
 		    ref.done = true;
 		    ref.xhr = null;
+		    return;
 		}
 		else if(this.status != 200 && this.status != 0){
 		    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
-		    this.xhr = null; // I DONT KNOW WHAT TO DO HERE YET
 		}
 	    }
 	}(this);
@@ -304,6 +306,7 @@ class TermManager{
 		    TermManager_ref.headRequest = null;
 		    TermManager_ref.requests.forEach(function(request){
 			request.start(function(responseData){ // individual callbacks
+			    
 			    preProcessDataPack(responseData);
 			    TermManager_ref.data.push(responseData); // add response to data...
 			    // and check if we're done
@@ -350,7 +353,7 @@ class TermManager{
 					return;
 				    }
 				}
-				// if we reach here, all of our saves are loaded
+				// if we reach here, all of our saves are loaded and there's nothing else to do
 			    }
 			});
 		    });
