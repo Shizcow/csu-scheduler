@@ -1,5 +1,3 @@
-//ADD - waitlist
-
 let test_percent_cap = 100; // takes a long time to load on 100%, consider 1% for testing
 let chunk = 300; // 500 is the largest the server will honor, but fastest seems to be 300
 //These values have been found from tested on my machine. Feel free to test yourself
@@ -107,7 +105,7 @@ function preProcessDataPack(data){
 	// strip out useless info by building a new course and subbing that in
 	["campusDescription", "creditHourIndicator", "crossList", "crossListAvailable", "crossListCapacity",
 	 "crossListCount", "enrollment", "id", "isSectionLinked", "linkIdentifier", "openSection", "partOfTerm",
-	 "reservedSeatSummary", "subjectDescription", "termDesc"].forEach(function(key){
+	 "reservedSeatSummary", "subjectDescription", "termDesc", "waitCount"].forEach(function(key){
 	     delete course[key];
 	 });
 	course.meetingsFaculty.forEach(function(meeting){
@@ -595,8 +593,12 @@ var app = {
 		if(course && courseHere){
 		    var div = document.createElement("div");
 		    div.className = "item";
-		    var creditText = this.creditsOf(course);			    
-		    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
+		    var creditText = this.creditsOf(course);
+		    var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
+		    if(course.waitAvailable > 0)
+			innerText += course.waitAvailable + '/' + course.waitCapacity + ' waitlist open\n';
+		    innerText += 'CRN: ' + course.courseReferenceNumber + '\n';
+		    div.innerText = innerText; // need to assign all at once so newlines work properly
 		    var link = document.createElement("a");
 		    link.className = "link";
 		    link.onclick = function(c){ // we need to close this in, else it looks at the last
