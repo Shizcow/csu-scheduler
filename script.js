@@ -525,6 +525,8 @@ var app = {
 		app.term = app.terms[index].code;
 		app.updateTerms();
 		app.changedTerm("first");
+		if(location.hash.split("&")[0].split("=")[1])
+		    gtag('event', 'Schedules Shared');
 	    } else {
 		app.term = app.terms[0].code;
 		app.updateTerms();
@@ -703,6 +705,8 @@ var app = {
 
 	//Deal with the "you can deselect" thing
 	document.getElementById("escTip").style.display = this.course != null && (this.closed || app.courses[this.course].seatsAvailable) ? "" : "none";
+
+	gtag('event', 'Schedules Tested');
     },
     fillSearch: function(referrer) {
 	var selectBox = document.getElementById("selectBox");
@@ -978,7 +982,7 @@ var app = {
 	localStorage.setItem('lastSaved', this.generateHash(false) + "!" + this.currentstorage);
 	
 	this.updateSaved();
-	gtag('event', 'Schedules Created')
+	gtag('event', 'Schedules Saved');
     },
     load: function(schedule) {
 	if(this.changed())
