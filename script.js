@@ -525,8 +525,6 @@ var app = {
 		app.term = app.terms[index].code;
 		app.updateTerms();
 		app.changedTerm("first");
-		if(location.hash.split("&")[0].split("=")[1])
-		    gtag('event', 'Schedules Shared');
 	    } else {
 		app.term = app.terms[0].code;
 		app.updateTerms();
@@ -1198,8 +1196,11 @@ var app = {
 	    var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
 		return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
 	    });
-	    if(!possible.length)
-		return; // no matches - new schedule
+	    if(!possible.length){ // no matches - new schedule
+		if(location.hash.split("&")[0].split("=")[1]) // make sure there are actually some courses
+		    gtag('event', 'Schedules Shared');
+		return;
+	    }
 	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
 	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
 	}
