@@ -704,6 +704,7 @@ var app = {
 	//Deal with the "you can deselect" thing
 	document.getElementById("escTip").style.display = this.course != null && (this.closed || app.courses[this.course].seatsAvailable) ? "" : "none";
 
+	localStorage.setItem('lastViewed', this.generateHash(false));
 	if(this.selected.length > 0)
 	    gtag('event', 'Schedules Tested');
     },
@@ -1196,8 +1197,8 @@ var app = {
 	    var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
 		return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
 	    });
-	    if(!possible.length){ // no matches - new schedule
-		if(location.hash.split("&")[0].split("=")[1]) // make sure there are actually some courses
+	    if(!possible.length){ // no matches - probably completly new
+		if(location.hash.split("&")[0].split("=")[1] && this.generateHash(false) != localStorage[lastViewed]) // make sure there are actually some courses
 		    gtag('event', 'Schedules Shared');
 		return;
 	    }
