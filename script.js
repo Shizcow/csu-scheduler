@@ -1198,12 +1198,13 @@ var app = {
 		return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
 	    });
 	    if(!possible.length){ // no matches - probably completly new
-		if(location.hash.split("&")[0].split("=")[1] && this.generateHash(false) != localStorage["lastViewed"]) // make sure there are actually some courses
-		    gtag('event', 'Schedules Shared');
-		return;
+		console.log(this.generateHash(false), localStorage["lastViewed"])
+		if((location.hash.split("&")[0].split("=")[1].length() > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
+		    gtag('event', 'Schedules Shared'); // is completly new
+	    } else { // previous - load and update
+		(lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
+		app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
 	    }
-	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
-	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
 	}
     },
     genFaculty: function(c)
