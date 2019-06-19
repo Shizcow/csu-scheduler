@@ -706,7 +706,8 @@ var app = {
 	//Deal with the "you can deselect" thing
 	document.getElementById("escTip").style.display = this.course != null && (this.closed || app.courses[this.course].seatsAvailable) ? "" : "none";
 
-	gtag('event', 'Schedules Tested');
+	if(this.selected.length > 0)
+	    gtag('event', 'Schedules Tested');
     },
     fillSearch: function(referrer) {
 	var selectBox = document.getElementById("selectBox");
@@ -976,6 +977,10 @@ var app = {
 	
 	if(!localStorage.schedules) localStorage.setItem('schedules', JSON.stringify({}));
 	var schedules = JSON.parse(localStorage.schedules);
+
+	if(schedules[this.currentstorage] == undefined)
+	    gtag('event', 'Schedules Created');
+	
 	schedules[this.currentstorage] = this.generateHash(true);
 	localStorage.setItem('schedules', JSON.stringify(schedules));
 	this.localStorage = schedules;
