@@ -1198,7 +1198,7 @@ var app = {
 		return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
 	    });
 	    if(!possible.length){ // no matches - probably completly new
-		if(location.hash.split("&")[0].split("=")[1] && this.generateHash(false) != localStorage[lastViewed]) // make sure there are actually some courses
+		if(location.hash.split("&")[0].split("=")[1] && this.generateHash(false) != localStorage["lastViewed"]) // make sure there are actually some courses
 		    gtag('event', 'Schedules Shared');
 		return;
 	    }
