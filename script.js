@@ -1100,7 +1100,8 @@ var app = {
 	range.value = 0;
 	app.courses_generator = null;
 	this.savedCourseGenerator = "";
-	this.fillSchedule(); // show empty while loading
+	if(loadHash != "first")
+	    this.fillSchedule(); // show empty while loading - don't need to on first load because it's already empty
 	this.percent = "";
 
 	document.getElementById("coursesBox").style.display = "none";
