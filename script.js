@@ -978,6 +978,7 @@ var app = {
 	localStorage.setItem('lastSaved', this.generateHash(false) + "!" + this.currentstorage);
 	
 	this.updateSaved();
+	gtag('event', 'Schedules Created')
     },
     load: function(schedule) {
 	if(this.changed())
