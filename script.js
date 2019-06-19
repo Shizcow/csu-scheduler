@@ -1199,7 +1199,7 @@ var app = {
 	    });
 	    if(!possible.length){ // no matches - probably completly new
 		console.log(this.generateHash(false), localStorage["lastViewed"])
-		if((location.hash.split("&")[0].split("=")[1].length() > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
+		if((location.hash.split("&")[0].split("=")[1].length > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
 		    gtag('event', 'Schedules Shared'); // is completly new
 	    } else { // previous - load and update
 		(lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
