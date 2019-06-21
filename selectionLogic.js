@@ -52,19 +52,19 @@ app.autoAndLabs = function(check_course){
 	return [check_course]; // Manual mode - only hover on one section
     return app.courses_generator ? app.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
 };
-// return a Lazy object which spits out valid schedules, and cache it so that Vue templating doesnt calculate it a million times
+// return a Lazy object which spits out valid schedules, and cache it so we don't need to calculate it more than once
 app.autoConstruct = function(courses){
     if(courses[0] === undefined) return {get: function(i){return []}}; // no courses - go no further
     if(courses.slice(-1)[0] === undefined) // remove empty at end when no class is selected
 	courses.pop();
-    courses = courses.filter(course => course.seatsAvailable || app.closed);
+    courses = courses.filter(course => course.seatsAvailable || this.closed);
     if(this.mode == "Manual"){
 	if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
 	    return app.courses_generator; // don't have to run the calculation for every hour in every day
-	if(this.savedCourseGenerator[0] == "A" && this.course){ // switching from automatic to manual - update app.course
-	    if(app.courses_generator)
-		if(app.courses_generator.get(this.course_list_selection))
-		    courses = app.courses_generator.get(this.course_list_selection); // slight optimization for caching
+	if(this.savedCourseGenerator[0] == "A" && this.course != null){ // switching from automatic to manual - update app.course
+	    if(this.courses_generator)
+		if(this.courses_generator.get(this.course_list_selection))
+		    courses = this.courses_generator.get(this.course_list_selection); // slight optimization for caching
 	    this.course = courses.filter(function(course){
 		return course.home == app.courses[app.course].home;
 	    })[0].index; // replace app.course with the proper one automatically assigned
@@ -72,8 +72,8 @@ app.autoConstruct = function(courses){
 	    //and fix a render bug
 	}
 	this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
-	app.courses_generator = {get: function(i){return courses;}};
-	return app.courses_generator;
+	this.courses_generator = {get: function(i){return courses;}};
+	return this.courses_generator;
     }
     //automatic generator
     if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "") == this.savedCourseGenerator)
