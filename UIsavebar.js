@@ -161,7 +161,7 @@ app.load = function(schedule) {
 	    this.course = null;
 	    document.getElementById("selectBox").value = "";
 	    this.updateTerms();
-	    this.loadHash();
+	    this.loadHash(); // just an optimization hack - function found in UIright.js
         }
     }
     this.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached

@@ -126,3 +126,29 @@ app.updateNotes = function(noteBox){
     noteBox.style.height=(noteBox.scrollHeight+25)+'px';
     this.saveMarker();
 };
+
+app.loadHash = function(first){ // loading from URL or save, get hash and parse it
+    var hashes = location.hash.split("=")[1].split("&")[0].split(",");
+    this.selected = app.courses.filter(function(course){
+	return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+    });
+    document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
+    this.closed = !!location.hash.split("&")[1];
+    if(first){ // loading hash from URL - check if there's a save which matches, and if so select it
+	// this will choose the firstmost schedule that matches
+	var possible = [];
+	for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
+	    if(this.localStorage[saves[i].innerText].split("+")[0] == location.hash.split("#")[1])
+		possible.push(saves[i]);
+	var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
+	    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
+	});
+	if(!possible.length){ // no matches - probably completly new
+	    if((location.hash.split("&")[0].split("=")[1].length > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
+		gtag('event', 'Schedules Shared'); // is completly new
+	} else { // previous - load and update
+	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
+	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
+	}
+    }
+};
