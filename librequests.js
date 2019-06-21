@@ -280,7 +280,7 @@ class TermManager{
 			    }, 0);
 			    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
 			    app.updatePercent();
-			    if(loadedAmount >= app.test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+			    if(loadedAmount >= app_config.test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
 				app.percent += "\nProcessng courses...";
 				app.updatePercent();
 				// if so, process data and mark term complete
@@ -336,10 +336,10 @@ class TermManager{
 			app.percent = min.toString() + "/" + max.toString();
 			app.updatePercent();
 			let offsets = []; // stores offset values for each subsequent required request
-			for(var i = min; i<app.test_percent_cap*max/100; i+=app.chunk)//NOTE: previously was using app.test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
-			    offsets.push(i); // fill offsets with integer values starting at min, offset by app.chunk size, and going up to only what we need to request
+			for(var i = min; i<app_config.test_percent_cap*max/100; i+=app_config.chunk)//NOTE: previously was using app_config.test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
+			    offsets.push(i); // fill offsets with integer values starting at min, offset by app_config.chunk size, and going up to only what we need to request
 			offsets.forEach(function(offset){ // construct all subsequent requests
-			    TermManager_ref.requests.push(new Searcher("courses", TermManager_ref.term, offset, app.chunk));
+			    TermManager_ref.requests.push(new Searcher("courses", TermManager_ref.term, offset, app_config.chunk));
 			});
 			TermManager_ref.start(main_callback, true); // recurse into start. Now that requests is filled, it'll just start them all
 		    });
