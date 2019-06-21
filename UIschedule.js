@@ -1,3 +1,9 @@
+// this function loads / unloads style_dark.css to switch between dark and light mode
+let change_style = function(styleSlider){
+    document.styleSheets[1].disabled = !styleSlider.checked;
+    localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for incoming storage handling
+}
+
 app.totalCredits = function(){
     return this.selected.reduce(function(acc, cur){
 	return acc+app.creditsOf(cur);

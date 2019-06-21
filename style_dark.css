@@ -1,3 +1,9 @@
+/* style_dark.css
+Stylesheet for dark mode
+This file only contains colors, which when loaded simply overwrite light mode
+If you want to make a custom theme, this would be a good place to start
+*/
+
 body {
     background: #555555;
 }
