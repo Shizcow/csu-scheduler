@@ -274,7 +274,7 @@ app.dayUpdate = function(){
 	    if(app.courses_generator.data){
 		if(app.courses_generator.data[this.course_list_selection]){
 		    test = app.courses_generator.data[this.course_list_selection].value;
-		    document.getElementById("noSchedAlign").style.display = "none";
+		    document.getElementById("noSchedWrapper").style.display = "none";
 		    if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
 			for(var i=1; i<=5; ++i){
 			    var trs = document.getElementById("schedTbody").children;
@@ -284,7 +284,7 @@ app.dayUpdate = function(){
 			}
 		    }
 		} else { // no valid schedules - show msg
-		    document.getElementById("noSchedAlign").style.display = "";
+		    document.getElementById("noSchedWrapper").style.display = "";
 		    if(document.getElementById("schedTbody").children[0].children[1].style.display == ""){
 			for(var i=1; i<=5; ++i){
 			    var trs = document.getElementById("schedTbody").children;
@@ -297,7 +297,7 @@ app.dayUpdate = function(){
 	    }
     } else {
 	test = this.selected.concat(app.courses[this.course]);
-	document.getElementById("noSchedAlign").style.display = "none";
+	document.getElementById("noSchedWrapper").style.display = "none";
 	if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
 	    for(var i=1; i<=5; ++i){
 		var trs = document.getElementById("schedTbody").children;

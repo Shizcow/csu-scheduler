@@ -10,7 +10,7 @@ app.mounted = function(){
     this.closed = Boolean(location.hash.split("&")[1]);
     document.getElementById("closedCheck").checked = this.closed;
     
-    document.getElementById("noSchedAlign").style.display = "none";
+    document.getElementById("noSchedWrapper").style.display = "none";
     //check CORS
     (new Searcher("test")).start(function(success){
 	if(success){
