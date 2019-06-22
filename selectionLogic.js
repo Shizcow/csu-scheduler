@@ -1,4 +1,63 @@
-class Lazy{ // a semi-memoized simplified, and specialized version of the Lazy class you can find online
+/* selectionLogic.js
+This file contains the core logic behind finding and displaying valid schedules in automatic mode
+This file also deals with manual mode schedules, but usually just optimizes them away
+
+In this file:
+
+Lazy class
+>caches generated schedules
+
+autoInAlts()
+>check if two sections are of the same course (ex: MATH 101 lab and MATH 101 lecture)
+
+autoConstruct()
+>creates a Lazy object which contains a generator for all valid courses of a given schedule
+
+removeDuplicatesBy()
+>util function which removes duplicates from an array based on an object value
+
+cartesianProduct*()
+>generator which returns a cartesian product from a given set of dimensions
+
+schedCompat()
+>checks if there are schedule conflicts in a given list of courses
+
+courseCompat()
+>checks if two courses have a schedule conflict
+
+meetingCompat()
+>checks if two meeting times conflict
+*/
+
+// a semi-memoized simplified, and specialized version of the Lazy class you can find online
+// essentially, it creates an array from a generator function and populates on get requests
+// also supports filter functions
+/*
+Example of use:
+NOTE: this example won't actually work. It only works with courses, but this is a good illustration
+
+var generator = function*(){
+  for(var i=0; i<10; ++i)
+    yield i;
+}
+
+var divisible_by_2 = function(a){
+  return !(a%2);
+}
+
+var lazy = new Lazy(generator);
+lazy.filter(divisible_by_2);
+
+console.log(lazy.get(0))
+// returns 0
+console.log(lazy.get(1))
+// returns 2
+console.log(lazy.get(2))
+// returns 4
+console.log(lazy.get(3))
+// returns 6
+*/
+class Lazy{
     constructor(inputgen){
         this.core = inputgen;
         this.data = [];
@@ -44,15 +103,8 @@ app.autoInAlts = function(check_course, course_alts){ // pretty much just fixes 
 	return check_course == course_alts;
     return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
 };
-// grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
-app.autoAndLabs = function(check_course){
-    if(check_course == null)
-	return []; // if there's one or zero, we don't even need to check
-    if(this.mode == "Manual")
-	return [check_course]; // Manual mode - only hover on one section
-    return app.courses_generator ? app.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
-};
-// return a Lazy object which spits out valid schedules, and cache it so we don't need to calculate it more than once
+
+// return a Lazy object which spits out valid schedules, and cache it so we don't need to generate the lazy more than once
 app.autoConstruct = function(courses){
     if(courses[0] === undefined) return {get: function(i){return []}}; // no courses - go no further
     if(courses.slice(-1)[0] === undefined) // remove empty at end when no class is selected
@@ -106,6 +158,11 @@ app.autoConstruct = function(courses){
     return app.courses_generator;
 };
 
+// remove duplicates by object key
+/* Example:
+removeDuplicatesBy((obj => obj.a), [{a: 1}, {a: 2}, {a: 1}, {a: 3}])
+>{{a: 1}, {a: 2}, {a:3}]
+ */
 app.removeDuplicatesBy = function(keyFn, array) {
     var mySet = new Set();
     return array.filter(function(x) {
@@ -115,8 +172,9 @@ app.removeDuplicatesBy = function(keyFn, array) {
     });
 };
 
-//Generates a Cartesian Product with given dimensions
-//Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'],['a', 'd'],['b', 'c'],['b', 'd']]
+// Generates a Cartesian Product with given dimensions
+// Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'], ['a', 'd'], ['b', 'c'], ['b', 'd']]
+// go read the wikipedia article on cartesian products for more info
 app.cartesianProduct = function*(dimensions){
     if(dimensions.length <= 1){// no need to calculate for 1 length lists (0 neither) - just yield each schedule
 	for(var i = 0; i<dimensions[0].length; ++i)
@@ -141,6 +199,7 @@ app.cartesianProduct = function*(dimensions){
 	stack[0]++; // incriment stack
     }
 };
+
 // check if a schedule in the form of sched:[course...] has no conflicts
 app.schedCompat = function(sched){
     if(sched.length == 1)
@@ -155,6 +214,7 @@ app.schedCompat = function(sched){
     } // we can't just pop because references
     return true; // if none are incompatable, then the schedule is valid
 };
+
 // expand courses into meeting times and check validity
 // this is needed because some courses have multiple meeting times
 app.courseCompat = function(a, b){
@@ -164,7 +224,8 @@ app.courseCompat = function(a, b){
 	}, true); // so if every meeting in b is compatable with...
     }, true); // every meeting in a, return true else return false
 };
-// Check if two meetings are compatable
+
+// Check if two meetings are compatable (don't overlap)
 app.meetingCompat = function(a, b){
     if(!["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce(function(acc, day){ // check if any of the days overlap
 	return acc || (a[day] && b[day]); // and carry over any trues
@@ -174,37 +235,4 @@ app.meetingCompat = function(a, b){
 	      (a.endTime   >  b.beginTime && a.endTime   <= b.endTime)|| // end       time of a is within b
 	      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime)|| // beginning time of b is within a
 	      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime) ) // end       time of b is within a
-};
-
-app.click = function(course){
-    if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
-    {
-	document.getElementById("selectBox").value = "";
-	if(this.mode == "Manual"){
-	    this.course = null;
-	    this.selected.push(course);
-	} else {
-	    var intended = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.course_list_selection).filter(c => this.autoInAlts(this.courses[this.course], c))
-	    this.course = null;
-	    intended.forEach(c => app.selected.push(c));
-	    this.savedCourseGenerator = "A";
-	    this.autoConstruct(this.selected).get(this.course_list_selection, true); // force url update & selected update
-	}
-    }
-    else
-    {
-	if(this.mode == "Manual")
-	    this.selected.splice(this.selected.indexOf(course), 1);
-	else
-	    this.selected = this.selected.filter(c => course.subjectCourse != c.subjectCourse);
-        this.hovering = [];
-    }
-
-    location.hash = this.generateHash(false);
-    this.course_list_selection = 0;
-    var range = document.getElementById('Range');
-    range.max = 0;
-    range.value = 0; // fix render on auto bar
-    this.hideSearch(); // TODO: optimize
-    this.fillSchedule();
 };

@@ -9,8 +9,12 @@ EventListener for escape/delete
 change_style()
 >toggles between dark mode and light mode
 
-creditsOf()
->gets the number of credits a course is worth
+autoAndLabs()
+>gets all selected sections which are of the same course as the input section
+>used to render hovering
+
+fillSchedule()
+>Renders courses into the on screen schedule
 
 genFaculty()
 >gets the faculty of a given course, returns it as a string
@@ -34,6 +38,12 @@ fetchDescription()
 dayUpdate()
 >looks through all courses to be rendered. If any of those courses are on
 >a weekend, expand the schedule to show those courses
+
+loadHash()
+>used to load a hash from a save or a URL
+
+click()
+>handles a doubleclick on a rendered course
  */
 
 // remove app.course and re-render
@@ -54,13 +64,148 @@ let change_style = function(styleSlider){
     localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
 }
 
-// gets the numbers of credits hours for a course
-app.creditsOf = function(course){
-    if(course.creditHours != undefined)
-	return course.creditHours;
-    if(course.creditHourLow != undefined)
-	return course.creditHourLow;
-    return course.creditHourHigh;
+// grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
+app.autoAndLabs = function(check_course){
+    if(check_course == null)
+	return []; // if there's one or zero, we don't even need to check
+    if(this.mode == "Manual")
+	return [check_course]; // Manual mode - only hover on one section
+    return app.courses_generator ? app.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
+};
+
+// renders courses into the on screen schedule
+app.fillSchedule = function(referrer) {
+    if(referrer)
+	this.course_list_selection = referrer.value;
+    this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
+    var wrappers = document.getElementsByClassName("wrapperInternal");
+    var schedule = this.autoConstruct(this.selected.concat(app.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+    // Then, cycle through and build a divlist
+    var divTracker = [];
+    for(var i=0; i < wrappers.length; ++i){
+	var wrapper = wrappers[i];
+	var day = wrapper.getAttribute("data-day");
+	var hour = wrapper.getAttribute("data-hour");
+	while(wrapper.firstChild) // clear
+	    wrapper.removeChild(wrapper.firstChild);
+	for(var j=0; j<schedule.length; ++j){
+	    var course = schedule[j];
+	    var courseHere = this.courseHere(day, hour, course);
+	    if(course && courseHere){
+		var div = document.createElement("div");
+		div.className = "item";
+		var creditText = this.creditsOf(course);
+		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
+		if(course.waitAvailable > 0)
+		    innerText += course.waitAvailable + '/' + course.waitCapacity + ' waitlist open\n';
+		innerText += 'CRN: ' + course.courseReferenceNumber + '\n';
+		div.innerText = innerText; // need to assign all at once so newlines work properly
+		var link = document.createElement("a");
+		link.className = "link";
+		link.onclick = function(c){ // we need to close this in, else it looks at the last
+		    return function(){app.fetchDescription(c);}; // value of course to be updated
+		}(course);
+		link.innerText = "Description";
+		div.appendChild(link)
+		div.setAttribute("data-index", course.index);
+		div.setAttribute("data-length", courseHere.length);
+		div.setAttribute("data-top", courseHere.top);
+		if(!app.autoInAlts(course, app.courses[app.course])) // run an update instantle - fixes flashes
+		    div.classList.add("selected");
+		div.style.top = div.getAttribute("data-top") * 100 + '%';
+		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+		div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+		wrapper.appendChild(div);
+		divTracker.push(div);
+	    }
+	}
+    }
+
+    //WEB CLASSES
+    var webWrapper = document.getElementById("webWrapper");
+    var web = document.getElementById("web");
+    while(web.firstChild)
+	web.removeChild(web.firstChild);
+    var schedule = this.autoConstruct(this.selected.concat(app.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+    var webClasses = this.webclasses(schedule);
+    webWrapper.style.display = webClasses.length ? "" : "none";
+    for(var j=0; j<webClasses.length; ++j){
+	var course = webClasses[j];
+	if(course){
+	    var div = document.createElement("div");
+	    div.className = "item";
+	    var creditText = this.creditsOf(course);
+	    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
+	    var link = document.createElement("a");
+	    link.className = "link";
+	    link.onclick = function(c){ // we need to close this in, else it looks at the last
+		return function(){app.fetchDescription(c);}; // value of course to be updated
+	    }(course);
+	    link.innerText = "Description";
+	    div.appendChild(link)
+	    div.setAttribute("data-index", course.index);
+	    if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
+		div.classList.add("selected");
+	    web.appendChild(div);
+	    divTracker.push(div);
+	}
+    }
+
+    //Set listeners
+    var update = function(divs){
+	return function(){
+	    for(var k=0; k<divs.length; ++k){
+		var div = divs[k];
+		var course = app.courses[div.getAttribute("data-index")];
+		if(!app.autoInAlts(course, app.courses[app.course]))
+		    div.classList.add("selected");
+		else
+		    div.classList.remove("selected");
+		if(app.hovering.includes(course))
+		    div.classList.add("hovering");
+		else
+		    div.classList.remove("hovering");
+		if(div.getAttribute("data-top")){ // non-web
+		    div.style.top = div.getAttribute("data-top") * 100 + '%';
+		    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+		    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+		}
+	    }
+	}
+    }(divTracker);
+    for(var j=0; j<divTracker.length; ++j){
+	divTracker[j].ondblclick = function(course){
+	    return function(){
+		app.click(course);
+		app.course = null;
+		document.getElementById("selectBox").value = "";
+	    }
+	}(app.courses[divTracker[j].getAttribute("data-index")]);
+	divTracker[j].onmouseenter = function(course){
+	    return function(){
+		app.hovering = app.autoAndLabs(course);
+		update();
+	    }
+	}(app.courses[divTracker[j].getAttribute("data-index")]);
+	divTracker[j].onmouseleave = function(){
+	    return function(){
+		app.hovering = [];
+		update();
+	    }
+	}();
+    }
+    
+    this.dayUpdate(); // and all the other stuff
+    this.autoBar();
+    this.saveMarker();
+    this.updateCredits();
+
+    //Deal with the "you can deselect" thing
+    document.getElementById("escTip").style.display = this.course != null && (this.closed || app.courses[this.course].seatsAvailable) ? "" : "none";
+
+    localStorage.setItem('lastViewed', this.generateHash(false));
+    if(this.selected.length > 0)
+	gtag('event', 'Schedules Tested');
 };
 
 // generates a string which contains course instructors
@@ -221,3 +366,66 @@ app.dayUpdate = function(){
 	}
     }
 }
+
+// used to load in a schedule from either a save or a shared URL
+app.loadHash = function(first){
+    var hashes = location.hash.split("=")[1].split("&")[0].split(",");
+    this.selected = app.courses.filter(function(course){
+	return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+    });
+    document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
+    this.closed = !!location.hash.split("&")[1];
+    if(first){ // loading hash from URL - check if there's a save which matches, and if so select it
+	// this will choose the firstmost schedule that matches
+	var possible = [];
+	for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
+	    if(this.localStorage[saves[i].innerText].split("+")[0] == location.hash.split("#")[1])
+		possible.push(saves[i]);
+	var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
+	    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
+	});
+	if(!possible.length){ // no matches - probably completly new
+	    if((location.hash.split("&")[0].split("=")[1].length > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
+		gtag('event', 'Schedules Shared'); // is completly new
+	} else { // previous - load and update
+	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
+	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
+	}
+    }
+};
+
+// handles a double click on a rendered schedule
+// this adds or removes the course from app.selected
+// but this needs extra steps and resets in auto mode
+app.click = function(course){
+    if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
+    {
+	document.getElementById("selectBox").value = "";
+	if(this.mode == "Manual"){
+	    this.course = null;
+	    this.selected.push(course);
+	} else {
+	    var intended = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.course_list_selection).filter(c => this.autoInAlts(this.courses[this.course], c))
+	    this.course = null;
+	    intended.forEach(c => app.selected.push(c));
+	    this.savedCourseGenerator = "A";
+	    this.autoConstruct(this.selected).get(this.course_list_selection, true); // force url update & selected update
+	}
+    }
+    else
+    {
+	if(this.mode == "Manual")
+	    this.selected.splice(this.selected.indexOf(course), 1);
+	else
+	    this.selected = this.selected.filter(c => course.subjectCourse != c.subjectCourse);
+        this.hovering = [];
+    }
+
+    location.hash = this.generateHash(false);
+    this.course_list_selection = 0;
+    var range = document.getElementById('Range');
+    range.max = 0;
+    range.value = 0; // fix render on auto bar
+    this.hideSearch(); // TODO: optimize
+    this.fillSchedule();
+};

@@ -1,6 +1,9 @@
 /* apputil.js
 This file contains a few app functions that are often in many other files.
 
+creditsOf()
+>gets the number of credits a course is worth
+
 app.generateHash()
 >generates a hash value string containing all information about a given schedule
 >used for sharing URLs and saving schedules
@@ -11,6 +14,15 @@ app.changed()
 >and if there is any deviation between that saved schedule and what is actually on the board
 >ie, modified but not yet saved
 */
+
+// gets the numbers of credits hours for a course
+app.creditsOf = function(course){
+    if(course.creditHours != undefined)
+	return course.creditHours;
+    if(course.creditHourLow != undefined)
+	return course.creditHourLow;
+    return course.creditHourHigh;
+};
 
 // generates hash string with all important schedule values included
 // the hash will take the form of the following:

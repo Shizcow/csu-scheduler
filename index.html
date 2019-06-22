@@ -44,7 +44,7 @@
 
     <div id="main" style="display:none;">
       <div class="left">
-	<div id="noSchedWrapper">
+	<div id="noSchedWrapper" style="display:none;">
 	  <div id="noSchedAlign">
 	    <div id="noSched">
 	      <span>No schedules available without conflict.</span>
@@ -69,7 +69,7 @@
           </thead>
           <tbody id="schedTbody">
 	    <!--
-		<tr once for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
+		<tr for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
 		  <td text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
 		  <td for="day in daylist(true)" class="block">
                     <div class="wrapper">
@@ -195,8 +195,8 @@
     <script type="text/javascript" src="./apputil.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./UIschedule.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./UIright.js?v=0.6.1" charset="utf-8"></script>
-    <script type="text/javascript" src="./selectionLogic.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./UIsavebar.js?v=0.6.1" charset="utf-8"></script>
+    <script type="text/javascript" src="./selectionLogic.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./mounted.js?v=0.6.1" charset="utf-8"></script>
   </body>
 

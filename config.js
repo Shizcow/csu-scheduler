@@ -8,7 +8,7 @@ let app_config = {}; // used for namespace and definition order reasons
 
 // Used for testing - out of a given term, this is how many courses are to be loaded
 // A lower percentage means fewer courses, which means less functionality but faster loading & testing
-app_config.test_percent_cap = 1;
+app_config.test_percent_cap = 100;
 
 // Used for performance tuning - for each large courses request, this is how many courses are requested
 // A lower number means fewer courses requested per request and thus faster requests, but more requests overall

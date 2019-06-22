@@ -1,14 +1,79 @@
-//Generate the next valid schedule and apply it to the board, if possible
+/* UIright.js
+This file contains listeners and aux functions directly responsible for updating
+the contents of <div class="right">. This includes terms, notes, mode selection,
+and course selection.
+This does NOT include webclass rendering. That's in UIschedule.js for continuity
 
+In this file:
 
+totalCredits()
+>returns an integer value representing the total number of credits for all
+>selected courses combined
+
+updateCredits()
+>Updates the "Total Credits" span according to totalCredits()
+
+autoBar()
+>Shows/hides automatic selection bar
+
+genNext()
+>Listener for the "Next" button in automatic mode. Calls out to selectionLogic.js to generate
+>the next valid schedule, or loop. Also updates UI accordingly
+
+changedTerm()
+>Listener for the term selectionn box. Upon change, will load the new term and update the UI accordingly
+
+genDivs()
+>Generates two lists of divs used in automatic&manual mode which are placed in the main course selection box
+
+updateTerms()
+>Fills the term selection dropdown list
+
+updatePercent()
+>Update the current percent message
+
+updateNotes()
+>Listener for the notes textbox, will stretch or shrink the box according to the text within
+
+fillSearch()
+>Fills the course selection box
+
+>autoFilter()
+>Filters out courses from the course selection box depending on the current mode
+
+hideSearch()
+>Filters out options from the course selection box depending on their filterSearch valie
+
+filterSearch()
+>Filters out a single option from the course selection box if the current search
+>query should filter it out
+
+loadHash()
+>Load the URL hash value into the schedule. Primarily used when recieving a schedule shared by URL
+*/
+
+// adds up the credit values of all selected courses and returns it as an integer
 app.totalCredits = function(){
     return this.selected.reduce(function(acc, cur){
 	return acc+app.creditsOf(cur);
     }, 0);
 };
 
+// updates the "Total Credits" counter
+app.updateCredits = function() {
+    document.getElementById("credits").innerText = this.totalCredits();
+};
+
+// shows or hides the automatic selection bar depending on the mode and number of courses selected
+app.autoBar = function(){
+    var autoBar = document.getElementById("autoBar");
+    autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(app.courses[this.course])[0] != null ? "inline-block" : "none";
+    document.getElementById('nextButton').innerText='Next';
+};
+
+// generates and displays the next valid schedule in automatic mode
 app.genNext = function(button){
-    if(app.courses_generator && app.courses_generator.get(app.courses_generator.data ? app.courses_generator.data.length : 0)){ // see if there's more we haven't seen yet
+    if(app.courses_generator && app.courses_generator.get(app.courses_generator.data ? app.courses_generator.data.length : 0)){ // see if there's another valid schedule we haven't seen yet
 	this.course_list_selection = (app.courses_generator.data ? app.courses_generator.data.length : 0)-1; // and show it to us
     } else { // done - start looping
 	this.course_list_selection++;
@@ -22,11 +87,10 @@ app.genNext = function(button){
     button.innerText = (app.courses_generator ? app.courses_generator.done : false) ? "Loop" : "Next";
 };
 
-app.updateCredits = function() {
-    document.getElementById("credits").innerText = this.totalCredits();
-};
-
-
+// listener for term selection box
+// loads in new term (see librequests.js) and places courses in course selection box
+// if loadHash is true, then render app.selected
+// if loadHash is "first", render from URL hash
 app.changedTerm = function(loadHash = false, referrer = null){
     if(!loadHash && referrer && this.changed())
         if (!window.confirm("Are you sure you want to discard your changes?")){
@@ -75,6 +139,10 @@ app.changedTerm = function(loadHash = false, referrer = null){
 	}
     }(loadHash));
 };
+
+// generate course selection box option list for manual and automatic mode
+// manual list is stored in app.courses_manual
+// auto list is stored in app.courses_auto
 app.genDivs = function(loadSelect = true){
     var courses_auto = app.courses.reduce(function(acc, cur){
 	if(acc.length > 0){
@@ -106,6 +174,9 @@ app.genDivs = function(loadSelect = true){
     document.getElementById("coursesBox").style.display = "";
     document.getElementById("loadingCourses").style.display = "none";
 };
+
+// take the loaded terms values and display them in the term selection dropdown list
+// fired in mount.js
 app.updateTerms = function(){
     var selectBox = document.getElementById("termSelect");
     while(selectBox.lastChild)
@@ -120,48 +191,20 @@ app.updateTerms = function(){
     selectBox.value = this.term;
 };
 
-
-app.autoBar = function(){
-    var autoBar = document.getElementById("autoBar");
-    autoBar.style.display = this.mode == 'Automatic' && this.selected.concat(app.courses[this.course])[0] != null ? "inline-block" : "none";
-    document.getElementById('nextButton').innerText='Next';
-};
+// update the percent message on screen
+// fired in librequests.js
 app.updatePercent = function(){
     document.getElementById("loadingCourses").innerText = "Loading Courses... " + this.percent;
 };
+
+// update the size of the notes box so it flexes with content
 app.updateNotes = function(noteBox){
     noteBox.style.height='25px';
     noteBox.style.height=(noteBox.scrollHeight+25)+'px';
     this.saveMarker();
 };
 
-app.loadHash = function(first){ // loading from URL or save, get hash and parse it
-    var hashes = location.hash.split("=")[1].split("&")[0].split(",");
-    this.selected = app.courses.filter(function(course){
-	return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
-    });
-    document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
-    this.closed = !!location.hash.split("&")[1];
-    if(first){ // loading hash from URL - check if there's a save which matches, and if so select it
-	// this will choose the firstmost schedule that matches
-	var possible = [];
-	for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
-	    if(this.localStorage[saves[i].innerText].split("+")[0] == location.hash.split("#")[1])
-		possible.push(saves[i]);
-	var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
-	    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
-	});
-	if(!possible.length){ // no matches - probably completly new
-	    if((location.hash.split("&")[0].split("=")[1].length > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
-		gtag('event', 'Schedules Shared'); // is completly new
-	} else { // previous - load and update
-	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
-	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
-	}
-    }
-};
-
-
+// fills in the course selection box according to mode and search query
 app.fillSearch = function(referrer) {
     var selectBox = document.getElementById("selectBox");
     var val = selectBox.value;
@@ -174,6 +217,14 @@ app.fillSearch = function(referrer) {
     this.hideSearch();
 };
 
+// returns the option list, dependent on mode
+// used to render course selection list
+app.autoFilter = function(courses, referrer){
+    this.mode = referrer ? referrer.value : this.mode;
+    return this.mode == "Manual" ? app.courses_manual : app.courses_auto;
+};
+
+// steps through each option in course selection box and hides it if the search string dictates
 app.hideSearch = function(referrer) {
     if(referrer){
 	this.closed = referrer.checked;
@@ -185,6 +236,7 @@ app.hideSearch = function(referrer) {
 	options[i].style.display = this.filterSearch(app.courses[options[i].value], search) ? "" : "none";
 };
 
+// hideSearch but for a single option
 app.filterSearch = function(course, search) {
     if(this.selected.indexOf(course) !== -1) return false;
     if (!this.closed && !course.seatsAvailable) return false;
@@ -202,145 +254,3 @@ app.filterSearch = function(course, search) {
     
     return true;
 };
-
-app.autoFilter = function(courses, referrer){ // remove all consecutive duplicates - only in automatic mode
-    this.mode = referrer ? referrer.value : this.mode;
-    return this.mode == "Manual" ? app.courses_manual : app.courses_auto;
-};
-
-
-app.fillSchedule = function(referrer) {
-    if(referrer)
-	this.course_list_selection = referrer.value;
-    this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
-    var wrappers = document.getElementsByClassName("wrapperInternal");
-    var schedule = this.autoConstruct(this.selected.concat(app.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
-    // Then, cycle through and build a divlist
-    var divTracker = [];
-    for(var i=0; i < wrappers.length; ++i){
-	var wrapper = wrappers[i];
-	var day = wrapper.getAttribute("data-day");
-	var hour = wrapper.getAttribute("data-hour");
-	while(wrapper.firstChild) // clear
-	    wrapper.removeChild(wrapper.firstChild);
-	for(var j=0; j<schedule.length; ++j){
-	    var course = schedule[j];
-	    var courseHere = this.courseHere(day, hour, course);
-	    if(course && courseHere){
-		var div = document.createElement("div");
-		div.className = "item";
-		var creditText = this.creditsOf(course);
-		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
-		if(course.waitAvailable > 0)
-		    innerText += course.waitAvailable + '/' + course.waitCapacity + ' waitlist open\n';
-		innerText += 'CRN: ' + course.courseReferenceNumber + '\n';
-		div.innerText = innerText; // need to assign all at once so newlines work properly
-		var link = document.createElement("a");
-		link.className = "link";
-		link.onclick = function(c){ // we need to close this in, else it looks at the last
-		    return function(){app.fetchDescription(c);}; // value of course to be updated
-		}(course);
-		link.innerText = "Description";
-		div.appendChild(link)
-		div.setAttribute("data-index", course.index);
-		div.setAttribute("data-length", courseHere.length);
-		div.setAttribute("data-top", courseHere.top);
-		if(!app.autoInAlts(course, app.courses[app.course])) // run an update instantle - fixes flashes
-		    div.classList.add("selected");
-		div.style.top = div.getAttribute("data-top") * 100 + '%';
-		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		wrapper.appendChild(div);
-		divTracker.push(div);
-	    }
-	}
-    }
-
-    //WEB CLASSES
-    var webWrapper = document.getElementById("webWrapper");
-    var web = document.getElementById("web");
-    while(web.firstChild)
-	web.removeChild(web.firstChild);
-    var schedule = this.autoConstruct(this.selected.concat(app.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
-    var webClasses = this.webclasses(schedule);
-    webWrapper.style.display = webClasses.length ? "" : "none";
-    for(var j=0; j<webClasses.length; ++j){
-	var course = webClasses[j];
-	if(course){
-	    var div = document.createElement("div");
-	    div.className = "item";
-	    var creditText = this.creditsOf(course);
-	    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
-	    var link = document.createElement("a");
-	    link.className = "link";
-	    link.onclick = function(c){ // we need to close this in, else it looks at the last
-		return function(){app.fetchDescription(c);}; // value of course to be updated
-	    }(course);
-	    link.innerText = "Description";
-	    div.appendChild(link)
-	    div.setAttribute("data-index", course.index);
-	    if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
-		div.classList.add("selected");
-	    web.appendChild(div);
-	    divTracker.push(div);
-	}
-    }
-
-    //Set listeners
-    var update = function(divs){
-	return function(){
-	    for(var k=0; k<divs.length; ++k){
-		var div = divs[k];
-		var course = app.courses[div.getAttribute("data-index")];
-		if(!app.autoInAlts(course, app.courses[app.course]))
-		    div.classList.add("selected");
-		else
-		    div.classList.remove("selected");
-		if(app.hovering.includes(course))
-		    div.classList.add("hovering");
-		else
-		    div.classList.remove("hovering");
-		if(div.getAttribute("data-top")){ // non-web
-		    div.style.top = div.getAttribute("data-top") * 100 + '%';
-		    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		}
-	    }
-	}
-    }(divTracker);
-    for(var j=0; j<divTracker.length; ++j){
-	divTracker[j].ondblclick = function(course){
-	    return function(){
-		app.click(course);
-		app.course = null;
-		document.getElementById("selectBox").value = "";
-	    }
-	}(app.courses[divTracker[j].getAttribute("data-index")]);
-	divTracker[j].onmouseenter = function(course){
-	    return function(){
-		app.hovering = app.autoAndLabs(course);
-		update();
-	    }
-	}(app.courses[divTracker[j].getAttribute("data-index")]);
-	divTracker[j].onmouseleave = function(){
-	    return function(){
-		app.hovering = [];
-		update();
-	    }
-	}();
-    }
-    
-    this.dayUpdate(); // and all the other stuff
-    this.autoBar();
-    this.saveMarker();
-    this.updateCredits();
-
-    //Deal with the "you can deselect" thing
-    document.getElementById("escTip").style.display = this.course != null && (this.closed || app.courses[this.course].seatsAvailable) ? "" : "none";
-
-    localStorage.setItem('lastViewed', this.generateHash(false));
-    if(this.selected.length > 0)
-	gtag('event', 'Schedules Tested');
-};
-
-

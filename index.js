@@ -1,5 +1,11 @@
-//This file is meant to fill the tedious html layouts
+/* index.js
+This file contains code to fill tedious tables so that index.html isn't unreadably long
 
+I use anon functions so they don't stick around in namespace
+*/
+
+// thead - fill with days of the week
+// see comment in index.html within <td id="schedThead">
 (function(){
     var thead = document.getElementById("schedThead");
     var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -11,14 +17,16 @@
     }
 })();
 
-(function(){ // tbody body
+// tbody - fill with lots of stuff
+// see commend in <tbody id="schedTbody">
+(function(){
     var tbody = document.getElementById("schedTbody");
     var hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     var days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     var tr_template = document.createElement("tr"); // CSS says Saturday & Sunday are hidden
     var td0 = document.createElement("td");
     td0.className = "time";
-    //td0.innerText = ((hour - 1) % 12 + 1) + ':00';
+    //td0.innerText = ((hour - 1) % 12 + 1) + ':00'; - set later
     tr_template.appendChild(td0);
 
     var td_template = document.createElement("td");
@@ -27,7 +35,7 @@
     div0.className = "wrapper";
     var div00 = document.createElement("div");
     div00.className = "wrapperInternal";
-    //div00.data-hour = hour, div00.data-day = day
+    //div00.data-hour = hour, div00.data-day = day - set later
     div0.appendChild(div00);
     div0.appendChild(document.createElement("div"));
     div0.appendChild(document.createElement("div"));
@@ -48,7 +56,8 @@
     }
 })();
 
-(function(){ // Hide Saturday and Sunday - will be shown on request
+// Hide Saturday and Sunday - will be shown on request
+(function(){
     var ths = document.getElementById("schedThead").children;
     ths[6].style.display = "none";
     ths[7].style.display = "none";
