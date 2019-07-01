@@ -46,14 +46,20 @@ body {
     bottom: 25px;
 }
 
-.right {
-    padding: 10px;
-    position: fixed;
+.rightWrapper {
+    border-left: 1px solid gray;
+    overflow: auto;
+    height: 100%;
+    width: 300px;
     right: 0;
     top: 0;
-    width: 300px;
+    position: fixed;
+}
+
+.right {
+    padding: 10px;
     height: 100%;
-    border-left: 1px solid gray;
+    width: 100%;
     overflow: auto;
 }
 

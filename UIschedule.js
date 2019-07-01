@@ -61,6 +61,7 @@ window.addEventListener("keydown", function (e) {
 // this function loads / unloads style_dark.css to switch between dark and light mode
 let change_style = function(styleSlider){
     document.styleSheets[1].disabled = !styleSlider.checked;
+    document.getElementById('logo').src = "CSU-Signature-Stacked-357-617" + (styleSlider.checked ? "-rev" : "") + ".svg";
     localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
 }
 

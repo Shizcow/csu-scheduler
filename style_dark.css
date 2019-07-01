@@ -87,8 +87,15 @@ table .item.selected.hovering, .selectedList div.selected:hover {
     background: #555555;
 }
 
-.export textarea, .export input, .right select, #searchBox, #selectBox>option, #notes, #nextButton {
+.export textarea, .export input, .right select:not(#termSelect), #searchBox, #selectBox>option, #notes, #nextButton {
     background: #f6f3e8;
+    color: #242424;
+}
+
+/*
+To fix the above for the dropdown - it renders ugly with a changed background
+*/
+#termSelect {
     color: #242424;
 }
 

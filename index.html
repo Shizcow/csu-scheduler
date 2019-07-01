@@ -39,7 +39,7 @@
       For Chrome, it's a bit more envolved. See <a href="https://www.codevoila.com/post/75/how-to-disable-same-origin-policy-in-chrome">this</a> for more details.
       <br>
       NOTE: it is technically unsafe to browse with CORS-everywhere enabled. Please, disable it when not using this tool.<br>
-      <b>If you'd like to use this tool without needing an extension, go bother CSU (I'll get an email later) and tell them you like this tool and want to see it used freeley.</b>
+      <b>If you'd like to use this tool without needing an extension, go bother Joe Rymski, Director of Web Communications, (Joe.Rymski@colostate.edu) you like this tool and want to see it used freeley.</b>
     </div>
 
     <div id="main" style="display:none;">
@@ -85,64 +85,66 @@
 	</table>
       </div>
 
-      <div class="right">
-	<img src="logo.png" style="width:100%"/>
-	<span class="title">Mode</span>
-	<br>
-	<input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();" checked="checked"> Manual
-	<br>
-	<input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();"> Automatic
-	<br>
-	<div id="autoBar" style="display:none;" style="width: 100%;">
-	  <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
-	  <button id="nextButton" style="width: 30%;float: right;"></button>
-	</div>
-	<br>
-	<span class="title">Term</span>
-	<select onchange="app.changedTerm(false, this)" id="termSelect">
-	  <option value="" selected hidden disabled></option>
-	  <!--
-              <option for="term in terms" value="term" text="term.description"></option>
-              -->
-	</select>
-	<div id="coursesBox" style="display:none;">
-          <span class="title">Courses</span>
-          <input id="searchBox" oninput="app.hideSearch()" placeholder="Search for a course..." style="width: 100%;">
-          <select id="selectBox" onchange="app.fillSchedule()" size="25">
-	    <option value="" selected disabled hidden>default</option>
-	    <!-- options are filled in automatically -->
-          </select>
-          <input id="closedCheck" onclick="app.hideSearch(this); app.fillSchedule(this)" type="checkbox"> Closed
-          <br>
-          <span id="escTip" class="hint">*Press esc to cancel selection</span>
-          
-          <br><br>
-
-	  <div>
-            <span class="title">Total Credits:</span>
-	    <span id="credits"></span><br><br>
+      <div class="rightWrapper">
+	<img id="logo" src="CSU-Signature-Stacked-357-617.svg" style="width:100%"/>
+	<div class="right">
+	  <span class="title">Mode</span>
+	  <br>
+	  <input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();" checked="checked"> Manual
+	  <br>
+	  <input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();"> Automatic
+	  <br>
+	  <div id="autoBar" style="display:none;" style="width: 100%;">
+	    <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
+	    <button id="nextButton" style="width: 30%;float: right;"></button>
 	  </div>
+	  <br>
+	  <span class="title">Term</span>
+	  <select onchange="app.changedTerm(false, this)" id="termSelect">
+	    <option value="" selected hidden disabled></option>
+	    <!--
+		<option for="term in terms" value="term" text="term.description"></option>
+		-->
+	  </select>
+	  <div id="coursesBox" style="display:none;">
+            <span class="title">Courses</span>
+            <input id="searchBox" oninput="app.hideSearch()" placeholder="Search for a course..." style="width: 100%;">
+            <select id="selectBox" onchange="app.fillSchedule()" size="25">
+	      <option value="" selected disabled hidden>default</option>
+	      <!-- options are filled in automatically -->
+            </select>
+            <input id="closedCheck" onclick="app.hideSearch(this); app.fillSchedule(this)" type="checkbox"> Closed
+            <br>
+            <span id="escTip" class="hint">*Press esc to cancel selection</span>
+            
+            <br><br>
 
-	  
-          <span class="title">Notes:</span>
-	  <textarea id="notes" onkeyup="app.updateNotes(this);"></textarea>
-	  
-          <div id="webWrapper" style="display:none;">
-            <span class="title">Web Classes</span>
-            <div class="selectedList" id="web">
-	      <!-- autofilled in fillSchedule
-		   <div for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
-		     {data...}
-		   </div>
-		   -->
+	    <div>
+              <span class="title">Total Credits:</span>
+	      <span id="credits"></span><br><br>
+	    </div>
+
+	    
+            <span class="title">Notes:</span>
+	    <textarea id="notes" onkeyup="app.updateNotes(this);"></textarea>
+	    
+            <div id="webWrapper" style="display:none;">
+              <span class="title">Web Classes</span>
+              <div class="selectedList" id="web">
+		<!-- autofilled in fillSchedule
+		     <div for="c in webclasses(selected.concat(courses[course]))" @dblClick="click(c)" :class="{selected: c != courses[course] }">
+		       {data...}
+		     </div>
+		     -->
+	      </div>
 	    </div>
 	  </div>
+	  <div id="loadingCourses"></div>
+
+	  <br><br>
+
+	  * Open seats can take up to two hours to update during peak registration hours
 	</div>
-	<div id="loadingCourses"></div>
-
-	<br><br>
-
-	* Open seats can take up to two hours to update during peak registration hours
       </div>
 
       <div class="footer">
