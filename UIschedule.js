@@ -16,6 +16,9 @@ autoAndLabs()
 fillSchedule()
 >Renders courses into the on screen schedule
 
+window.onhashchange()
+>detects a URL shared schedule during normal operation
+
 courseHere()
 >Checks if a course section is offered during a given day/hour
 >If so, returns a minimal rendering object
@@ -202,6 +205,23 @@ app.fillSchedule = function(referrer) {
     localStorage.setItem('lastViewed', this.generateHash(false));
     if(this.selected.length > 0)
 	gtag('event', 'Schedules Tested');
+};
+
+// handler for catching shared scheduled mid-operation without a refresh
+// this only works because the onhashchange function fires after a normal fillSchedule
+// so, all we need to do is detect if we just ran a fill schedule
+// if so, ignore the hash change. If not, we know there's been a manual change -- refill
+// and alert GA of a schedule shared
+onhashchange = function(){
+    //first, check if we need to load
+    //IE, if hash agrees with loaded schedule
+    if(!(app.generateHash(false) == location.hash.substr(1))){
+	//first change term
+	app.term = app.terms[app.terms.map(el => el.URLcode).indexOf(location.hash.split("=")[0].substr(1))].URLcode;
+	//then load selected & render on screen
+	app.updateTerms();
+	app.changedTerm("first");
+    }
 };
 
 // tests whether or not a course is in a day/hour, and if so returns a render object
@@ -416,6 +436,6 @@ app.click = function(course){
     var range = document.getElementById('Range');
     range.max = 0;
     range.value = 0; // fix render on auto bar
-    this.hideSearch(); // TODO: optimize
+    this.hideSearch();
     this.fillSchedule();
 };
