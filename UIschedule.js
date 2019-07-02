@@ -49,7 +49,7 @@ click()
 // remove app.course and re-render
 // used to de-select a pending (rendered in blue) course
 window.addEventListener("keydown", function (e) {
-    if(e.key == "Escape" || e.key == "Delete"){   // when deleted or escaped
+    if(e.key == "Escape"){   // when pressing escape
 	document.getElementById("selectBox").value = "";
 	app.course = null;
 	app.savedCourseGenerator = "";

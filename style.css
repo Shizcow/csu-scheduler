@@ -48,7 +48,7 @@ body {
 
 .rightWrapper {
     border-left: 1px solid gray;
-    overflow: auto;
+    overflow: hidden;
     height: 100%;
     width: 300px;
     right: 0;
