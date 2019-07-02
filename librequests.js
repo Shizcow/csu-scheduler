@@ -15,7 +15,7 @@ void preProcessDataPack(dataPack_object)
 */
 
 // Prepends common URL prefix
-let server = function(h) { return 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/' + h; };
+let server = function(h) { return app_config.URLprefix + h; };
 
 // pre process courses are they're coming in, strip down data for lower memory usage
 // acts on var contents like a reference in C because JS is weird and you can do this sometimes
@@ -136,32 +136,37 @@ class Searcher{
     start(callback = null){
 	if(this.xhr || this.done) // don't restart if not needed
 	    return;
-	var url = "";
-	var sendData = null;
-	var openMethod = "GET";
+	var GETPOST = {};
+	GETPOST.postData = null;
+	GETPOST.openMethod = null;
+	GETPOST.url = null;
 	switch(this.type){
 	case "prime":
-	    url = server("term/search?mode=search");
-	    sendData = "term=" + this.term + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
-	    openMethod = "POST";
+	    app_config.URLprime(GETPOST, this.term);
 	    break;
 	case "courses":
-	    url = server("searchResults/searchResults?txt_term=" + this.term + "&startDatepicker=&endDatepicker=&pageOffset=" + this.offset.toString() + "&pageMaxSize=" + this.size.toString() + "&sortColumn=subjectDescription&sortDirection=asc");
+	    app_config.URLgetCourses(GETPOST, this.term, this.offset, this.size);
 	    break;
 	case "terms":
-	    url = server("classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566");
+	    app_config.URLgetTerms(GETPOST);
 	    break;
 	case "desc":
-	    url = server("searchResults/getCourseDescription");
-	    sendData = "term=" + this.term + "&courseReferenceNumber=" + this.offset;
-	    openMethod = "POST";
+	    app_config.URLgetDescription(GETPOST, this.term, this.offset);
 	    break;
 	case "test":
-	    url = server("");
+	    app_config.URLtest(GETPOST);
 	    break;
 	default:
 	    console.error("Invalid type in Searcher");
 	}
+	// check to make sure config.js has set GETPOST correctly
+	if(GETPOST.url == null)
+	    console.error("url not set for request of type " + this.type + ". There's an erorr in config.js");
+	if(GETPOST.openMethod == null)
+	    console.error("openMethod not set for request of type " + this.type + ". There's an erorr in config.js");
+	if(GETPOST.openMethod == "POST" && GETPOST.postData == null)
+	    console.error("postData is missing for POST request of type " + this.type + ". There's an erorr in config.js");
+	// start making the request
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
@@ -195,11 +200,11 @@ class Searcher{
 		}
 	    }
 	}(this);
-	this.xhr.open(openMethod, url); // local sync
+	this.xhr.open(GETPOST.openMethod, GETPOST.url); // local sync
 	this.xhr.withCredentials = true; // needed for auth cookies
-	if(openMethod == "POST")
+	if(GETPOST.openMethod == "POST")
 	    this.xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); // needed for submitting form data - posts and descriptions
-	this.xhr.send(sendData);
+	this.xhr.send(GETPOST.postData);
     }
     stop(){
 	if(!this.xhr || this.done) // can't stop what's not there to stop
