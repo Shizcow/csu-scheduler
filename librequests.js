@@ -186,7 +186,10 @@ class Searcher{
 		if(ref.type == "test")
 		    return; // forget about everything else if it's just a test
 		if (this.readyState === 4 && this.status === 200){
-		    var response = ref.type == "desc" ? this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim() : JSON.parse(this.responseText);
+		    var response = null;
+		    response = ref.type == "desc" ? this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim() : JSON.parse(this.responseText);
+		    if(ref.type == "terms")
+			response = app_config.PROCESSgetTerms(this.responseText);
 		    if(ref.type != "prime") // else it's priming and just a post
 			ref.data = response.data;
 		    if(callback)

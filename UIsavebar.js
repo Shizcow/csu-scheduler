@@ -198,9 +198,9 @@ app.load = function(schedule) {
     document.getElementById("notes").value = this.localStorage[schedule].split("+")[1];
     location.hash = this.localStorage[schedule].split("+")[0];
     var currentTerm = location.hash.split("=")[0].substr(1);
-    if ((index = this.terms.map(term => term.code).indexOf(currentTerm)) > -1){ // make sure term is valid
-        if(this.term != this.terms[index].code) {
-	    this.term = this.terms[index].code;
+    if ((index = this.terms.map(term => term.URLcode).indexOf(currentTerm)) > -1){ // make sure term is valid
+        if(this.term != this.terms[index].URLcode) {
+	    this.term = this.terms[index].URLcode;
 	    this.updateTerms();
 	    this.changedTerm(true);
         } else {

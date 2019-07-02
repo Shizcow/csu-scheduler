@@ -184,8 +184,9 @@ app.updateTerms = function(){
     for(var i = 0; i < this.terms.length; i++){
 	var term = this.terms[i];
 	var option = document.createElement("option");
-	option.value = term.code;
-	option.innerText = term.description;
+	console.log("term", term)
+	option.value = term.URLcode;
+	option.innerText = term.title;
 	selectBox.appendChild(option);
     }
     selectBox.value = this.term;

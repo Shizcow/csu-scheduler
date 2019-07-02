@@ -33,12 +33,12 @@ document.getElementById("closedCheck").checked = app.closed;
 //load terms -> then load courses and everything else
 (new Searcher("terms")).start(function(response){
     app.terms = response;
-    if (location.hash.match(/#\d+=[\d+,?]+/) && (index = app.terms.map(el => el.code).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
-	app.term = app.terms[index].code;
+    if (location.hash.match(/#\d+=[\d+,?]+/) && (index = app.terms.map(el => el.URLcode).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
+	app.term = app.terms[index].URLcode;
 	app.updateTerms();
 	app.changedTerm("first");
     } else {
-	app.term = app.terms[0].code;
+	app.term = app.terms[0].URLcode;
 	app.updateTerms();
 	app.changedTerm(false);
     }

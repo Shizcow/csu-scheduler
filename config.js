@@ -51,8 +51,6 @@ app_config.chunk = 300;
 //100---> Finish: 45.26s, 34.36s, 36.82s = 38.813s avg
 
 
-
-
 /*_      _____ ____  _____  ______ ____  _    _ ______  _____ _______ _____ 
  | |    |_   _|  _ \|  __ \|  ____/ __ \| |  | |  ____|/ ____|__   __/ ____|
  | |      | | | |_) | |__) | |__ | |  | | |  | | |__  | (___    | | | (___  
@@ -175,13 +173,13 @@ app_config.URLgetCourses = function(GETPOST, termCode, offset, size){
 // app_config.URLgetDescription
 // This function is used to get the URL needed for quering a course description
 // this function takes two additional parameters:
-// 1) "termCode", which is the URL code used to represent a term in a term request.
-//     termCode is calculated in app_config.PROCESSgetTerms
-// 2) "courseReferenceNumber", which is the URL code representing a course ID
-app_config.URLgetDescription = function(GETPOST, termCode, courseReferenceNumber){
+// 1) "termURLcode", which is the URL code used to represent a term in a term request.
+//     termURLcode is calculated in app_config.PROCESSgetTerms
+// 2) "courseURLcode", which is the URL code representing a course ID
+app_config.URLgetDescription = function(GETPOST, termURLcode, courseURLcode){
     GETPOST.openMethod = "POST";
     GETPOST.url = app_config.URLprefix + "searchResults/getCourseDescription";
-    GETPOST.postData = "term=" + termCode + "&courseReferenceNumber=" + courseReferenceNumber;
+    GETPOST.postData = "term=" + termURLcode + "&courseReferenceNumber=" + courseURLcode;
 }
 
 // app_config.URLtest
@@ -207,7 +205,7 @@ app_config.URLtest = function(GETPOST){
 app_config.URLprime = function(GETPOST, termCode){
     GETPOST.openMethod = "POST";
     GETPOST.url = app_config.URLprefix + "term/search?mode=search";
-    GETPOST.postData = "term=" + termCode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker="
+    GETPOST.postData = "term=" + termCode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
 }
 
 
@@ -226,4 +224,226 @@ app_config.URLprime = function(GETPOST, termCode){
 
 This sections is used for processing incoming data and preparing it to work
 with the rest of the source code.
+This is important because it takes less work to modify data than it does to
+modify source code.
+
+So let's assume you followed the librequests URLs guide and you're ready
+to get some stuff up on screen. In order to make that happen, you need to
+process incoming data, and it stands to reason that incoming data will
+be different for each college. So, here's a guide on how to process your
+data in such a way that it will magically work with the rest of the site:
+
+1) Process URL recieved data
+So let's assume you've overcame the hardest part: getting things to load.
+Now you need to get that stuff to display on screen. First up is terms.
+In each of the PROCESSget functions, results are daken directly from the
+URLget functions we defined eariler. Specific instructions and templates
+are found in functions. Fill them out in this order:
+app_config.PROCESSgetTerms()
+app_config.PROCESSgetCourses()
+app_config.PROCESSgetDescription()
 */
+
+
+// app_config.PROCESSgetTerms()
+// This function is used to process incoming term data into a way
+// the source can understand
+// This function takes one parameter: responseText. This is more
+// or less taken directly from the XMLHttpRequest.onreadystatechange
+// method as this.responseText, and should be treated as such
+//
+// Now, for processing rules. With the input of responseText, construct
+// a list of objects which hold two values: URLcode and title.
+// -URLcode is the URL representation of a term. It's what's passed
+//  to app_config.URLgetCourses, the pattern should be evident
+// -title is nothing more than the human readable version of the term
+//  this can be "Summer 2019" or such. You may need to construct this
+// so long as you can get both of these working, you should be perfect
+//
+// here's an example:
+/*
+responseText (literal text):
+[
+  {
+    "code": "201990",
+    "description": "Fall Semester 2019"
+  },
+  {
+    "code": "201960",
+    "description": "Summer Session 2019"
+  },
+  {
+    "code": "201910",
+    "description": "Spring Semester 2019"
+  }
+]
+
+desired return value as an array of objects:
+[
+  {
+    URLcode: "201990",
+    title: "Fall Semester 2019"
+  },
+  {
+    URLcode: "201960",
+    title: "Summer Session 2019"
+  },
+  {
+    URLcode: "201910",
+    title: "Spring Semester 2019"
+  }
+]
+*/
+app_config.PROCESSgetTerms = function(responseText){
+    var termJSON = JSON.parse(responseText);
+    var ret = [];
+    termJSON.forEach(function(termObj){
+	ret.push({URLcode: termObj.code, title: termObj.description});
+    });
+    return ret;
+}
+
+
+// app_config.PROCESSgetCourses()
+// This function is similar to app_config.PROCESSgetTerms
+// The goal here is to take incoming responseData and coax it into a form
+// the rest of the source code will understand.
+//
+// NOTE: Do NOT filter any courses here. The length of the returned array is
+// very important.
+//
+// Now, for the processing rules. With the input of responseText, construct
+// an array of objects, each representing a course. They should have the
+// following values:
+/*
+-courseNumber: if the course is MATH 101, this value should be "101"
+-URLcode: the URL code used to get the course description, passed to app_config.URLgetDescription()
+-title: if the course is MATH 101, this value should be "Introduction to College Algebra"
+-credits: integer representation of a course's credit hours
+-faculty: string of faculty, such as "Jon Doe, Mike Smith, and Sarah Williams"
+-meetings: a list of meetings. See below for more details
+           If meetings is an empty list, this course will be automatically filtered out later
+-scheduleTypeDescription: "Lecture", "Laboratory", "Rescission", etc.
+-subject: if the course is MATH 101, this value should be "MATH"
+
+and if available:
+-maximumEnrollment: if there are 25/100 seats available (75 taken), this value should be "100"
+-seatsAvailable: if there are 25/100 seats available (75 taken), this value should be "25"
+-waitAvailable: same as above but on a waitlist
+-waitCapacity: same as above but on a waitlist
+*/
+// Now, meetings have some strange rules. They are as follows:
+/*
+the meetings property should be an array of objects, all of which have a few properties:
+
+-building: if the section is held in BC 104, this value should be "BC"
+-room: if the section is held in BC 104, this value should be "104"
+-beginTime: string value represented in military time for the start
+            this is to be zero-truncated and missing the :
+            if the course starts at 2:45pm, this should be "1445"
+            if the course starts at 8:30am, this should be "830"
+            if the course starts at 1:00pm, this should be "1300"
+-endTime: same as above but for end
+-monday: Boolean - is the section held on monday?
+-tuesday: same as above
+-wednesday: etc
+-thursday
+-friday
+-saturday
+-sunday
+*/
+// an example of a constructed course is as follows:
+/*
+{
+ courseNumber: "101"
+ URLcode: "29948"
+ title: "Introduction to College Algebra"
+ credits: 4
+ faculty: "Jon Doe, Mike Smith, and Sarah Williams"
+ meetings: [
+            {
+	     building: "BC"
+	     room: "104"
+	     beginTime: "900"
+	     endTime: "1030"
+	     monday: true
+	     tuesday: false
+	     wednesday: true
+	     thursday: false
+	     friday: true
+	     saturday: false
+	     sunday: false
+	    },
+            {
+	     building: "RA"
+	     room: "209"
+	     beginTime: "1230"
+	     endTime: "1400"
+	     monday: false
+	     tuesday: true
+	     wednesday: false
+	     thursday: true
+	     friday: false
+	     saturday: false
+	     sunday: false
+	    }
+           ]
+ scheduleTypeDescription: "Lecture"
+ subject: "MATH"
+ maximumEnrollment: "100"
+ seatsAvailable: "25"
+}
+*/
+// Remember to return a list of constructed courses
+app_config.PROCESSgetCourses = function(responseText){
+    var coursesJSON = JSON.parse(responseText).data;
+    ret_courses = [];
+    coursesJSON.forEach(function(courseJSON){
+	ret_course = {};
+	ret_course.courseNumber = courseJSON.courseNumber;
+	ret_course.URLcode = courseJSON.courseReferenceNumber;
+	ret_course.title = courseJSON.courseTitle;
+	
+	ret_course.credits = 0;
+	if(courseJSON.creditHours != undefined)
+	    ret_course.credits = courseJSON.creditHours;
+	else if(courseJSON.creditHourLow != undefined)
+	    ret_course.credits = courseJSON.creditHourLow;
+	else if(courseJSON.creditHourHigh != undefined)
+	    ret_course.credits = courseJSON.creditHourHigh;
+
+	if(courseJSON.faculty.length == 0)
+	    ret_course.faculty = "STAFF";
+	else if(courseJSON.faculty.length <= 2)
+	    ret_course.faculty = courseJSON.faculty.join(" and ");
+	else{
+	    ret_course.faculty = courseJSON.faculty.slice(0, -1).join(", ") + ", and " + courseJSON.faculty[faculty.length-1];
+	    // make a list in form of "a, b, c, d, and e"
+	}
+
+	ret_course.scheduleTypeDescription = courseJSON.scheduleTypeDescription;
+	ret_course.subject = courseJSON.subject;
+	ret_course.maximumEnrollment = courseJSON.maximumEnrollment;
+	ret_course.seatsAvailable = courseJSON.seatsAvailable;
+	ret_course.waitAvailable = courseJSON.waitAvailable;
+	ret_course.waitCapacity = courseJSON.waitCapacity;
+
+	ret_course.meetings = courseJSON.meetingsFaculty.map(function(meetingFaculty){
+	    var meeting = {};
+	    meeting.building = meetingsFaculty.meetingTime.building;
+	    meeting.room = meetingsFaculty.meetingTime.room;
+	    meeting.beginTime = meetingsFaculty.meetingTime.beginTime;
+	    meeting.endTime = meetingsFaculty.meetingTime.endTime;
+	    meeting.monday = meetingsFaculty.meetingTime.monday;
+	    meeting.tuesday = meetingsFaculty.meetingTime.tuesday;
+	    meeting.wednesday = meetingsFaculty.meetingTime.wednesday;
+	    meeting.thursday = meetingsFaculty.meetingTime.thursday;
+	    meeting.friday = meetingsFaculty.meetingTime.friday;
+	    meeting.saturday = meetingsFaculty.meetingTime.saturday;
+	    meeting.sunday = meetingsFaculty.meetingTime.sunday;
+	});
+	
+	ret_courses.push(ret_course);
+    })
+    return ret_courses;
+}
