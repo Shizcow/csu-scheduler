@@ -7,9 +7,6 @@ In this file:
 Lazy class
 >caches generated schedules
 
-autoInAlts()
->check if two sections are of the same course (ex: MATH 101 lab and MATH 101 lecture)
-
 autoConstruct()
 >creates a Lazy object which contains a generator for all valid courses of a given schedule
 
@@ -48,13 +45,13 @@ var divisible_by_2 = function(a){
 var lazy = new Lazy(generator);
 lazy.filter(divisible_by_2);
 
-console.log(lazy.get(0))
+console..log(lazy.get(0))
 // returns 0
-console.log(lazy.get(1))
+console..log(lazy.get(1))
 // returns 2
-console.log(lazy.get(2))
+console..log(lazy.get(2))
 // returns 4
-console.log(lazy.get(3))
+console..log(lazy.get(3))
 // returns 6
 */
 class Lazy{
@@ -95,15 +92,6 @@ class Lazy{
     }
 }
 
-// check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
-app.autoInAlts = function(check_course, course_alts){ // pretty much just fixes a render bug
-    if(check_course == null || course_alts == null)
-	return false; // if there's one or zero, we don't even need to check
-    if(this.mode == "Manual")
-	return check_course == course_alts;
-    return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
-};
-
 // return a Lazy object which spits out valid schedules, and cache it so we don't need to generate the lazy more than once
 app.autoConstruct = function(courses){
     if(courses[0] === undefined) return {get: function(i){return []}}; // no courses - go no further
@@ -111,7 +99,7 @@ app.autoConstruct = function(courses){
 	courses.pop();
     courses = courses.filter(course => course.seatsAvailable || this.closed);
     if(this.mode == "Manual"){
-	if("M"+courses.map(course => course.courseReferenceNumber).join() == this.savedCourseGenerator)
+	if("M"+courses.map(course => course.URLcode).join() == this.savedCourseGenerator)
 	    return app.courses_generator; // don't have to run the calculation for every hour in every day
 	if(this.savedCourseGenerator[0] == "A" && this.course != null){ // switching from automatic to manual - update app.course
 	    if(this.courses_generator)
@@ -123,12 +111,12 @@ app.autoConstruct = function(courses){
 	    document.getElementById("selectBox").value = this.course.toString();
 	    //and fix a render bug
 	}
-	this.savedCourseGenerator = "M"+courses.map(el => el.courseReferenceNumber).join();
+	this.savedCourseGenerator = "M"+courses.map(el => el.URLcode).join();
 	this.courses_generator = {get: function(i){return courses;}};
 	return this.courses_generator;
     }
     //automatic generator
-    if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "") == this.savedCourseGenerator)
+    if("A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (this.closed ? "C" : "") == this.savedCourseGenerator)
 	return app.courses_generator; // don't have to run the calculation for every hour in every day
     if(this.savedCourseGenerator[0] == "M" && this.course){ // switching from manual to automatic - update app.course
 	this.course = app.courses[this.course].home.index; // basically just a render bug
@@ -154,7 +142,7 @@ app.autoConstruct = function(courses){
     }, []))).filter(function(schedule){
 	return !schedule.filter(course => !course.seatsAvailable && !app.closed).length;
     }).filter(this.schedCompat);
-    this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.courseReferenceNumber).filter(c => c).join() + (this.closed ? "C" : "");
+    this.savedCourseGenerator = "A"+this.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (this.closed ? "C" : "");
     return app.courses_generator;
 };
 
@@ -218,9 +206,9 @@ app.schedCompat = function(sched){
 // expand courses into meeting times and check validity
 // this is needed because some courses have multiple meeting times
 app.courseCompat = function(a, b){
-    return a.meetingsFaculty.reduce(function(a_compat, a_meeting){ // check every meeting in a...
-	return a_compat && b.meetingsFaculty.reduce(function(b_compat, b_meeting){ // against every meeting in b
-	    return b_compat && app.meetingCompat(a_meeting.meetingTime, b_meeting.meetingTime);
+    return a.meetings.reduce(function(a_compat, a_meeting){ // check every meeting in a...
+	return a_compat && b.meetings.reduce(function(b_compat, b_meeting){ // against every meeting in b
+	    return b_compat && app.meetingCompat(a_meeting, b_meeting);
 	}, true); // so if every meeting in b is compatable with...
     }, true); // every meeting in a, return true else return false
 };
@@ -230,7 +218,7 @@ app.meetingCompat = function(a, b){
     if(!["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce(function(acc, day){ // check if any of the days overlap
 	return acc || (a[day] && b[day]); // and carry over any trues
     }, false))
-	return true; // if the two aren't even on the same days, we knot it's compatable
+	return true; // if the two aren't even on the same days, we know it's compatable
     return !( (a.beginTime >= b.beginTime && a.beginTime <  b.endTime)|| // beginning time of a is within b
 	      (a.endTime   >  b.beginTime && a.endTime   <= b.endTime)|| // end       time of a is within b
 	      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime)|| // beginning time of b is within a

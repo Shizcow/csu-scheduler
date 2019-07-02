@@ -55,7 +55,7 @@ loadHash()
 // adds up the credit values of all selected courses and returns it as an integer
 app.totalCredits = function(){
     return this.selected.reduce(function(acc, cur){
-	return acc+app.creditsOf(cur);
+	return acc+cur.credits;
     }, 0);
 };
 
@@ -146,7 +146,7 @@ app.changedTerm = function(loadHash = false, referrer = null){
 app.genDivs = function(loadSelect = true){
     var courses_auto = app.courses.reduce(function(acc, cur){
 	if(acc.length > 0){
-	    if(cur.subjectCourse != acc[acc.length-1].subjectCourse){
+	    if(cur.subject + cur.courseNumber != acc[acc.length-1].subject + acc[acc.length-1].courseNumber){
 		return acc.concat(cur); // add new
 	    } else {
 		return acc; // ignore duplicate
@@ -159,7 +159,7 @@ app.genDivs = function(loadSelect = true){
     for(var i = 0; i < app.courses.length; i++){
 	var c = app.courses[i];
 	var el = document.createElement("option");
-	el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
+	el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.title;
 	el.value = c.index;
 	app.courses_manual.push(el);
     }
@@ -167,7 +167,7 @@ app.genDivs = function(loadSelect = true){
     for(var i = 0; i < courses_auto.length; i++){
 	var c = courses_auto[i];
 	var el = document.createElement("option");
-	el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.courseTitle;
+	el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.title;
 	el.value = c.index;
 	app.courses_auto.push(el);
     }
@@ -184,7 +184,6 @@ app.updateTerms = function(){
     for(var i = 0; i < this.terms.length; i++){
 	var term = this.terms[i];
 	var option = document.createElement("option");
-	console.log("term", term)
 	option.value = term.URLcode;
 	option.innerText = term.title;
 	selectBox.appendChild(option);
@@ -242,8 +241,11 @@ app.filterSearch = function(course, search) {
     if(this.selected.indexOf(course) !== -1) return false;
     if (!this.closed && !course.seatsAvailable) return false;
     
-    if(search && !((course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
-		   course.courseTitle.toLowerCase().indexOf(search) > -1)) // not found in search
+    if(search && !(
+	(course.subject + ' ' + course.courseNumber).toLowerCase().indexOf(search) > -1 ||
+	    course.title.toLowerCase().indexOf(search) > -1 ||
+	    course.URLcode.toString() == search // or exact URLcode number
+    )) // not found in search
 	return false; // this is done first because it's faster than constructing alts list
     
     if(this.mode == "Automatic"){

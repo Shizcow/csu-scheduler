@@ -6,6 +6,9 @@ This file contains all one-time code for setting up the website. This includes:
 -setting up a few more complicated event listeners
 
 This should be the last script to be loaded, as it depends on all other scripts to be loaded
+
+TODO: use onHashChange instead of manually triggering fillSchedule. This will make
+loading on hash not need a refresh
 */
 
 //style first

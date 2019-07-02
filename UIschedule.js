@@ -16,9 +16,6 @@ autoAndLabs()
 fillSchedule()
 >Renders courses into the on screen schedule
 
-genFaculty()
->gets the faculty of a given course, returns it as a string
-
 courseHere()
 >Checks if a course section is offered during a given day/hour
 >If so, returns a minimal rendering object
@@ -95,11 +92,10 @@ app.fillSchedule = function(referrer) {
 	    if(course && courseHere){
 		var div = document.createElement("div");
 		div.className = "item";
-		var creditText = this.creditsOf(course);
-		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + courseHere.loc + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
+		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + courseHere.loc + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
 		if(course.waitAvailable > 0)
 		    innerText += course.waitAvailable + '/' + course.waitCapacity + ' waitlist open\n';
-		innerText += 'CRN: ' + course.courseReferenceNumber + '\n';
+		innerText += 'CRN: ' + course.URLcode + '\n';
 		div.innerText = innerText; // need to assign all at once so newlines work properly
 		var link = document.createElement("a");
 		link.className = "link";
@@ -135,8 +131,7 @@ app.fillSchedule = function(referrer) {
 	if(course){
 	    var div = document.createElement("div");
 	    div.className = "item";
-	    var creditText = this.creditsOf(course);
-	    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.courseTitle.replace(/&ndash;/g, "–") + '\n' + app.genFaculty(course) + '\n' + creditText + ' credit' + (creditText !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.courseReferenceNumber + '\n';
+	    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.URLcode + '\n';
 	    var link = document.createElement("a");
 	    link.className = "link";
 	    link.onclick = function(c){ // we need to close this in, else it looks at the last
@@ -209,31 +204,21 @@ app.fillSchedule = function(referrer) {
 	gtag('event', 'Schedules Tested');
 };
 
-// generates a string which contains course instructors
-app.genFaculty = function(course){
-    let out = ""
-    course.faculty.forEach(function(el){
-	out+=el.displayName+", and ";
-    });
-    return out ? out.substr(0, out.length-6) : "STAFF";
-};
-
 // tests whether or not a course is in a day/hour, and if so returns a render object
 app.courseHere = function(day, hour, course){
     if (!course) return;
     var res = null;
     // if course is in day&hour, res will become an object with css information
     
-    course.meetingsFaculty.forEach(function(meeting){
-	let time = meeting.meetingTime;
-	if (time.building == 'WS' || !time.beginTime || !time[day]) return;
-	var start = this.convertTime(time.beginTime);
-	var end = this.convertTime(time.endTime);
+    course.meetings.forEach(function(meeting){
+	if (meeting.building == 'WS' || !meeting.beginTime || !meeting[day]) return;
+	var start = this.convertTime(meeting.beginTime);
+	var end = this.convertTime(meeting.endTime);
 	if (Math.trunc(start, 0) != hour-8) return;
 	res = {
 	    top: start-Math.trunc(start,0),
 	    length: end-start,
-	    loc: time.building + time.room,
+	    loc: meeting.building + " " + meeting.room,
 	}
     }.bind(this));
     return res;
@@ -249,7 +234,7 @@ app.convertTime = function(time){
 // takes a list of courses and returns only the web courses
 app.webclasses = function(courses){
     return courses ? courses.filter(function(course){
-	return course && (course.meetingsFaculty.map(el => el.meetingTime.building == "ONLINE").reduce((a, b) => (a || b), false));
+	return course && (course.meetings.map(el => el.building == "ONLINE").reduce((a, b) => (a || b), false));
     }) : [];
 };
 
@@ -269,7 +254,7 @@ app.fetchDescription = function(course){
     }
     if(!course.description){
 	// if it's not loaded, load it and cache it in the course object
-	(new Searcher("desc", course.term.toString(), course.courseReferenceNumber.toString())).start(function(response){
+	(new Searcher("desc", this.term.toString(), course.URLcode.toString())).start(function(response){
 	    updater(response);
 	    course.description = response;
 	});
@@ -321,11 +306,13 @@ app.dayUpdate = function(){
 	    }
 	}
     }
+
+    
     //then, show only what needed
     if(test != false ? test.map(function(c){ // Any of the courses are held on a Saturday (or Sunday)
 	if(!c) return false;
-	return c.meetingsFaculty.map(function(m){
-	    return m.meetingTime.saturday || m.meetingTime.sunday
+	return c.meetings.map(function(meeting){
+	    return meeting.saturday || meeting.sunday
 	}).reduce(function(a, b){
 	    return a || b;
 	})
@@ -344,10 +331,11 @@ app.dayUpdate = function(){
 	    trs[i].children[6].style.display = "none";
 	}
     }
+    
     if(test != false ? test.map(function(c){ // Any of the courses are held on a Sunday
 	if(!c) return false;
-	return c.meetingsFaculty.map(function(m){
-	    return m.meetingTime.sunday
+	return c.meetings.map(function(meeting){
+	    return meeting.sunday
 	}).reduce(function(a, b){
 	    return a || b;
 	})
@@ -372,7 +360,7 @@ app.dayUpdate = function(){
 app.loadHash = function(first){
     var hashes = location.hash.split("=")[1].split("&")[0].split(",");
     this.selected = app.courses.filter(function(course){
-	return hashes.indexOf(course.courseReferenceNumber.toString()) > -1;
+	return hashes.indexOf(course.URLcode.toString()) > -1;
     });
     document.getElementById("closedCheck").checked = !!location.hash.split("&")[1];
     this.closed = !!location.hash.split("&")[1];
@@ -418,7 +406,7 @@ app.click = function(course){
 	if(this.mode == "Manual")
 	    this.selected.splice(this.selected.indexOf(course), 1);
 	else
-	    this.selected = this.selected.filter(c => course.subjectCourse != c.subjectCourse);
+	    this.selected = this.selected.filter(c => course.home != c.home);
         this.hovering = [];
     }
 

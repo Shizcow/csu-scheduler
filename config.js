@@ -394,7 +394,7 @@ the meetings property should be an array of objects, all of which have a few pro
  seatsAvailable: "25"
 }
 */
-// Remember to return a list of constructed courses
+// Remember to return a LIST of constructed courses
 app_config.PROCESSgetCourses = function(responseText){
     var coursesJSON = JSON.parse(responseText).data;
     ret_courses = [];
@@ -414,12 +414,10 @@ app_config.PROCESSgetCourses = function(responseText){
 
 	if(courseJSON.faculty.length == 0)
 	    ret_course.faculty = "STAFF";
-	else if(courseJSON.faculty.length <= 2)
-	    ret_course.faculty = courseJSON.faculty.join(" and ");
-	else{
-	    ret_course.faculty = courseJSON.faculty.slice(0, -1).join(", ") + ", and " + courseJSON.faculty[faculty.length-1];
-	    // make a list in form of "a, b, c, d, and e"
-	}
+	else
+	    ret_course.faculty = courseJSON.faculty.map((obj, index, array) => (array.length > 1 && index == array.length-1 ? "and " : "") + obj.displayName.split(", ").reverse().join(" ")).join(", ");
+	// make a list in form of "first last, first last, and first last"
+	// from ["last, first", "last, first", "last, first"] w/ keys
 
 	ret_course.scheduleTypeDescription = courseJSON.scheduleTypeDescription;
 	ret_course.subject = courseJSON.subject;
@@ -429,18 +427,19 @@ app_config.PROCESSgetCourses = function(responseText){
 	ret_course.waitCapacity = courseJSON.waitCapacity;
 
 	ret_course.meetings = courseJSON.meetingsFaculty.map(function(meetingFaculty){
-	    var meeting = {};
-	    meeting.building = meetingsFaculty.meetingTime.building;
-	    meeting.room = meetingsFaculty.meetingTime.room;
-	    meeting.beginTime = meetingsFaculty.meetingTime.beginTime;
-	    meeting.endTime = meetingsFaculty.meetingTime.endTime;
-	    meeting.monday = meetingsFaculty.meetingTime.monday;
-	    meeting.tuesday = meetingsFaculty.meetingTime.tuesday;
-	    meeting.wednesday = meetingsFaculty.meetingTime.wednesday;
-	    meeting.thursday = meetingsFaculty.meetingTime.thursday;
-	    meeting.friday = meetingsFaculty.meetingTime.friday;
-	    meeting.saturday = meetingsFaculty.meetingTime.saturday;
-	    meeting.sunday = meetingsFaculty.meetingTime.sunday;
+	    return {
+		building: meetingFaculty.meetingTime.building,
+		room: meetingFaculty.meetingTime.room,
+		beginTime: meetingFaculty.meetingTime.beginTime,
+		endTime: meetingFaculty.meetingTime.endTime,
+		monday: meetingFaculty.meetingTime.monday,
+		tuesday: meetingFaculty.meetingTime.tuesday,
+		wednesday: meetingFaculty.meetingTime.wednesday,
+		thursday: meetingFaculty.meetingTime.thursday,
+		friday: meetingFaculty.meetingTime.friday,
+		saturday: meetingFaculty.meetingTime.saturday,
+		sunday: meetingFaculty.meetingTime.sunday
+	    }
 	});
 	
 	ret_courses.push(ret_course);

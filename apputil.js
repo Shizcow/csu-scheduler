@@ -1,28 +1,21 @@
 /* apputil.js
 This file contains a few app functions that are often in many other files.
 
-creditsOf()
->gets the number of credits a course is worth
+
+In this file:
 
 app.generateHash()
 >generates a hash value string containing all information about a given schedule
 >used for sharing URLs and saving schedules
 
-In this file:
 app.changed()
 >checks if the user has selected a saved schedule,
 >and if there is any deviation between that saved schedule and what is actually on the board
 >ie, modified but not yet saved
-*/
 
-// gets the numbers of credits hours for a course
-app.creditsOf = function(course){
-    if(course.creditHours != undefined)
-	return course.creditHours;
-    if(course.creditHourLow != undefined)
-	return course.creditHourLow;
-    return course.creditHourHigh;
-};
+autoInAlts()
+>check if two sections are of the same course (ex: MATH 101 lab and MATH 101 lecture)
+*/
 
 // generates hash string with all important schedule values included
 // the hash will take the form of the following:
@@ -37,7 +30,7 @@ app.creditsOf = function(course){
 app.generateHash = function(includeNotes) {
     var hash = this.term + "=";
     hash += this.selected.map(function(s){
-	return s.courseReferenceNumber;
+	return s.URLcode;
     }).sort((a, b) => parseInt(a)-parseInt(b)).join();
     if(this.closed)
 	hash += "&C";
@@ -71,3 +64,14 @@ app.changed = function(){
     // one and coming from another
     return ret;
 };
+
+// check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
+app.autoInAlts = function(check_course, course_alts){ // pretty much just fixes a render bug
+    if(check_course == null || course_alts == null)
+	return false; // if there's one or zero, we don't even need to check
+    if(this.mode == "Manual")
+	return check_course == course_alts;
+    return check_course.home == course_alts.home; // automatic - if check_course is course_alts or is in its alts
+};
+
+

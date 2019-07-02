@@ -17,25 +17,6 @@ void preProcessDataPack(dataPack_object)
 // Prepends common URL prefix
 let server = function(h) { return app_config.URLprefix + h; };
 
-// pre process courses are they're coming in, strip down data for lower memory usage
-// acts on var contents like a reference in C because JS is weird and you can do this sometimes
-let preProcessDataPack = function(data){
-    data.data.forEach(function(course){
-	// strip out useless info by deleting object keys
-	["campusDescription", "creditHourIndicator", "crossList", "crossListAvailable", "crossListCapacity",
-	 "crossListCount", "enrollment", "id", "isSectionLinked", "linkIdentifier", "openSection", "partOfTerm",
-	 "reservedSeatSummary", "subjectDescription", "termDesc", "waitCount"].forEach(function(key){
-	     delete course[key];
-	 });
-	course.meetingsFaculty.forEach(function(meeting){
-	    // same here
-	    ["category", "class", "courseReferenceNumber", "faculty", "term"].forEach(function(key){
-		delete meeting[key];
-	    });
-	});
-    });
-}
-
 // after a term is fully loaded, all courses are extracted and ran through here
 // a few important steps are taken:
 // 1) if a course has no meeting times, get rid of it
@@ -54,8 +35,8 @@ let preProcessDataPack = function(data){
 let postProcessCourses = function(courses){
     return courses
 	.filter(function(course){ // remove courses that don't have a scheduled time / can't be shown on the board
-	    return course.meetingsFaculty.reduce(function(acc, cur){
-		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur.meetingTime[_cur], false);
+	    return course.meetings.reduce(function(acc, cur){
+		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur[_cur], false);
 	    }, false);
 	})
 	.map(function(course){ // fix honors vs non-honors courses
@@ -66,9 +47,9 @@ let postProcessCourses = function(courses){
 	    return course;
 	})
     // now, start constructing alts list
-	.reduce(function(acc, cur){ // collect all courses into lists of same subjectCourse (ECE101)
+	.reduce(function(acc, cur){ // collect all courses into lists of same subject + number (ECE101)
 	    if(acc.length > 0){ // this is done in case courses are stored in a weird order
-		if(acc[acc.length-1][0].subjectCourse == cur.subjectCourse) // compare to previous packet
+		if(acc[acc.length-1][0].subject + acc[acc.length-1][0].courseNumber == cur.subject + cur.courseNumber) // compare to previous packet
 		    acc[acc.length-1].push(cur); // push to last packet where it's the same
 		else
 		    acc.push([cur]); // or set up a new packet
@@ -173,7 +154,7 @@ class Searcher{
 		if(this.readyState == 4)
 		    ref.xhr = null;
 		if(ref.type == "test" && this.readyState === 4 && this.status === 0){ // test failed
-		    console.log("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
+		    console.error("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
 		    if(callback)
 			callback(false);
 		    return;
@@ -190,8 +171,10 @@ class Searcher{
 		    response = ref.type == "desc" ? this.responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim() : JSON.parse(this.responseText);
 		    if(ref.type == "terms")
 			response = app_config.PROCESSgetTerms(this.responseText);
-		    if(ref.type != "prime") // else it's priming and just a post
-			ref.data = response.data;
+		    if(ref.type == "courses")
+			response = this.responseText; // TODO: move PROCESSgetCourses here?
+		    //if(ref.type != "prime") // else it's priming and just a post
+			//ref.data = response.data;
 		    if(callback)
 			callback(response);
 		    ref.done = true;
@@ -199,7 +182,7 @@ class Searcher{
 		    return;
 		}
 		else if(this.status != 200 && this.status != 0){
-		    console.log("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
+		    console.error("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
 		}
 	    }
 	}(this);
@@ -272,31 +255,31 @@ class TermManager{
 	    return function(ignored){ // this one is just needed to get cookies in line
 		if(TermManager_ref.data.length){ // we've already made some requests - just finish them
 		    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded so far
-			return acc + cur.data.length; // by summing them all up
+			return acc + cur.courses.length; // by summing them all up
 		    }, 0);
-		    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
+		    app.percent = loadedAmount.toString() + "/" + TermManager_ref.totalCount.toString();
 		    app.updatePercent();
 		    TermManager_ref.headRequest = null;
 		    TermManager_ref.requests.forEach(function(request){
 			request.start(function(responseData){ // individual callbacks
-			    
-			    preProcessDataPack(responseData);
-			    TermManager_ref.data.push(responseData); // add response to data...
+			    var preProcessedCourses = app_config.PROCESSgetCourses(responseData);
+			    TermManager_ref.data.push({courses: preProcessedCourses, offset: JSON.parse(responseData).pageOffset}); // cache...
+			    // TODO: pageOffset to config
 			    // and check if we're done
 			    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
-				return acc + cur.data.length; // by summing them all up
+				return acc + cur.courses.length; // by summing them all up
 			    }, 0);
-			    app.percent = loadedAmount.toString() + "/" + TermManager_ref.data[0].totalCount.toString();
+			    app.percent = loadedAmount.toString() + "/" + TermManager_ref.totalCount.toString();
 			    app.updatePercent();
-			    if(loadedAmount >= app_config.test_percent_cap*TermManager_ref.data[0].totalCount/100){ // and see if we've got enough
+			    if(loadedAmount >= app_config.test_percent_cap*TermManager_ref.totalCount/100){ // and see if we've got enough
 				app.percent += "\nProcessng courses...";
 				app.updatePercent();
 				// if so, process data and mark term complete
 				TermManager_ref.data = postProcessCourses(
 				    TermManager_ref.data // take fufilled requests
-					.sort((a, b) => a.pageOffset - b.pageOffset) // sort them all, because they probably won't load in order
+					.sort((a, b) => a.offset - b.offset) // sort them all, because they probably won't load in order
 					.reduce(function(acc, cur){ // and unwrap them all
-					    return acc.concat(cur.data); // into one big array
+					    return acc.concat(cur.courses); // into one big array
 					}, [])
 				); // then post process them so automatic mode actually works
 				
@@ -335,12 +318,14 @@ class TermManager{
 		    app.updatePercent(); // update loading bar (if running in the background, it will be hidden)
 		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
 		    TermManager_ref.headRequest.start(function(responseData){
-			preProcessDataPack(responseData);
+			var preProcessedCourses = app_config.PROCESSgetCourses(responseData);
+			// TODO: replace "small request" with something in config for getting max
 			TermManager_ref.headRequest = null; // head requests are all done
-			TermManager_ref.data = [responseData]; // currently wrapped with extra info, will unwrap later
-			var min = responseData.data.length; // how many actually loaded with the first request
+			TermManager_ref.data = [{courses: preProcessedCourses, offset: 0}]; // currently wrapped with extra info, will unwrap later
+			TermManager_ref.totalCount = JSON.parse(responseData).totalCount;
+			var min = preProcessedCourses.length; // how many actually loaded with the first request
 			//NOTE: Yes, it's not always 10. The server seems to always honor larger requests (100+), but doesn't always give us the amount we ask for with smaller queries, so we have to check this
-			var max = responseData.totalCount; // how many courses are in the database
+			var max = TermManager_ref.totalCount; // how many courses are in the database
 			app.percent = min.toString() + "/" + max.toString();
 			app.updatePercent();
 			let offsets = []; // stores offset values for each subsequent required request
