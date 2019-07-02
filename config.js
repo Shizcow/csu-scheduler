@@ -37,7 +37,7 @@ This section contains options useful for non-production versions
 
 // Used for testing - out of a given term, this is how many courses are to be loaded
 // A lower percentage means fewer courses, which means less functionality but faster loading & testing
-app_config.test_percent_cap = 1;
+app_config.test_percent_cap = 100;
 
 // Used for performance tuning - for each large courses request, this is how many courses are requested
 // A lower number means fewer courses requested per request and thus faster requests, but more requests overall
@@ -106,7 +106,12 @@ app_config.URLgetDescription()
 Now, if these are all GET requests, easy. If they're post requests, pay attention
 to the parameters too, you can fill those in too. Use the GETPOST parameter.
 
-4) Get it working by itself
+4) Learn a bit about what courses are available
+We need to know the total number of courses available to load for any given term.
+Fill out:
+app_config.URLgetCourseTotalCount()
+
+5) Get it working by itself
 Now that you have all the URLS you need, you need to be able to actually make requests.
 Why is this important to note? Some colleges require session authentication cookies,
 which make it impossible to come out of the blue and request courses, but possible
@@ -155,7 +160,7 @@ app_config.URLgetTerms = function(GETPOST){
     GETPOST.url = app_config.URLprefix + "classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566";
 }
 
-// app_config.URLgetCourses
+// app_config.URLgetCourses()
 // This function is used to get the URL needed for quering courses residing in a specific term
 // this function takes three additional parameters:
 // 1) "termCode", which is the URL code used to represent a term in a term request.
@@ -165,12 +170,12 @@ app_config.URLgetTerms = function(GETPOST){
 // 3) "size", which is passed as a decimal number, which represents the total number
 //     of courses being requested
 // offset and size are automatically generated and handled in librequests.js
-app_config.URLgetCourses = function(GETPOST, termCode, offset, size){
+app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
     GETPOST.openMethod = "GET";
-    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termCode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
+    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
 }
 
-// app_config.URLgetDescription
+// app_config.URLgetDescription()
 // This function is used to get the URL needed for quering a course description
 // this function takes two additional parameters:
 // 1) "termURLcode", which is the URL code used to represent a term in a term request.
@@ -182,7 +187,22 @@ app_config.URLgetDescription = function(GETPOST, termURLcode, courseURLcode){
     GETPOST.postData = "term=" + termURLcode + "&courseReferenceNumber=" + courseURLcode;
 }
 
-// app_config.URLtest
+// app_config.URLgetCourseTotalCount()
+// This function returns the URL needed for checking how many courses can be loaded in a single term
+//
+// For example, if we're looking at Fall 2019 and there are 6610 courses in this term, this function
+// should return the URL which when loaded has data containing 6610.
+//
+// NOTE: if your college doesn't give you a total number, good luck because this is suprisingly hard
+// to account for - check librequests.js in the TermManager object for how courses are counted
+app_config.URLgetCourseTotalCount = function(GETPOST, termURLcode){
+    // this example just loads as few courses as possible to get some data - may not be the same
+    // at every school
+    GETPOST.openMethod = "GET";
+    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc";
+}
+
+// app_config.URLtest()
 // This function returns the URL needed for two things
 // 1) setting session auth cookies
 // 2) testing whether or not we're being blocked by CORS
@@ -195,17 +215,17 @@ app_config.URLtest = function(GETPOST){
     GETPOST.url = app_config.URLprefix;
 }
 
-// app_config.URLprime
+// app_config.URLprime()
 // This function is used to get the URL needed for "priming" a request,
 // or asking the server for cookies needed to make requests.
 // This function is activated on every term change before requesting courses
 // This function takes an additional parameter:
 //  "termCode", which is the URL code used to represent a term in a term request.
 //   termCode is calculated in app_config.PROCESSgetTerms
-app_config.URLprime = function(GETPOST, termCode){
+app_config.URLprime = function(GETPOST, termURLcode){
     GETPOST.openMethod = "POST";
     GETPOST.url = app_config.URLprefix + "term/search?mode=search";
-    GETPOST.postData = "term=" + termCode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
+    GETPOST.postData = "term=" + termURLcode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
 }
 
 
@@ -233,13 +253,14 @@ process incoming data, and it stands to reason that incoming data will
 be different for each college. So, here's a guide on how to process your
 data in such a way that it will magically work with the rest of the site:
 
-1) Process URL recieved data
+---Process URL recieved data
 So let's assume you've overcame the hardest part: getting things to load.
 Now you need to get that stuff to display on screen. First up is terms.
 In each of the PROCESSget functions, results are daken directly from the
 URLget functions we defined eariler. Specific instructions and templates
 are found in functions. Fill them out in this order:
 app_config.PROCESSgetTerms()
+app_config.PROCESSgetCourseTotalCount()
 app_config.PROCESSgetCourses()
 app_config.PROCESSgetDescription()
 */
@@ -304,9 +325,21 @@ app_config.PROCESSgetTerms = function(responseText){
 }
 
 
+// app_config.PROCESSgetCourseTotalCount()
+// This function is similar to app_config.PROCESSgetTerms, but a lot more simple
+// 
+// The goal here is to take incoming responseText and return an integer
+// representing the total number of courses that can be loaded for a term
+//
+// This function will process the responseText of app_config.URLgetCourseTotalCount
+app_config.PROCESSgetCourseTotalCount = function(responseText){
+    return JSON.parse(responseText).totalCount;
+}
+
 // app_config.PROCESSgetCourses()
 // This function is similar to app_config.PROCESSgetTerms
-// The goal here is to take incoming responseData and coax it into a form
+//
+// The goal here is to take incoming responseText and coax it into a form
 // the rest of the source code will understand.
 //
 // NOTE: Do NOT filter any courses here. The length of the returned array is

@@ -125,6 +125,9 @@ class Searcher{
 	case "prime":
 	    app_config.URLprime(GETPOST, this.term);
 	    break;
+	case "count":
+	    app_config.URLgetCourseTotalCount(GETPOST, this.term);
+	    break;
 	case "courses":
 	    app_config.URLgetCourses(GETPOST, this.term, this.offset, this.size);
 	    break;
@@ -247,7 +250,7 @@ class TermManager{
 	}
 	var callback = function(TermManager_ref){ // set up callback for the first Searcher request, actual execution is after definition
 	    return function(ignored){ // this one is just needed to get cookies in line
-		if(TermManager_ref.data.length){ // we've already made some requests - just finish them
+		if(TermManager_ref.requests.length){ // we've already made some requests - just finish them
 		    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded so far
 			return acc + cur.courses.length; // by summing them all up
 		    }, 0);
@@ -257,8 +260,7 @@ class TermManager{
 		    TermManager_ref.requests.forEach(function(request){
 			request.start(function(responseData){ // individual callbacks
 			    var preProcessedCourses = app_config.PROCESSgetCourses(responseData);
-			    TermManager_ref.data.push({courses: preProcessedCourses, offset: JSON.parse(responseData).pageOffset}); // cache...
-			    // TODO: pageOffset to config
+			    TermManager_ref.data.push({courses: preProcessedCourses, offset: request.offset}); // cache...
 			    // and check if we're done
 			    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
 				return acc + cur.courses.length; // by summing them all up
@@ -310,23 +312,22 @@ class TermManager{
 		} else { // first time requesting - do a small request first to gauge total size, then fill up
 		    app.percent = "0/?";
 		    app.updatePercent(); // update loading bar (if running in the background, it will be hidden)
-		    TermManager_ref.headRequest = new Searcher("courses", TermManager_ref.term, 0, 10);
+		    TermManager_ref.headRequest = new Searcher("count", TermManager_ref.term);
 		    TermManager_ref.headRequest.start(function(responseData){
-			var preProcessedCourses = app_config.PROCESSgetCourses(responseData);
-			// TODO: replace "small request" with something in config for getting max
+			TermManager_ref.totalCount = app_config.PROCESSgetCourseTotalCount(responseData);
 			TermManager_ref.headRequest = null; // head requests are all done
-			TermManager_ref.data = [{courses: preProcessedCourses, offset: 0}]; // currently wrapped with extra info, will unwrap later
-			TermManager_ref.totalCount = JSON.parse(responseData).totalCount;
-			var min = preProcessedCourses.length; // how many actually loaded with the first request
-			//NOTE: Yes, it's not always 10. The server seems to always honor larger requests (100+), but doesn't always give us the amount we ask for with smaller queries, so we have to check this
-			var max = TermManager_ref.totalCount; // how many courses are in the database
-			app.percent = min.toString() + "/" + max.toString();
+			app.percent = "0/" + TermManager_ref.totalCount.toString();
 			app.updatePercent();
 			let offsets = []; // stores offset values for each subsequent required request
-			for(var i = min; i<app_config.test_percent_cap*max/100; i+=app_config.chunk)//NOTE: previously was using app_config.test_percent_cap*(max-min)/100, but this seems more logical. If error arrises, it's probably from here
-			    offsets.push(i); // fill offsets with integer values starting at min, offset by app_config.chunk size, and going up to only what we need to request
+			for(var i = 0; i<app_config.test_percent_cap*TermManager_ref.totalCount/100; i+=app_config.chunk)
+			    offsets.push(i); // fill offsets with integer values starting at 0
+			// offset by app_config.chunk size, and going up to only what we need to request
+			
 			offsets.forEach(function(offset){ // construct all subsequent requests
-			    TermManager_ref.requests.push(new Searcher("courses", TermManager_ref.term, offset, app_config.chunk));
+			    var searcher = new Searcher("courses", TermManager_ref.term, offset, app_config.chunk);
+			    searcher.offset = offset; // we carry offset through so we can sort courses in the
+			    // correct order after they're all loaded in
+			    TermManager_ref.requests.push(searcher);
 			});
 			TermManager_ref.start(main_callback, true); // recurse into start. Now that requests is filled, it'll just start them all
 		    });
