@@ -37,7 +37,7 @@ This section contains options useful for non-production versions
 
 // Used for testing - out of a given term, this is how many courses are to be loaded
 // A lower percentage means fewer courses, which means less functionality but faster loading & testing
-app_config.test_percent_cap = 1;
+app_config.test_percent_cap = 100;
 
 // Used for performance tuning - for each large courses request, this is how many courses are requested
 // A lower number means fewer courses requested per request and thus faster requests, but more requests overall
@@ -445,4 +445,23 @@ app_config.PROCESSgetCourses = function(responseText){
 	ret_courses.push(ret_course);
     })
     return ret_courses;
+}
+
+
+// app_config.PROCESSgetDescription()
+// Again, very similar to app_config.PROCESSgetTerms, but even more simple
+//
+// The goal here is to take responseText, process it to look friendly on screen,
+// and return the value, that's it
+app_config.PROCESSgetDescription = function(responseText){
+    var ret = responseText.replace(/<br>/g, "\r\n").replace(/<BR>/g, "\r\n").trim(); // format
+    
+    while(ret.substr(0, 2) == "\r\n")
+	ret = ret.substr(2, ret.length);
+    //remove leading newlines
+    
+    while(ret.substr(ret.length-2, ret.length-1) == "\r\n")
+	ret = ret.substr(0, ret.length-2);
+    //remove trailing newlines
+    return ret;
 }

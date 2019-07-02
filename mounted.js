@@ -35,7 +35,7 @@ document.getElementById("closedCheck").checked = app.closed;
 
 //load terms -> then load courses and everything else
 (new Searcher("terms")).start(function(response){
-    app.terms = response;
+    app.terms = app_config.PROCESSgetTerms(response);
     if (location.hash.match(/#\d+=[\d+,?]+/) && (index = app.terms.map(el => el.URLcode).indexOf(location.hash.split("=")[0].substr(1))) > -1){ //need to load from url
 	app.term = app.terms[index].URLcode;
 	app.updateTerms();
