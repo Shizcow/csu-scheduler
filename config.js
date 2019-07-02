@@ -1,5 +1,6 @@
 /* config.js
 This file contains various configs for developing or adapting to other colleges
+If you're lucky, this file contains everything you need to do so
 
 The intent is to minimize the need to look around in other files when
 adapting this for other colleges. Read through this entire file and
@@ -13,6 +14,8 @@ Those sections are as follows:
  L->Used for configuring URLS for outgoing requests
 -librequests processing
  L->Used to process incoming requests and construct course objects
+-misc
+ L->basically a big stringtable
 */
 
 //config init -- don't touch this
@@ -356,6 +359,9 @@ app_config.PROCESSgetCourseTotalCount = function(responseText){
 -faculty: string of faculty, such as "Jon Doe, Mike Smith, and Sarah Williams"
 -meetings: a list of meetings. See below for more details
            If meetings is an empty list, this course will be automatically filtered out later
+	   *If the course is held online (partially or fully), there should be a meeting who's
+	   *building is "ONLINE"
+	   *This is so if a course is held both in class and online, it can be handled properly
 -scheduleTypeDescription: "Lecture", "Laboratory", "Rescission", etc.
 -subject: if the course is MATH 101, this value should be "MATH"
 
@@ -498,3 +504,56 @@ app_config.PROCESSgetDescription = function(responseText){
     //remove trailing newlines
     return ret;
 }
+
+
+
+/*__  __ _____  _____  _____ 
+ |  \/  |_   _|/ ____|/ ____|
+ | \  / | | | | (___ | |     
+ | |\/| | | |  \___ \| |     
+ | |  | |_| |_ ____) | |____ 
+ |_|  |_|_____|_____/ \_____|
+                             
+                             
+This section is pretty much a big string table, all about UI.
+Specifically, this is mostly about what your college names things.
+
+Just go throuugh and fill everything out, most of it is
+self explanatory
+*/
+
+app_config.collegeName = "Colorado State University";
+app_config.collegeNameShort = "CSU";
+app_config.siteTitle = "CSU Scheduler - Course Scheduler for Colorado State University";
+app_config.siteTitleShort = "CSU Scheduler";
+
+// app_config.courseURLcodeName
+// For many colleges, when a student wants to register for a class they put in a number instead
+// of the course name. At CSU, this is a 5 digit number representing the course id.
+// This value will be shown to the user if they actually want to register for a class
+// Earlier, we defined this value as courseURLcode
+// This varible holds an abreviated (~3-4 char) name for that value that the user will understand
+//
+// For example, at CSU, this value is called the Course Reference Number, and is abreviated as CRN
+app_config.courseURLcodeName = "CRN";
+
+// This is important when developing, go read up on CORS
+// This message will be shown at the bottom of the page when a user is locked out due to cors
+// It might be a good idea to fill in some details about who controls the web servers at your college
+// That way, if people start using your tool, you can get them to talk to whoever can make it open access
+app_config.CORScustom = "If you\'d like to use this tool without needing an extension, go bother Joe Rymski, Director of Web Communications, (Joe.Rymski@colostate.edu) you like this tool and want to see it used freeley.";
+
+// app_config.getLogoName()
+// Should return the file path/name of your college's logo, the one saved in this directory
+// At this point, you should go download the logos and place them in the same directory as this file
+// If you only have one logo, just return that file's name. If you want to have two, one for light
+// and one for dark mode, the isDarkMode parameter should be self explanatory
+app_config.getLogoName = function(isDarkMode){
+    return "CSU-Signature-Stacked-357-617" + (isDarkMode ? "-rev" : "") + ".svg";
+}
+
+// You should also go to index.html and do a few things
+// 1) Go set up google analytics, then go to the top of index.html and change the tracking tag
+// 2) Change the second <meta> tag's content to have a description of this website tailored for your college
+
+// At this point, just edit the README and you should be all done

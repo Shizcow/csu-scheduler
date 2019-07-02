@@ -61,7 +61,7 @@ window.addEventListener("keydown", function (e) {
 // this function loads / unloads style_dark.css to switch between dark and light mode
 let change_style = function(styleSlider){
     document.styleSheets[1].disabled = !styleSlider.checked;
-    document.getElementById('logo').src = "CSU-Signature-Stacked-357-617" + (styleSlider.checked ? "-rev" : "") + ".svg";
+    document.getElementById('logo').src = app_config.getLogoName(styleSlider.checked);
     localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
 }
 
@@ -95,10 +95,12 @@ app.fillSchedule = function(referrer) {
 	    if(course && courseHere){
 		var div = document.createElement("div");
 		div.className = "item";
-		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + courseHere.loc + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
-		if(course.waitAvailable > 0)
+		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + courseHere.loc + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
+		if(course.seatsAvailable && course.maximumEnrollment)
+		    innerText += Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
+		if(course.waitAvailable && course.waitAvailable > 0)
 		    innerText += course.waitAvailable + '/' + course.waitCapacity + ' waitlist open\n';
-		innerText += 'CRN: ' + course.URLcode + '\n';
+		innerText += app_config.courseURLcodeName + ': ' + course.URLcode + '\n';
 		div.innerText = innerText; // need to assign all at once so newlines work properly
 		var link = document.createElement("a");
 		link.className = "link";
@@ -134,7 +136,13 @@ app.fillSchedule = function(referrer) {
 	if(course){
 	    var div = document.createElement("div");
 	    div.className = "item";
-	    div.innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n' + Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n' + course.URLcode + '\n';
+	    var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
+	    if(course.seatsAvailable && course.maximumEnrollment)
+		innerText += Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
+	    if(course.waitAvailable && course.waitAvailable > 0)
+		innerText += course.waitAvailable + '/' + course.waitCapacity + ' waitlist open\n';
+	    innerText += app_config.courseURLcodeName + ': ' + course.URLcode + '\n';
+	    div.innerText = innerText; // need to assign all at once so newlines work properly
 	    var link = document.createElement("a");
 	    link.className = "link";
 	    link.onclick = function(c){ // we need to close this in, else it looks at the last

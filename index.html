@@ -20,7 +20,6 @@
       -->
     <!-- End GA -->
     <meta charset="utf-8">
-    <title>CSU Scheduler - Course Scheduler for Colorado State University</title>
     <meta name="description" content="Course Scheduler for Colorado State University. Create, save, share, and export all your schedule combinations.">
     <link rel="stylesheet" href="style.css?v=0.6.1">
     <link rel="stylesheet" href="style_dark.css?v=0.6.1">
@@ -31,15 +30,7 @@
     </div>
     
     <div id="cors" style="display:none;">
-      Hi, and welcome to CSU Scheduler! This is a tool for creating, editing, testing, and sharing schedules for Colorado State University.<br>
-      <br>
-      I can see you're locked out of the CSU systems. Unfortunately, there isn't anything I the developer can do about this. This is because CSU won't recognize this website as friendly.<br>
-      <b>In order to use this tool, please download and use a CORS-everywhere extension</b> and refresh. This intercepts data coming from CSU's servers and makes your browser think CSU trusts us, so that your browser doesn't lock you out. Here are a few I recommend:<br>
-      <a href="https://addons.mozilla.org/en-US/firefox/addon/cors-everywhere/">Firefox</a><br>
-      For Chrome, it's a bit more envolved. See <a href="https://www.codevoila.com/post/75/how-to-disable-same-origin-policy-in-chrome">this</a> for more details.
-      <br>
-      NOTE: it is technically unsafe to browse with CORS-everywhere enabled. Please, disable it when not using this tool.<br>
-      <b>If you'd like to use this tool without needing an extension, go bother Joe Rymski, Director of Web Communications, (Joe.Rymski@colostate.edu) you like this tool and want to see it used freeley.</b>
+      <!-- message is set in index.js -->
     </div>
 
     <div id="main" style="display:none;">
@@ -86,7 +77,7 @@
       </div>
 
       <div class="rightWrapper">
-	<img id="logo" src="CSU-Signature-Stacked-357-617.svg" style="width:100%"/>
+	<img id="logo" style="width:100%"/> <!-- src is set in config.js -->
 	<div class="right">
 	  <span class="title">Mode</span>
 	  <br>
@@ -190,8 +181,8 @@
       </div>
     </div>
     <!-- SCRIPTS -->
-    <script type="text/javascript" src="./index.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./config.js?v=0.6.1" charset="utf-8"></script>
+    <script type="text/javascript" src="./index.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./librequests.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./init.js?v=0.6.1" charset="utf-8"></script>
     <script type="text/javascript" src="./apputil.js?v=0.6.1" charset="utf-8"></script>

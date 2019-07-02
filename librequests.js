@@ -36,7 +36,7 @@ let postProcessCourses = function(courses){
     return courses
 	.filter(function(course){ // remove courses that don't have a scheduled time / can't be shown on the board
 	    return course.meetings.reduce(function(acc, cur){
-		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur[_cur], false);
+		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur[_cur], false)||cur.building=="ONLINE";
 	    }, false);
 	})
 	.map(function(course){ // fix honors vs non-honors courses
@@ -157,7 +157,7 @@ class Searcher{
 		if(this.readyState == 4)
 		    ref.xhr = null;
 		if(ref.type == "test" && this.readyState === 4 && this.status === 0){ // test failed
-		    console.error("CORS DENIED - please enable a CORS-everywhere extension or ask CSU to let us in");
+		    console.error("CORS DENIED - please enable a CORS-everywhere extension or ask " + app_config.collegeNameShort + " to let us in");
 		    if(callback)
 			callback(false);
 		    return;
