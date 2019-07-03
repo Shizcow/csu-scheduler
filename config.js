@@ -40,7 +40,7 @@ This section contains options useful for non-production versions
 
 // Used for testing - out of a given term, this is how many courses are to be loaded
 // A lower percentage means fewer courses, which means less functionality but faster loading & testing
-app_config.test_percent_cap = 100;
+app_config.test_percent_cap = 1;
 
 // Used for performance tuning - for each large courses request, this is how many courses are requested
 // A lower number means fewer courses requested per request and thus faster requests, but more requests overall
@@ -110,9 +110,12 @@ Now, if these are all GET requests, easy. If they're post requests, pay attentio
 to the parameters too, you can fill those in too. Use the GETPOST parameter.
 
 4) Learn a bit about what courses are available
-We need to know the total number of courses available to load for any given term.
+With some colleges, you need to make multiple requests in order to load all courses
+in a given term. In this case, you need to know how many courses there are to load.
 Fill out:
 app_config.URLgetCourseTotalCount()
+NOTE: if your college is nice and you only need to make a single request for all the
+courses in a term, you still need to go check the notes above app_config.URLgetCourseTotalCount()
 
 5) Get it working by itself
 Now that you have all the URLS you need, you need to be able to actually make requests.
@@ -124,9 +127,9 @@ scenarios, there are two built in request functions. They are as follows:
 app_config.URLtest() and app_config.URLprime()
 URLtest  deals with the session approach
 URLprime deals with the term    approach
-They can be used together, appart, or not at all. At this point, figure out what
-requests you need to make in order to make term and course requests off of the
-official site. Then fill out:
+They can be used together, appart, or not at all. If not needed, set GETPOST.url to ""
+At this point, figure out what requests you need to make in order to make term and 
+course requests off of the official site. Then fill out:
 app_config.URLtest()
 app_config.URLprime()
 
@@ -196,8 +199,8 @@ app_config.URLgetDescription = function(GETPOST, termURLcode, courseURLcode){
 // For example, if we're looking at Fall 2019 and there are 6610 courses in this term, this function
 // should return the URL which when loaded has data containing 6610.
 //
-// NOTE: if your college doesn't give you a total number, good luck because this is suprisingly hard
-// to account for - check librequests.js in the TermManager object for how courses are counted
+// NOTE: if your college is nice and gives you all the courses in a single request, and thus you don't
+//       need to count them, set GETPOST.url to "" and return
 app_config.URLgetCourseTotalCount = function(GETPOST, termURLcode){
     // this example just loads as few courses as possible to get some data - may not be the same
     // at every school
@@ -226,6 +229,8 @@ app_config.URLtest = function(GETPOST){
 //  "termCode", which is the URL code used to represent a term in a term request.
 //   termCode is calculated in app_config.PROCESSgetTerms
 app_config.URLprime = function(GETPOST, termURLcode){
+    //GETPOST.url = ""; // this is an example where your life is easy and you don't
+    //return;           // need to bother with cookies
     GETPOST.openMethod = "POST";
     GETPOST.url = app_config.URLprefix + "term/search?mode=search";
     GETPOST.postData = "term=" + termURLcode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
@@ -564,4 +569,5 @@ app_config.getLogoName = function(isDarkMode){
 // 1) Go set up google analytics, then go to the top of index.html and change the tracking tag
 // 2) Change the second <meta> tag's content to have a description of this website tailored for your college
 
-// At this point, just edit the README and you should be all done
+// At this point, just download files, edit the README and you should be all done
+

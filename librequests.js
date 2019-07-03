@@ -146,6 +146,12 @@ class Searcher{
 	// check to make sure config.js has set GETPOST correctly
 	if(GETPOST.url == null)
 	    console.error("url not set for request of type " + this.type + ". There's an erorr in config.js");
+	if(GETPOST.url == "" && ((this.type == "prime") || (this.type == "count"))){
+	    this.xhr = null;
+	    this.done = true;
+	    callback(false); // false -> let hedRequest know we're not counting anything
+	    return; // in the case where a college's servers are designed well and we don't need to check these
+	}
 	if(GETPOST.openMethod == null)
 	    console.error("openMethod not set for request of type " + this.type + ". There's an erorr in config.js");
 	if(GETPOST.openMethod == "POST" && GETPOST.postData == null)
@@ -154,8 +160,10 @@ class Searcher{
 	this.xhr = new XMLHttpRequest();
 	this.xhr.onreadystatechange = function(ref){ // callback
 	    return function(){
-		if(this.readyState == 4)
+		if(this.readyState == 4){
+		    this.done = true;
 		    ref.xhr = null;
+		}
 		if(ref.type == "test" && this.readyState === 4 && this.status === 0){ // test failed
 		    console.error("CORS DENIED - please enable a CORS-everywhere extension or ask " + app_config.collegeNameShort + " to let us in");
 		    if(callback)
@@ -169,11 +177,9 @@ class Searcher{
 		}
 		if(ref.type == "test")
 		    return; // forget about everything else if it's just a test
-		if (this.readyState === 4 && this.status === 200){
-		    var response = null;
-		    response = this.responseText;
+		if (this.readyState === 4 && this.status === 200){ // everything else
 		    if(callback)
-			callback(response);
+			callback(this.responseText);
 		    ref.done = true;
 		    ref.xhr = null;
 		    return;
@@ -254,8 +260,10 @@ class TermManager{
 		    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded so far
 			return acc + cur.courses.length; // by summing them all up
 		    }, 0);
-		    app.percent = loadedAmount.toString() + "/" + TermManager_ref.totalCount.toString();
-		    app.updatePercent();
+		    if(TermManager_ref.totalCount !== undefined){
+			app.percent = loadedAmount.toString() + "/" + TermManager_ref.totalCount.toString();
+			app.updatePercent();
+		    }
 		    TermManager_ref.headRequest = null;
 		    TermManager_ref.requests.forEach(function(request){
 			request.start(function(responseData){ // individual callbacks
@@ -265,9 +273,12 @@ class TermManager{
 			    var loadedAmount = TermManager_ref.data.reduce(function(acc, cur){ // check how many courses we have loaded
 				return acc + cur.courses.length; // by summing them all up
 			    }, 0);
-			    app.percent = loadedAmount.toString() + "/" + TermManager_ref.totalCount.toString();
-			    app.updatePercent();
-			    if(loadedAmount >= app_config.test_percent_cap*TermManager_ref.totalCount/100){ // and see if we've got enough
+			    
+			    if(TermManager_ref.totalCount !== undefined){
+				app.percent = loadedAmount.toString() + "/" + TermManager_ref.totalCount.toString();
+				app.updatePercent();
+			    }
+			    if((TermManager_ref.totalCount === undefined) || (loadedAmount >= app_config.test_percent_cap*TermManager_ref.totalCount/100)){ // and see if we've got enough
 				app.percent += "\nProcessng courses...";
 				app.updatePercent();
 				// if so, process data and mark term complete
@@ -314,22 +325,32 @@ class TermManager{
 		    app.updatePercent(); // update loading bar (if running in the background, it will be hidden)
 		    TermManager_ref.headRequest = new Searcher("count", TermManager_ref.term);
 		    TermManager_ref.headRequest.start(function(responseData){
-			TermManager_ref.totalCount = app_config.PROCESSgetCourseTotalCount(responseData);
 			TermManager_ref.headRequest = null; // head requests are all done
-			app.percent = "0/" + TermManager_ref.totalCount.toString();
-			app.updatePercent();
-			let offsets = []; // stores offset values for each subsequent required request
-			for(var i = 0; i<app_config.test_percent_cap*TermManager_ref.totalCount/100; i+=app_config.chunk)
-			    offsets.push(i); // fill offsets with integer values starting at 0
-			// offset by app_config.chunk size, and going up to only what we need to request
-			
-			offsets.forEach(function(offset){ // construct all subsequent requests
-			    var searcher = new Searcher("courses", TermManager_ref.term, offset, app_config.chunk);
-			    searcher.offset = offset; // we carry offset through so we can sort courses in the
-			    // correct order after they're all loaded in
+			if(responseData === false){ // this can only happen when config.js says we don't
+			                            // need to count and all courses will be in 1 request
+			    app.percent = "";
+			    app.updatePercent();
+			    var searcher = new Searcher("courses", TermManager_ref.term, 0, 0);
+			    searcher.offset = 0;
 			    TermManager_ref.requests.push(searcher);
-			});
-			TermManager_ref.start(main_callback, true); // recurse into start. Now that requests is filled, it'll just start them all
+			    TermManager_ref.start(TermManager_ref.main_callback_wrapper.callback, true);
+			} else {
+			    TermManager_ref.totalCount = app_config.PROCESSgetCourseTotalCount(responseData);
+			    app.percent = "0/" + TermManager_ref.totalCount.toString();
+			    app.updatePercent();
+			    let offsets = []; // stores offset values for each subsequent required request
+			    for(var i = 0; i<app_config.test_percent_cap*TermManager_ref.totalCount/100; i+=app_config.chunk)
+				offsets.push(i); // fill offsets with integer values starting at 0
+			    // offset by app_config.chunk size, and going up to only what we need to request
+			    
+			    offsets.forEach(function(offset){ // construct all subsequent requests
+				var searcher = new Searcher("courses", TermManager_ref.term, offset, app_config.chunk);
+				searcher.offset = offset; // we carry offset through so we can sort courses in the
+				// correct order after they're all loaded in
+				TermManager_ref.requests.push(searcher);
+			    });
+			    TermManager_ref.start(TermManager_ref.main_callback_wrapper.callback, true); // recurse into start. Now that requests is filled, it'll just start them all
+			}
 		    });
 		}
 	    }
