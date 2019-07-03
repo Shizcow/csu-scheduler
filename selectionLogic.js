@@ -169,7 +169,6 @@ app.cartesianProduct = function*(dimensions){
 	    yield [dimensions[0][i]]; // wrap each course as its own schedule
 	return; // generators are weird
     }
-    console.log(dimensions)
     var stack = new Array(dimensions.length).fill(0, 0, dimensions.length);
     while(true){ // This incriments over stack, treating it like a mixed-base number
 	for(var i = 0; i<stack.length-1; ++i){ // check stack state for carry
