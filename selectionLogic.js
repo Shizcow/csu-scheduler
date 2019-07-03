@@ -136,7 +136,7 @@ app.autoConstruct = function(courses){
 		    typePack.unshift(compareCourse); // then re-add it to front
 		}	
 	    });
-	    acc.push(this.closed ? typePack : typePack.filter(c => c.seatsAvailable > 0)); // filter out courses that are closed
+	    acc.push(app.closed ? typePack : typePack.filter(c => c.seatsAvailable > 0)); // filter out courses that are closed
 	});
 	return acc;
     }, []))).filter(this.schedCompat);
@@ -169,6 +169,7 @@ app.cartesianProduct = function*(dimensions){
 	    yield [dimensions[0][i]]; // wrap each course as its own schedule
 	return; // generators are weird
     }
+    console.log(dimensions)
     var stack = new Array(dimensions.length).fill(0, 0, dimensions.length);
     while(true){ // This incriments over stack, treating it like a mixed-base number
 	for(var i = 0; i<stack.length-1; ++i){ // check stack state for carry
