@@ -220,16 +220,18 @@ app.fillSchedule = function(referrer) {
 // so, all we need to do is detect if we just ran a fill schedule
 // if so, ignore the hash change. If not, we know there's been a manual change -- refill
 // and alert GA of a schedule shared
+app.disableOnHashChange = false;
 onhashchange = function(){
     //first, check if we need to load
     //IE, if hash agrees with loaded schedule
-    if(!(app.generateHash(false) == app.getHash().substr(1)) && app.getHash().substr(1).split("=")[0].length){
+    if(!app.disableOnHashChange && !(app.generateHash(false) == app.getHash().substr(1)) && app.getHash().substr(1).split("=")[0].length){
 	//first change term
 	app.term = app.terms[app.terms.map(el => el.URLcode).indexOf(app.getHash().split("=")[0].substr(1))].URLcode;
 	//then load selected & render on screen
 	app.updateTerms();
 	app.changedTerm("first");
     }
+    app.disableOnHashChange = false;
 };
 
 // tests whether or not a course is in a day/hour, and if so returns a render object
