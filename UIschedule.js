@@ -404,6 +404,8 @@ app.loadHash = function(first){
 	} else { // previous - load and update
 	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
 	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
+	    // and update notes too
+	    document.getElementById("notes").value = this.localStorage[app.currentstorage].split("+")[1];
 	}
     }
 };
@@ -412,8 +414,7 @@ app.loadHash = function(first){
 // this adds or removes the course from app.selected
 // but this needs extra steps and resets in auto mode
 app.click = function(course){
-    if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
-    {
+    if (this.autoInAlts(this.courses[this.course], course)){ // needs to be added to selected
 	document.getElementById("selectBox").value = "";
 	if(this.mode == "Manual"){
 	    this.course = null;
