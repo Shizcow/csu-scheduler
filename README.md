@@ -3,7 +3,7 @@ Course Scheduler for Colorado State University. Create, save, edit, and view all
 
 Initially based off of the old [stevens-scheduler](https://github.com/danielheyman/stevens-scheduler/tree/492b2c443bf3134244bebd456db5610b199934d6) but with a lot more features.
 
-Features include:
+Features include:  
 -Saving, loading, and sharing schedules  
 -Rearranging saved schedules  
 -Dark<=>Light mode slider in top left  
