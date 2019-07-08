@@ -95,7 +95,7 @@ app.fillSchedule = function(referrer) {
 	    if(course && courseHere){
 		var div = document.createElement("div");
 		div.className = "item";
-		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + (Boolean(courseHere.loc.trim()) ? (courseHere.loc + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
+		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + (course.faculty.trim().length ? (course.faculty + '\n') : "") + (courseHere.loc.length ? (courseHere.loc + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
 		if((course.seatsAvailable !== undefined) && (course.maximumEnrollment !== undefined))
 		    innerText += Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
 		if((course.waitAvailable !== undefined) && (course.waitAvailable !== undefined))
@@ -136,7 +136,7 @@ app.fillSchedule = function(referrer) {
 	if(course){
 	    var div = document.createElement("div");
 	    div.className = "item";
-	    var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
+	    var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + (course.faculty.trim().length ? (course.faculty + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
 	    if((course.seatsAvailable !== undefined) && (course.maximumEnrollment !== undefined))
 		innerText += Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
 	    if((course.waitAvailable !== undefined) && (course.waitAvailable !== undefined))
@@ -246,7 +246,7 @@ app.courseHere = function(day, hour, course){
 	res = {
 	    top: start-Math.trunc(start, 0),
 	    length: end-start,
-	    loc: ((Boolean(meeting.building) && Boolean(meeting.building.trim()) && Boolean(meeting.room) && Boolean(meeting.room.trim())) ? (meeting.building + " " + meeting.room) : ""),
+	    loc: ((Boolean(meeting.building) && meeting.building.trim().length && Boolean(meeting.room) && meeting.room.trim().length) ? (meeting.building + " " + meeting.room) : ""),
 	}
     }.bind(this));
     return res;
@@ -404,6 +404,8 @@ app.loadHash = function(first){
 	} else { // previous - load and update
 	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
 	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
+	    // and update notes too
+	    document.getElementById("notes").value = this.localStorage[app.currentstorage].split("+")[1];
 	}
     }
 };
@@ -412,8 +414,7 @@ app.loadHash = function(first){
 // this adds or removes the course from app.selected
 // but this needs extra steps and resets in auto mode
 app.click = function(course){
-    if (this.autoInAlts(this.courses[this.course], course)) // needs to be added to selected
-    {
+    if (this.autoInAlts(this.courses[this.course], course)){ // needs to be added to selected
 	document.getElementById("selectBox").value = "";
 	if(this.mode == "Manual"){
 	    this.course = null;
