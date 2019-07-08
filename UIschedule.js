@@ -95,7 +95,7 @@ app.fillSchedule = function(referrer) {
 	    if(course && courseHere){
 		var div = document.createElement("div");
 		div.className = "item";
-		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + courseHere.loc + '\n' + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
+		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + course.faculty + '\n' + (Boolean(courseHere.loc.trim()) ? (courseHere.loc + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
 		if((course.seatsAvailable !== undefined) && (course.maximumEnrollment !== undefined))
 		    innerText += Math.max(0, course.seatsAvailable) + '/' + course.maximumEnrollment + ' seats open\n';
 		if((course.waitAvailable !== undefined) && (course.waitAvailable !== undefined))
@@ -246,9 +246,9 @@ app.courseHere = function(day, hour, course){
 	var end = this.convertTime(meeting.endTime);
 	if (Math.trunc(start, 0) != hour-8) return;
 	res = {
-	    top: start-Math.trunc(start,0),
+	    top: start-Math.trunc(start, 0),
 	    length: end-start,
-	    loc: meeting.building + " " + meeting.room,
+	    loc: ((Boolean(meeting.building) && Boolean(meeting.building.trim()) && Boolean(meeting.room) && Boolean(meeting.room.trim())) ? (meeting.building + " " + meeting.room) : ""),
 	}
     }.bind(this));
     return res;
