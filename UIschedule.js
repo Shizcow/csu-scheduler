@@ -225,11 +225,9 @@ onhashchange = function(){
     //first, check if we need to load
     //IE, if hash agrees with loaded schedule
     if(!app.disableOnHashChange && !(app.generateHash(false) == app.getHash().substr(1)) && app.getHash().substr(1).split("=")[0].length){
-	//first change term
-	app.term = app.terms[app.terms.map(el => el.URLcode).indexOf(app.getHash().split("=")[0].substr(1))].URLcode;
 	//then load selected & render on screen
+	app.changedTerm("first", {value: app.terms[app.terms.map(el => el.URLcode).indexOf(app.getHash().split("=")[0].substr(1))].URLcode}); // need to pend a term change, just like loading a schedule
 	app.updateTerms();
-	app.changedTerm("first");
     }
     app.disableOnHashChange = false;
 };

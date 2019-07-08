@@ -98,10 +98,10 @@ app.changedTerm = function(loadHash = false, referrer = null){
 	    return false;
 	}
     }
-    if(this.currentstorage && loadHash != true && !this.clear(false, loadHash == "first"))
+    if(loadHash != true && !this.clear(false, loadHash == "first"))
 	return document.getElementById("termSelect").value = this.term; // confirm
     if(referrer){
-	if(referrer.firstChild.value == "") // clean up on first get
+	if(referrer.firstChild && referrer.firstChild.value == "") // clean up on first get
 	    referrer.removeChild(referrer.firstChild);
 	this.term = referrer.value;
     }
