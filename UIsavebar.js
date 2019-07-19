@@ -85,12 +85,12 @@ let animator = {
 
 	    if(Math.abs(e.clientX - animator.startX) > 5 || Math.abs(e.clientY - animator.startY) > 5){
 		//rearrange localStorage and then app.localStorage
-		var entries = Object.entries(JSON.parse(window.localStorage.schedules)); // [[name, hash], ...]
+		var entries = Object['entries'](JSON.parse(window.localStorage.schedules)); // [[name, hash], ...]
 		var order = animator.element.parentNode.children;
 		var builder = [];
 		for(var i=0; i<order.length; ++i)
 		    builder.push(entries.filter(e => e[0] == order[i].innerText)[0]); // no two saves share a name
-		window.localStorage.schedules = JSON.stringify(Object.fromEntries(builder));
+		window.localStorage.schedules = JSON.stringify(Object['fromEntries'](builder)); // TODO: consider moving away from fromEntries to make this more compatable
 		app.localStorage = JSON.parse(window.localStorage.schedules);
 	    } else { // normal click
 		var wrapper = animator.element.parentElement; // because changed() looks at style

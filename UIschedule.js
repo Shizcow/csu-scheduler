@@ -78,7 +78,7 @@ app.autoAndLabs = function(check_course){
 app.fillSchedule = function(referrer = null) {
     if(referrer)
 	app.course_list_selection = referrer.value;
-    app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
+    app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value, 10) : null;
     var wrappers = document.getElementsByClassName("wrapperInternal");
     var schedule = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
     // Then, cycle through and build a divlist
@@ -128,7 +128,6 @@ app.fillSchedule = function(referrer = null) {
     var web = document.getElementById("web");
     while(web.firstChild)
 	web.removeChild(web.firstChild);
-    var schedule = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
     var webClasses = app.webclasses(schedule);
     webWrapper.style.display = webClasses.length ? "" : "none";
     for(var j=0; j<webClasses.length; ++j){
@@ -242,9 +241,9 @@ app.courseHere = function(day, hour, course){
 	if (meeting.building == 'WS' || !meeting.beginTime || !meeting[day]) return;
 	var start = app.convertTime(meeting.beginTime);
 	var end = app.convertTime(meeting.endTime);
-	if (Math.trunc(start, 0) != hour-8) return;
+	if (Math.trunc(start) != hour-8) return;
 	res = {
-	    top: start-Math.trunc(start, 0),
+	    top: start-Math.trunc(start),
 	    length: end-start,
 	    loc: ((Boolean(meeting.building) && meeting.building.trim().length && Boolean(meeting.room) && meeting.room.trim().length) ? (meeting.building + " " + meeting.room) : ""),
 	}
@@ -256,7 +255,7 @@ app.courseHere = function(day, hour, course){
 // the offset between the time value and the top of the schedule
 app.convertTime = function(time){
     var minute = time.substr(-2);
-    return parseFloat(time.substr(0, time.length-minute.length), 10)+parseFloat(minute)/60-8;
+    return parseFloat(time.substr(0, time.length-minute.length))+parseFloat(minute)/60-8;
 };
 
 // takes a list of courses and returns only the web courses
@@ -382,7 +381,7 @@ app.dayUpdate = function(){
 }
 
 // used to load in a schedule from either a save or a shared URL
-app.loadHash = function(first){
+app.loadHash = function(first = false){
     var hashes = app.getHash().split("=")[1].split("&")[0].split(",");
     app.selected = app.courses.filter(function(course){
 	return hashes.indexOf(course.URLcode.toString()) > -1;

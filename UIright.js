@@ -157,7 +157,7 @@ app.genDivs = function(loadSelect = true){
     for(var i = 0; i < app.courses.length; i++){
 	var c = app.courses[i];
 	var el = document.createElement("option");
-	el.textContent = c.subject + ' ' + c.courseNumber + (c.sessionMod ? c.sessionMod : "") + ': ' + c.title;
+	el.innerHTML = c.subject + ' ' + c.courseNumber + (c.sessionMod ? c.sessionMod : "") + ': ' + c.title;
 	el.value = c.index;
 	app.courses_manual.push(el);
     }
@@ -165,7 +165,7 @@ app.genDivs = function(loadSelect = true){
     for(var i = 0; i < courses_auto.length; i++){
 	var c = courses_auto[i];
 	var el = document.createElement("option");
-	el.textContent = c.subject + ' ' + c.courseNumber + ': ' + c.title;
+	el.innerHTML = c.subject + ' ' + c.courseNumber + ': ' + c.title;
 	el.value = c.index;
 	app.courses_auto.push(el);
     }
@@ -203,7 +203,7 @@ app.updateNotes = function(noteBox){
 };
 
 // fills in the course selection box according to mode and search query
-app.fillSearch = function(referrer) {
+app.fillSearch = function(referrer = null) {
     var selectBox = document.getElementById("selectBox");
     var val = selectBox.value;
     while(selectBox.lastChild.value != "")
