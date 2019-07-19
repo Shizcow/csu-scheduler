@@ -23,21 +23,20 @@ See below for instructions.
 After that, little source modification will be required. Direct any questions to csu-scheduler maintainers.  
   
   
-#Minifying
-Currently, the source code is set up to be minified, and will require it to work.
-Here's how the minify structure is layed out
+# Minifying
+Currently, minifying is required by the source and the website will not work without it.
+Here's how the minify structure is layed out, which if followed means no modification here:
 
-HTML:
-	index_source.html -> index.html
-
-CSS:
-	style.css -> style.min.css
-	style_dark.css -> style_dark.min.css
-
-JS:
-	GA.js, config.js, index.js, librequests.js, init.js, apputil.js, UIschedule.js, UIright.js, UIsavebar.js, selectionLogic.js, mounted.js -> min.js
-
-	Note: you'll need a jsminifier that works with ES6. Google Closure Compiler is a nice choice.
+- HTML:
+    - index_source.html -> index.html
+  
+- CSS:
+    - style.css -> style.min.css
+    - style_dark.css -> style_dark.min.css
+  
+- JS:
+    - GA.js, config.js, index.js, librequests.js, init.js, apputil.js, UIschedule.js, UIright.js, UIsavebar.js, selectionLogic.js, mounted.js -> min.js
+    - Note: you'll need a jsminifier that works with ES6. Google Closure Compiler is a nice choice.
 
 
 Once you find good packages that work on your machine, it might be a good idea to set up a pre-commit git hook.
@@ -46,7 +45,7 @@ options to git commit, it won't actually commit, but only build and ask for opti
 
 
 Here's an example of a pre-commit hook for this project, which may or may not work on your machine:
-
+```
 #!/bin/sh
 
 echo "minifying files..."
@@ -81,3 +80,4 @@ fi
 
 
 echo "minifing was a success"
+```
