@@ -172,7 +172,7 @@ app.save = function() {
         app.currentstorage = name;
     }
     
-    if(!window.localStorage.schedules) window.localStorage.setItem('schedules', JSON.stringify({}));
+    if(!window.localStorage.schedules) window.localStorage.setItem('schedules', '{}');
     var schedules = JSON.parse(window.localStorage.schedules);
 
     if(schedules[app.currentstorage] == undefined)
@@ -224,7 +224,7 @@ app.discard = function() {
     var schedule = app.currentstorage;
     app.currentstorage = null;
     app.load(schedule);
-    window.localStorage.setItem('lastSaved', JSON.stringify({}));
+    window.localStorage.setItem('lastSaved', "{}");
 };
 
 // creates a new schedule from an old schedule
@@ -243,7 +243,7 @@ app.deleteSchedule = function() {
         app.clear(true);
 	app.updateSaved();
 	app.fillSchedule();
-	window.localStorage.setItem('lastSaved', JSON.stringify({}));
+	window.localStorage.setItem('lastSaved', "{}");
     }
 };
 
@@ -272,7 +272,7 @@ app.clear = function(bypass = false, share = false) {
     app.updateSaved();
     app.fillSchedule();
     app.hideSearch();
-    window.localStorage.setItem('lastSaved', JSON.stringify({}));
+    window.localStorage.setItem('lastSaved', "{}");
     return true;
 };
 

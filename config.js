@@ -453,6 +453,7 @@ the meetings property should be an array of objects, all of which have a few pro
  maximumEnrollment: "100"
  seatsAvailable: "25"
 }
+
 */
 // Remember to return a LIST of constructed courses
 app_config.PROCESSgetCourses = function(responseText){

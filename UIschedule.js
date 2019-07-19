@@ -247,7 +247,7 @@ app.courseHere = function(day, hour, course){
 	    length: end-start,
 	    loc: ((Boolean(meeting.building) && meeting.building.trim().length && Boolean(meeting.room) && meeting.room.trim().length) ? (meeting.building + " " + meeting.room) : ""),
 	}
-    }.bind(this));
+    });
     return res;
 };
 
