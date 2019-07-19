@@ -59,6 +59,8 @@ if [[ $? != 0 ]]; then
     exit 1
 fi
 
+git add min.js
+
 
 echo "->minifying CSS..."
 
@@ -71,12 +73,16 @@ if [[ $? != 0 ]]; then
     exit 1
 fi
 
+git add style.min.css
+
 
 echo "->minifying HTML..."
 minify -o index.html index_source.html
 if [[ $? != 0 ]]; then 
     exit 1
 fi
+
+git add index.html
 
 
 echo "minifing was a success"
