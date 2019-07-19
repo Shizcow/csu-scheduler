@@ -62,25 +62,25 @@ window.addEventListener("keydown", function (e) {
 let change_style = function(styleSlider){
     document.styleSheets[1].disabled = !styleSlider.checked;
     document.getElementById('logo').src = app_config.getLogoName(styleSlider.checked);
-    localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
+    window.localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
 }
 
 // grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
 app.autoAndLabs = function(check_course){
     if(check_course == null)
 	return []; // if there's one or zero, we don't even need to check
-    if(this.mode == "Manual")
+    if(app.mode == "Manual")
 	return [check_course]; // Manual mode - only hover on one section
-    return app.courses_generator ? app.courses_generator.get(this.course_list_selection).filter(course => course && course.home == check_course.home) : [];
+    return app.courses_generator ? app.courses_generator.get(app.course_list_selection).filter(course => course && course.home == check_course.home) : [];
 };
 
 // renders courses into the on screen schedule
-app.fillSchedule = function(referrer) {
+app.fillSchedule = function(referrer = null) {
     if(referrer)
-	this.course_list_selection = referrer.value;
-    this.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
+	app.course_list_selection = referrer.value;
+    app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value) : null;
     var wrappers = document.getElementsByClassName("wrapperInternal");
-    var schedule = this.autoConstruct(this.selected.concat(app.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
+    var schedule = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
     // Then, cycle through and build a divlist
     var divTracker = [];
     for(var i=0; i < wrappers.length; ++i){
@@ -91,7 +91,7 @@ app.fillSchedule = function(referrer) {
 	    wrapper.removeChild(wrapper.firstChild);
 	for(var j=0; j<schedule.length; ++j){
 	    var course = schedule[j];
-	    var courseHere = this.courseHere(day, hour, course);
+	    var courseHere = app.courseHere(day, hour, course);
 	    if(course && courseHere){
 		var div = document.createElement("div");
 		div.className = "item";
@@ -128,8 +128,8 @@ app.fillSchedule = function(referrer) {
     var web = document.getElementById("web");
     while(web.firstChild)
 	web.removeChild(web.firstChild);
-    var schedule = this.autoConstruct(this.selected.concat(app.courses[this.course])).get(this.mode == 'Manual' ? 0 : this.course_list_selection);
-    var webClasses = this.webclasses(schedule);
+    var schedule = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
+    var webClasses = app.webclasses(schedule);
     webWrapper.style.display = webClasses.length ? "" : "none";
     for(var j=0; j<webClasses.length; ++j){
 	var course = webClasses[j];
@@ -202,16 +202,16 @@ app.fillSchedule = function(referrer) {
 	}();
     }
     
-    this.dayUpdate(); // and all the other stuff
-    this.autoBar();
-    this.saveMarker();
-    this.updateCredits();
+    app.dayUpdate(); // and all the other stuff
+    app.autoBar();
+    app.saveMarker();
+    app.updateCredits();
 
     //Deal with the "you can deselect" thing
-    document.getElementById("escTip").style.display = (this.course != null) ? "" : "none";
+    document.getElementById("escTip").style.display = (app.course != null) ? "" : "none";
 
-    localStorage.setItem('lastViewed', this.generateHash(false));
-    if(this.selected.length > 0)
+    window.localStorage.setItem('lastViewed', app.generateHash(false));
+    if(app.selected.length > 0)
 	gtag('event', 'Schedules Tested');
 };
 
@@ -221,7 +221,7 @@ app.fillSchedule = function(referrer) {
 // if so, ignore the hash change. If not, we know there's been a manual change -- refill
 // and alert GA of a schedule shared
 app.disableOnHashChange = false;
-onhashchange = function(){
+window.onhashchange = function(){
     //first, check if we need to load
     //IE, if hash agrees with loaded schedule
     if(!app.disableOnHashChange && !(app.generateHash(false) == app.getHash().substr(1)) && app.getHash().substr(1).split("=")[0].length){
@@ -240,8 +240,8 @@ app.courseHere = function(day, hour, course){
     
     course.meetings.forEach(function(meeting){
 	if (meeting.building == 'WS' || !meeting.beginTime || !meeting[day]) return;
-	var start = this.convertTime(meeting.beginTime);
-	var end = this.convertTime(meeting.endTime);
+	var start = app.convertTime(meeting.beginTime);
+	var end = app.convertTime(meeting.endTime);
 	if (Math.trunc(start, 0) != hour-8) return;
 	res = {
 	    top: start-Math.trunc(start, 0),
@@ -282,7 +282,7 @@ app.fetchDescription = function(course){
     }
     if(!course.description){
 	// if it's not loaded, load it and cache it in the course object
-	(new Searcher("desc", this.term.toString(), course.URLcode.toString())).start(function(response){
+	(new Searcher("desc", app.term.toString(), course.URLcode.toString())).start(function(response){
 	    response = app_config.PROCESSgetDescription(response);
 	    updater(response);
 	    course.description = response;
@@ -297,8 +297,8 @@ app.fetchDescription = function(course){
 app.dayUpdate = function(){
     var test = false;
     //first, hide weekends
-    if(this.mode == "Automatic"){ // check if valid
-	if((app.selected.length == 0) || (app.courses_generator && app.courses_generator.data && app.courses_generator.data[this.course_list_selection])){
+    if(app.mode == "Automatic"){ // check if valid
+	if((app.selected.length == 0) || (app.courses_generator && app.courses_generator.data && app.courses_generator.data[app.course_list_selection])){
 	    //good to go
 	    document.getElementById("noSchedWrapper").style.display = "none";
 	    if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
@@ -383,29 +383,29 @@ app.dayUpdate = function(){
 
 // used to load in a schedule from either a save or a shared URL
 app.loadHash = function(first){
-    var hashes = this.getHash().split("=")[1].split("&")[0].split(",");
-    this.selected = app.courses.filter(function(course){
+    var hashes = app.getHash().split("=")[1].split("&")[0].split(",");
+    app.selected = app.courses.filter(function(course){
 	return hashes.indexOf(course.URLcode.toString()) > -1;
     });
-    document.getElementById("closedCheck").checked = Boolean(this.getHash().split("&")[1]);
-    this.closed = Boolean(this.getHash().split("&")[1]);
+    document.getElementById("closedCheck").checked = Boolean(app.getHash().split("&")[1]);
+    app.closed = Boolean(app.getHash().split("&")[1]);
     if(first){ // loading hash from URL - check if there's a save which matches, and if so select it
 	// this will choose the firstmost schedule that matches
 	var possible = [];
 	for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
-	    if(this.localStorage[saves[i].innerText].split("+")[0] == this.getHash().split("#")[1])
+	    if(app.localStorage[saves[i].innerText].split("+")[0] == app.getHash().split("#")[1])
 		possible.push(saves[i]);
 	var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
-	    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == localStorage.lastSaved;
+	    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == window.localStorage.lastSaved;
 	});
 	if(!possible.length){ // no matches - probably completly new
-	    if((this.getHash().split("&")[0].split("=")[1].length > 0) && (this.generateHash(false) != localStorage["lastViewed"])) // make sure there are actually some courses
+	    if((app.getHash().split("&")[0].split("=")[1].length > 0) && (app.generateHash(false) != window.localStorage["lastViewed"])) // make sure there are actually some courses
 		gtag('event', 'Schedules Shared'); // is completly new
 	} else { // previous - load and update
 	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
 	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
 	    // and update notes too
-	    document.getElementById("notes").value = this.localStorage[app.currentstorage].split("+")[1];
+	    document.getElementById("notes").value = app.localStorage[app.currentstorage].split("+")[1];
 	}
     }
 };
@@ -414,33 +414,33 @@ app.loadHash = function(first){
 // this adds or removes the course from app.selected
 // but this needs extra steps and resets in auto mode
 app.click = function(course){
-    if (this.autoInAlts(this.courses[this.course], course)){ // needs to be added to selected
+    if (app.autoInAlts(app.courses[app.course], course)){ // needs to be added to selected
 	document.getElementById("selectBox").value = "";
-	if(this.mode == "Manual"){
-	    this.course = null;
-	    this.selected.push(course);
+	if(app.mode == "Manual"){
+	    app.course = null;
+	    app.selected.push(course);
 	} else {
-	    var intended = this.autoConstruct(this.selected.concat(this.courses[this.course])).get(this.course_list_selection).filter(c => this.autoInAlts(this.courses[this.course], c))
-	    this.course = null;
+	    var intended = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.course_list_selection).filter(c => app.autoInAlts(app.courses[app.course], c))
+	    app.course = null;
 	    intended.forEach(c => app.selected.push(c));
-	    this.savedCourseGenerator = "A";
-	    this.autoConstruct(this.selected).get(this.course_list_selection, true); // force url update & selected update
+	    app.savedCourseGenerator = "A";
+	    app.autoConstruct(app.selected).get(app.course_list_selection, true); // force url update & selected update
 	}
     }
     else
     {
-	if(this.mode == "Manual")
-	    this.selected.splice(this.selected.indexOf(course), 1);
+	if(app.mode == "Manual")
+	    app.selected.splice(app.selected.indexOf(course), 1);
 	else
-	    this.selected = this.selected.filter(c => course.home != c.home);
-        this.hovering = [];
+	    app.selected = app.selected.filter(c => course.home != c.home);
+        app.hovering = [];
     }
 
-    location.hash = this.generateHash(false);
-    this.course_list_selection = 0;
+    location.hash = app.generateHash(false);
+    app.course_list_selection = 0;
     var range = document.getElementById('Range');
     range.max = 0;
     range.value = 0; // fix render on auto bar
-    this.hideSearch();
-    this.fillSchedule();
+    app.hideSearch();
+    app.fillSchedule();
 };

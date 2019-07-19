@@ -288,7 +288,7 @@ app_config.PROCESSgetDescription()
 // the source can understand
 // This function takes one parameter: responseText. This is more
 // or less taken directly from the XMLHttpRequest.onreadystatechange
-// method as this.responseText, and should be treated as such
+// method as XMLHttpRequest.responseText, and should be treated as such
 //
 // Now, for processing rules. With the input of responseText, construct
 // a list of objects which hold two values: URLcode and title.
@@ -457,9 +457,9 @@ the meetings property should be an array of objects, all of which have a few pro
 // Remember to return a LIST of constructed courses
 app_config.PROCESSgetCourses = function(responseText){
     var coursesJSON = JSON.parse(responseText).data;
-    ret_courses = [];
+    var ret_courses = [];
     coursesJSON.forEach(function(courseJSON){
-	ret_course = {};
+	var ret_course = {};
 	ret_course.courseNumber = courseJSON.courseNumber;
 	ret_course.URLcode = courseJSON.courseReferenceNumber;
 	ret_course.courseRegistrationCode = courseJSON.courseReferenceNumber;

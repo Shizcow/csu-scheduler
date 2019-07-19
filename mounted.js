@@ -8,10 +8,13 @@ This file contains all one-time code for setting up the website. This includes:
 This should be the last script to be loaded, as it depends on all other scripts to be loaded
 */
 
+//defines
+if(window.localStorage.lastSaved == undefined) window.localStorage.lastSaved = "";
+
 //style first
-if(localStorage.darkMode == undefined) localStorage.darkMode = "false";
+if(window.localStorage.darkMode == undefined) window.localStorage.darkMode = "false";
 var styleSlider = document.getElementById("styleSlider");
-styleSlider.checked = localStorage.darkMode == "true";
+styleSlider.checked = window.localStorage.darkMode == "true";
 change_style(styleSlider);
 
 //then check browser cache for radio buttons and checkboxes, update accordingly
@@ -33,8 +36,9 @@ document.getElementById("closedCheck").checked = app.closed;
 //load terms -> then load courses and everything else
 (new Searcher("terms")).start(function(response){
     app.terms = app_config.PROCESSgetTerms(response);
-    if ((app.getHash().split("=")[1] || "").split("&")[0].length && (index = app.terms.map(el => el.URLcode).indexOf(app.getHash().split("=")[0].substr(1))) > -1){ //need to load from url
-	app.term = app.terms[index].URLcode;
+    var foundIdx = (app.getHash().split("=")[1] || "").split("&")[0].length ?  app.terms.map(el => el.URLcode).indexOf(app.getHash().split("=")[0].substr(1)) : -1;
+    if ((app.getHash().split("=")[1] || "").split("&")[0].length && foundIdx > -1){ //need to load from url
+	app.term = app.terms[foundIdx].URLcode;
 	app.updateTerms();
 	app.changedTerm("first");
     } else {
@@ -43,8 +47,8 @@ document.getElementById("closedCheck").checked = app.closed;
 	app.changedTerm(false);
     }
     document.getElementById("termSelect").value = app.term;
-    if(localStorage.schedules)
-	app.localStorage = JSON.parse(localStorage.schedules);
+    if(window.localStorage.schedules)
+	app.localStorage = JSON.parse(window.localStorage.schedules);
     app.updateSaved();
 });
 
@@ -55,7 +59,7 @@ let longpress = { // namespace reasons
     waiter: null,
     advanceNextButton: function(e){
 	app.genNext(nextButton);
-	longpress.waiter = setTimeout(longpress.advanceNextButton, 50); // no idea why this.waiter doesn't work
+	longpress.waiter = setTimeout(longpress.advanceNextButton, 50);
     },
     pressingDown: function(e){
 	app.genNext(nextButton);
