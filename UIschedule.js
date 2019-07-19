@@ -294,7 +294,6 @@ app.fetchDescription = function(course){
 
 // if needed, expands schedule to include Saturdays and Sundays - and show "No valid schedules"
 app.dayUpdate = function(){
-    var test = app.courses;
     //first, hide weekends
     if(app.mode == "Automatic"){ // check if valid
 	if((app.selected.length == 0) || (app.courses_generator && app.courses_generator.data && app.courses_generator.data[app.course_list_selection])){
@@ -333,16 +332,11 @@ app.dayUpdate = function(){
 
     
     //then, show only what needed
-    if(test.map(function(c){ // Any of the courses are held on a Saturday (or Sunday)
-	if(!c) return false;
-	return c.meetings.map(function(meeting){
-	    return meeting.saturday || meeting.sunday
-	}).reduce(function(a, b){
-	    return a || b;
-	})
-    }).reduce(function(a, b){
-	return a || b;
-    }, false)){
+    if((app.course === null ? app.selected : app.selected.concat(app.courses[app.course])) // saturday
+       .filter(c => c.meetings
+	       .filter(m => m.saturday || m.sunday)
+	       .length > 0)
+       .length > 0){
 	document.getElementById("schedThead").children[6].style.display = "";
 	var trs = document.getElementById("schedTbody").children;
 	for(var i=0; i<trs.length; ++i){
@@ -356,16 +350,11 @@ app.dayUpdate = function(){
 	}
     }
     
-    if(test.map(function(c){ // Any of the courses are held on a Sunday
-	if(!c) return false;
-	return c.meetings.map(function(meeting){
-	    return meeting.sunday
-	}).reduce(function(a, b){
-	    return a || b;
-	})
-    }).reduce(function(a, b){
-	return a || b
-    }, false)){
+    if((app.course === null ? app.selected : app.selected.concat(app.courses[app.course])) // sunday
+       .filter(c => c.meetings
+	       .filter(m => m.sunday)
+	       .length > 0)
+       .length > 0){
 	document.getElementById("schedThead").children[7].style.display = "";
 	var trs = document.getElementById("schedTbody").children;
 	for(var i=0; i<trs.length; ++i){
