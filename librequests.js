@@ -311,7 +311,7 @@ class TermManager{
 				var saveTerms = [];
 				// look through each save and grab their terms
 				for(var i=0; i<saves.length; ++i)
-				    saveTerms.push(app.localStorage[saves[i].innerText].split("=")[0]);
+				    saveTerms.push(JSON.parse(window.localStorage.schedules)[saves[i].innerText].split("=")[0]);
 				// then look through loaded terms and grab their terms
 				var completedTerms = app.termCacher.termManagers.filter(manager => manager.done).map(manager => manager.term);
 				// then find the first save term that doesn't have a fully loaded term

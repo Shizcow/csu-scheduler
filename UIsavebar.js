@@ -84,14 +84,17 @@ let animator = {
 	    animator.element.style.position = "static";
 
 	    if(Math.abs(e.clientX - animator.startX) > 5 || Math.abs(e.clientY - animator.startY) > 5){
-		//rearrange localStorage and then app.localStorage
-		var entries = Object['entries'](JSON.parse(window.localStorage.schedules)); // [[name, hash], ...]
-		var order = animator.element.parentNode.children;
+		// need to rearrange localStorage.schedules
+		var ordered_saves = document.getElementById("saves").children;
 		var builder = [];
-		for(var i=0; i<order.length; ++i)
-		    builder.push(entries.filter(e => e[0] == order[i].innerText)[0]); // no two saves share a name
-		window.localStorage.schedules = JSON.stringify(Object['fromEntries'](builder)); // TODO: consider moving away from fromEntries to make this more compatable
-		app.localStorage = JSON.parse(window.localStorage.schedules);
+		for(var i=0; i<ordered_saves.length; ++i){ // recalculate
+		    builder.push([ordered_saves[i].innerText, JSON.parse(window.localStorage.schedules)[ordered_saves[i].innerText]]);
+		}
+		var obj_builder = {};
+		for(var i=0; i<builder.length; ++i){
+		    obj_builder[builder[i][0]] = builder[i][1];
+		}
+		window.localStorage.schedules = JSON.stringify(obj_builder);
 	    } else { // normal click
 		var wrapper = animator.element.parentElement; // because changed() looks at style
 		for(var i = 0; i < wrapper.children.length; ++i) // we need to do animator twice in case load gets interrupted
@@ -130,9 +133,9 @@ app.saveMarker = function() {
 
 // renders in all the saved schedules buttons into the <div id="saves"> tag
 app.updateSaved = function() {
-    if(!app.localStorage)
+    var schedules = Object.keys(JSON.parse(window.localStorage.schedules));
+    if(!schedules.length)
 	return;
-    var schedules = Object.keys(app.localStorage);
     var saves = document.getElementById("saves");
     for(var i=0; i<saves.children.length; ++i){
 	var save = saves.children[i];
@@ -180,7 +183,6 @@ app.save = function() {
     
     schedules[app.currentstorage] = app.generateHash(true);
     window.localStorage.setItem('schedules', JSON.stringify(schedules));
-    app.localStorage = schedules;
     window.localStorage.setItem('lastSaved', app.generateHash(false) + "!" + app.currentstorage);
     
     app.updateSaved();
@@ -193,9 +195,9 @@ app.load = function(schedule) {
         if (!window.confirm("Are you sure you want to discard your changes?"))
 	    return false;
     app.currentstorage = schedule;
-    document.getElementById("notes").value = app.localStorage[schedule].split("+")[1];
+    document.getElementById("notes").value = JSON.parse(window.localStorage.schedules)[schedule].split("+")[1];
     app.disableOnHashChange = true;
-    location.hash = app.localStorage[schedule].split("+")[0];
+    location.hash = JSON.parse(window.localStorage.schedules)[schedule].split("+")[0];
     var currentTerm = app.getHash().split("=")[0].substr(1);
     var foundIdx = app.terms.map(term => term.URLcode).indexOf(currentTerm);
     if (foundIdx > -1){ // make sure term is valid
@@ -239,7 +241,6 @@ app.deleteSchedule = function() {
         var schedules = JSON.parse(window.localStorage.schedules);
         delete schedules[app.currentstorage];
         window.localStorage.setItem('schedules', JSON.stringify(schedules));
-        app.localStorage = schedules;
         app.clear(true);
 	app.updateSaved();
 	app.fillSchedule();

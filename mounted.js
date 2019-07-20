@@ -47,8 +47,6 @@ document.getElementById("closedCheck").checked = app.closed;
 	app.changedTerm(false);
     }
     document.getElementById("termSelect").value = app.term;
-    if(window.localStorage.schedules)
-	app.localStorage = JSON.parse(window.localStorage.schedules);
     app.updateSaved();
 });
 
