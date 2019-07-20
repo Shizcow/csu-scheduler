@@ -62,12 +62,12 @@ app.changed = function(){
 	if(saves[i].classList.contains("selected")) // this will be BEFORE render change
 	    foundIdx = i;
     if(foundIdx > -1)
-	ret = app.localStorage[saves[foundIdx].innerText] != app.generateHash(true);
+	ret = JSON.parse(window.localStorage.schedules)[saves[foundIdx].innerText] != app.generateHash(true);
     //save coming from, vs actual classes on the board
     else // edge case - if we're coming from no save selected and it happens to be the same
 	for(var i=0; i < saves.length; ++i)
 	    if(saves[i].classList.contains("preselect")) // this will be AFTER render change
-		ret = app.localStorage[saves[i].innerText] != app.generateHash(true);
+		ret = JSON.parse(window.localStorage.schedules)[saves[i].innerText] != app.generateHash(true);
     // we need to split this up, because if we're going from one schedule to another schedule,
     // there would otherwise be no way to compare the two, or even see if we're going to
     // one and coming from another

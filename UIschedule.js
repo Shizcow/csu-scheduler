@@ -381,10 +381,10 @@ app.loadHash = function(first = false){
 	// this will choose the firstmost schedule that matches
 	var possible = [];
 	for(var i=0,saves = document.getElementById("saves").children; i < saves.length; ++i)
-	    if(app.localStorage[saves[i].innerText].split("+")[0] == app.getHash().split("#")[1])
+	    if(JSON.parse(window.localStorage.schedules)[saves[i].innerText].split("+")[0] == app.getHash().split("#")[1])
 		possible.push(saves[i]);
 	var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
-	    return app.localStorage[element.innerText].split("+")[0] + "!" + element.innerText == window.localStorage.lastSaved;
+	    return JSON.parse(window.localStorage.schedules)[element.innerText].split("+")[0] + "!" + element.innerText == window.localStorage.lastSaved;
 	});
 	if(!possible.length){ // no matches - probably completly new
 	    if((app.getHash().split("&")[0].split("=")[1].length > 0) && (app.generateHash(false) != window.localStorage["lastViewed"])) // make sure there are actually some courses
@@ -393,7 +393,7 @@ app.loadHash = function(first = false){
 	    (lastMatch.length ? lastMatch[0] : possible[0]).classList.add("selected"); // if we're reloading, go for the known correct schedule. Else, go for the first one to match
 	    app.currentstorage = (lastMatch.length ? lastMatch[0] : possible[0]).innerText;
 	    // and update notes too
-	    document.getElementById("notes").value = app.localStorage[app.currentstorage].split("+")[1];
+	    document.getElementById("notes").value = JSON.parse(window.localStorage.schedules)[app.currentstorage].split("+")[1];
 	}
     }
 };
