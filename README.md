@@ -74,6 +74,7 @@ if [[ $? != 0 ]]; then
 fi
 
 git add style.min.css
+git add style_dark.min.css
 
 
 echo "->minifying HTML..."
