@@ -221,5 +221,5 @@ app.meetingCompat = function(a, b){
     return !( (a.beginTime >= b.beginTime && a.beginTime <  b.endTime)|| // beginning time of a is within b
 	      (a.endTime   >  b.beginTime && a.endTime   <= b.endTime)|| // end       time of a is within b
 	      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime)|| // beginning time of b is within a
-	      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime) ) // end       time of b is within a
+	      (b.endTime   >  a.beginTime && b.endTime   <= a.endTime) ); // end       time of b is within a
 };

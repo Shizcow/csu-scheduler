@@ -1,3 +1,5 @@
+// Google Analytics
+
 var tagID = 'UA-142471442-2';
 
 //first get the tag
