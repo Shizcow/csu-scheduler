@@ -35,7 +35,7 @@ autoInAlts()
  * if includeNotes is set to true (used for saving schedules),
  * they are appended at the end of the hash, after a "+"
  *
- * @param   {!bool}  includeNotes    Add notes to return
+ * @param   {boolean}  includeNotes  Add notes to return
  * @returns {string}                 Hash
  *
  * @memberOf app
@@ -73,7 +73,7 @@ app.getHash = function(){
  * this is done be first checking if there's a saved schedule selected
  * then comparing the hash values of the two
  *
- * @returns {!bool}
+ * @returns {boolean}
  * @memberOf app
  * @constant
  */
@@ -104,9 +104,9 @@ app.changed = function(){
  *
  * check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
  *
- * @param {!Course} check_course
- * @param {!Course} course_alts
- * @returns {!bool}
+ * @param {!Course}   check_course
+ * @param {!Course}   course_alts
+ * @returns {boolean}
  *
  * @memberOf app
  * @constant

@@ -127,7 +127,7 @@ app.genNext = function(button){
  * if loadHash is true, then render app.selected
  * if loadHash is "first", render from URL hash
  *
- * @param {!bool}        [loadHash]  should we be loading from URL hash?
+ * @param {boolean}      [loadHash]  should we be loading from URL hash?
  * @param {?HTMLElement} [referrer]  term selection box
  *
  * @memberof app
@@ -189,7 +189,7 @@ app.changedTerm = function(loadHash = false, referrer = null){
  * manual list is stored in app.courses_manual
  * auto list is stored in app.courses_auto
  *
- * @param {!bool} [loadSelect]
+ * @param {boolean} [loadSelect]
  *
  * @memberof app
  * @constant
@@ -283,7 +283,7 @@ app.updateNotes = function(noteBox){
  *
  * fills in the course selection box according to mode and search query
  *
- * @param {?bool} [referrer]
+ * @param {boolean} [referrer]
  *
  * @memberof app
  * @constant

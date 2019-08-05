@@ -442,23 +442,14 @@ class TermCacher{
 	this.termManagers = [];
     }
     /**
-     * Callback for push(term, callback)
-     * Takes a list of loaded courses (constructed from responseText through app_config) and passes them here
-     * Usually for top level rendering (render courses when loaded)
-     *
-     * @callback callback
-     *
-     * @param {Course[]}  courses       courses to be acted on
-     */
-    /**
      * push(term, callback=null)
      *
      * Sets up a new (or existing) term for loading
      * will continue to load this term until finished, or another term requires loading
      *
-     * @param {string}    term          URL code for the term to load
-     * @param {?callback} [callback]    callback(courses) is the function to be executed after loading - removed upon interruption
-     *                                  Used mostly for rendering reasons
+     * @param {string}                     term          URL code for the term to load
+     * @param {?function(!Array<!Course>)} [callback]    callback(courses) is the function to be executed after loading - removed upon interruption
+     *                                                   Used mostly for rendering reasons
      */
     push(term, callback=null){ // start loading a term
 	//first, sift through termManagers and see if we've already got one loaded/loading

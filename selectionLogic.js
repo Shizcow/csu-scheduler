@@ -79,8 +79,8 @@ class Lazy{
      *
      * grabbs a value from the generator
      *
-     * @param   {number} i      desired index in generated array
-     * @param   {!bool}  [set]  set app.selected to value grabbed?
+     * @param   {number} i        desired index in generated array
+     * @param   {boolean}  [set]  set app.selected to value grabbed?
      *
      * @returns {!Array<!Course>}
      *
@@ -196,7 +196,7 @@ app.autoConstruct = function(courses){
  *
  * remove duplicates by object key
  * 
- * @param {function(!Object):!bool} keyFn
+ * @param {function(!Object):boolean} keyFn
  * @param {!Array<?Object>}         array
  *
  * @returns {!Array<!Object>}
@@ -264,7 +264,7 @@ app.cartesianProduct = function*(dimensions){
  *
  * @param   {!Array<!Course>} sched  schedule to check
  *
- * @returns {!bool}                  is this schedule compatable
+ * @returns {boolean}                  is this schedule compatable
  *
  * @memberof app
  * @constant
@@ -292,7 +292,7 @@ app.schedCompat = function(sched){
  * @param   {!Course} a  schedule to check
  * @param   {!Course} b  schedule to check
  *
- * @returns {!bool}      are these two courses compatable
+ * @returns {boolean}      are these two courses compatable
  *
  * @memberof app
  * @constant
@@ -313,7 +313,7 @@ app.courseCompat = function(a, b){
  * @param   {!Meeting} a  meeting to check
  * @param   {!Meeting} b  meeting to check
  *
- * @returns {!bool}       are these two meetings compatable
+ * @returns {boolean}       are these two meetings compatable
  *
  * @memberof app
  * @constant

@@ -230,7 +230,7 @@ app.save = function() {
  *
  * @param   {string} schedule  title of schedule
  *
- * @returns {!bool}            is the user okay with discarding changes?
+ * @returns {boolean}          is the user okay with discarding changes?
  *
  * @memberof app
  * @constant
@@ -319,10 +319,10 @@ app.deleteSchedule = function() {
  *
  * clears the board and deselects a saved schedule, if selected
  *
- * @param {!bool} [bypass]  bypass conformation - works around double conformations
- * @param {!bool} [share]   coming from a share - do we need to update the hash?
+ * @param {boolean} [bypass]  bypass conformation - works around double conformations
+ * @param {boolean} [share]   coming from a share - do we need to update the hash?
  *
- * @returns {!bool}         is the user okay with discarding changes?
+ * @returns {boolean}         is the user okay with discarding changes?
  *
  * @memberof app
  * @constant

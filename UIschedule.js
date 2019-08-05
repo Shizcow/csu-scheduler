@@ -245,7 +245,7 @@ app.fillSchedule = function(referrer = null) {
  * Works with window.onhashchange (below) as a means of internal bypassing
  * Ex, if we're testing a course without adding it to selected, don't change hash
  *
- * @type {!bool}
+ * @type {boolean}
  *
  * @memberof app
  */
@@ -467,7 +467,7 @@ app.dayUpdate = function(){
  *
  * Loads a schedule from URL hash, and checks whether or not that course is a saved course
  *
- * @param {!bool} [first]
+ * @param {boolean} [first]
  *
  * @memberof app
  * @constant
