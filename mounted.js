@@ -67,7 +67,7 @@ let longpress = { // namespace reasons
 	clearTimeout(longpress.waiter);
 	longpress.waiter = null;
     }
-}
+};
 
 // Listening for the mouse and touch events    
 nextButton.addEventListener("mousedown", longpress.pressingDown, false);

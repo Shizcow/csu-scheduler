@@ -52,26 +52,58 @@ loadHash()
 >Load the URL hash value into the schedule. Primarily used when recieving a schedule shared by URL
 */
 
-// adds up the credit values of all selected courses and returns it as an integer
+/**
+ * app.totalCredits()
+ *
+ * adds up the credit values of all selected courses and returns it as an integer
+ *
+ * @returns {number}
+ *
+ * @memberof app
+ * @constant
+ */
 app.totalCredits = function(){
     return app.selected.reduce(function(acc, cur){
 	return acc+cur.credits;
     }, 0);
 };
 
-// updates the "Total Credits" counter
+/**
+ * app.updateCredits()
+ * 
+ * updates the "Total Credits" counter
+ *
+ * @memberof app
+ * @constant
+ */
 app.updateCredits = function() {
     document.getElementById("credits").innerText = app.totalCredits();
 };
 
-// shows or hides the automatic selection bar depending on the mode and number of courses selected
+/**
+ * app.autoBar()
+ *
+ * shows or hides the automatic selection bar depending on the mode and number of courses selected
+ *
+ * @memberof app
+ * @constant
+ */
 app.autoBar = function(){
     var autoBar = document.getElementById("autoBar");
     autoBar.style.display = app.mode == 'Automatic' && app.selected.concat(app.courses[app.course])[0] != null ? "inline-block" : "none";
     document.getElementById('nextButton').innerText='Next';
 };
 
-// generates and displays the next valid schedule in automatic mode
+/**
+ * app.genNext(button)
+ * 
+ * generates and displays the next valid schedule in automatic mode
+ *
+ * @param {!HTMLElement} button
+ *
+ * @memberof app
+ * @constant
+ */
 app.genNext = function(button){
     if(app.courses_generator && app.courses_generator.get(app.courses_generator.data ? app.courses_generator.data.length : 0)){ // see if there's another valid schedule we haven't seen yet
 	app.course_list_selection = (app.courses_generator.data ? app.courses_generator.data.length : 0)-1; // and show it to us
@@ -87,19 +119,31 @@ app.genNext = function(button){
     button.innerText = (app.courses_generator ? app.courses_generator.done : false) ? "Loop" : "Next";
 };
 
-// listener for term selection box
-// loads in new term (see librequests.js) and places courses in course selection box
-// if loadHash is true, then render app.selected
-// if loadHash is "first", render from URL hash
+/**
+ * app.changedTerm (loadHash = false, referrer = null)
+ *
+ * listener for term selection box
+ * loads in new term (see librequests.js) and places courses in course selection box
+ * if loadHash is true, then render app.selected
+ * if loadHash is "first", render from URL hash
+ *
+ * @param {!bool}        [loadHash]  should we be loading from URL hash?
+ * @param {?HTMLElement} [referrer]  term selection box
+ *
+ * @memberof app
+ * @constant
+ */
 app.changedTerm = function(loadHash = false, referrer = null){
     if(!loadHash && referrer && app.changed()){
         if (!window.confirm("Are you sure you want to discard your changes?")){
 	    document.getElementById("termSelect").value = app.term;
-	    return false;
+	    return;
 	}
     }
-    if(loadHash != true && !app.clear(false, loadHash == "first"))
-	return document.getElementById("termSelect").value = app.term; // confirm
+    if(loadHash != true && !app.clear(false, loadHash == "first")){
+	document.getElementById("termSelect").value = app.term; // confirm
+	return;
+    }
     if(referrer){
 	if(referrer.firstChild && referrer.firstChild.value == "") // clean up on first get
 	    referrer.removeChild(referrer.firstChild);
@@ -134,13 +178,22 @@ app.changedTerm = function(loadHash = false, referrer = null){
 		app.loadHash(_loadHash === "first");
 	    app.fillSchedule();
 	    app.fillSearch();
-	}
+	};
     }(loadHash));
 };
 
-// generate course selection box option list for manual and automatic mode
-// manual list is stored in app.courses_manual
-// auto list is stored in app.courses_auto
+/**
+ * app.genDivs(loadSelect = true)
+ *
+ * generate course selection box option list for manual and automatic mode
+ * manual list is stored in app.courses_manual
+ * auto list is stored in app.courses_auto
+ *
+ * @param {!bool} [loadSelect]
+ *
+ * @memberof app
+ * @constant
+ */
 app.genDivs = function(loadSelect = true){
     var courses_auto = app.courses.reduce(function(acc, cur){
 	if(acc.length > 0){
@@ -173,8 +226,15 @@ app.genDivs = function(loadSelect = true){
     document.getElementById("loadingCourses").style.display = "none";
 };
 
-// take the loaded terms values and display them in the term selection dropdown list
-// fired in mount.js
+/**
+ * app.updateTerms()
+ *
+ * take the loaded terms values and display them in the term selection dropdown list
+ * fired in mount.js
+ *
+ * @memberof app
+ * @constant
+ */
 app.updateTerms = function(){
     var selectBox = document.getElementById("termSelect");
     while(selectBox.lastChild)
@@ -189,40 +249,85 @@ app.updateTerms = function(){
     selectBox.value = app.term;
 };
 
-// update the percent message on screen
-// fired in librequests.js
+/**
+ * app.updatePercent()
+ *
+ * update the percent message on screen
+ * fired in librequests.js
+ *
+ * @memberof app
+ * @constant
+ */
 app.updatePercent = function(){
     document.getElementById("loadingCourses").innerText = "Loading Courses... " + app.percent;
 };
 
-// update the size of the notes box so it flexes with content
+/**
+ * app.updateNotes(noteBox)
+ *
+ * update the size of the notes box so it flexes with content
+ *
+ * @param {!HTMLElement} noteBox
+ *
+ * @memberof app
+ * @constant
+ */
 app.updateNotes = function(noteBox){
     noteBox.style.height='25px';
     noteBox.style.height=(noteBox.scrollHeight+25)+'px';
     app.saveMarker();
 };
 
-// fills in the course selection box according to mode and search query
+/**
+ * app.fillSearch(referrer = null)
+ *
+ * fills in the course selection box according to mode and search query
+ *
+ * @param {?bool} [referrer]
+ *
+ * @memberof app
+ * @constant
+ */
 app.fillSearch = function(referrer = null) {
     var selectBox = document.getElementById("selectBox");
     var val = selectBox.value;
     while(selectBox.lastChild.value != "")
 	selectBox.removeChild(selectBox.lastChild);
-    var courses = app.autoFilter(app.courses, referrer);
+    var courses = app.autoFilter(referrer);
     for(var i = 0; i < courses.length; i++)
 	selectBox.appendChild(courses[i]);
     selectBox.value = val;
     app.hideSearch();
 };
 
-// returns the option list, dependent on mode
-// used to render course selection list
-app.autoFilter = function(courses, referrer){
+/**
+ * app.autoFilter(courses, referrer)
+ *
+ * returns the option list, dependent on mode
+ * used to render course selection list
+ *
+ * @param   {?HTMLElement}         referrer
+ *
+ * @returns {!Array<!HTMLElement>}
+ *
+ * @memberof app
+ * @constant
+ */
+app.autoFilter = function(referrer){
     app.mode = referrer ? referrer.value : app.mode;
     return app.mode == "Manual" ? app.courses_manual : app.courses_auto;
 };
 
-// steps through each option in course selection box and hides it if the search string dictates
+/**
+ * app.hideSearch(referrer = null)
+ *
+ * steps through each option in course selection box and hides it if the search string dictates
+ *
+ * @param {?HTMLElement} [referrer]
+ *
+ * @memberof app
+ * @constant
+ */
 app.hideSearch = function(referrer = null) {
     if(referrer){
 	app.closed = referrer.checked;
@@ -234,7 +339,19 @@ app.hideSearch = function(referrer = null) {
 	options[i].style.display = app.filterSearch(app.courses[options[i].value], search) ? "" : "none";
 };
 
-// hideSearch but for a single option
+/**
+ * app.filterSearch(course, search)
+ *
+ * hideSearch but for a single option
+ *
+ * @param   {!Course} course   course to be acted on
+ * @param   {string}  search   search string
+ *
+ * @returns {!bool}            should this course be shown?
+ *
+ * @memberof app
+ * @constant
+*/
 app.filterSearch = function(course, search) {
     if(app.selected.indexOf(course) !== -1) return false;
     if (!app.closed && (app.mode == "Manual" ? (course.seatsAvailable <= 0) : // if auto, check if it's possible to load in a full configuration

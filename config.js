@@ -407,7 +407,7 @@ app_config.PROCESSgetDescription()
  *
  * @param   {string} responseText    XMPHttpRequest.responseText
  *
- * @returns {!Term[]}                 List of term objects
+ * @returns {!Array<!Term>}          List of term objects
  *
  * @memberOf app_config
  * @constant
@@ -444,35 +444,36 @@ app_config.PROCESSgetCourseTotalCount = function(responseText){
  * Before we continue, it's time to introcude the Course Object
  * This object holds all information about a specific course
  *
- * @typedef  {Object}     Course
+ * @typedef  {Object}               Course
  *
  * The following properties must be set later in app_config.PROCESSgetCourses:
- * @property {string}     courseNumber               MATH 101 => "101"
- * @property {string}     subject                    MATH 101 => "MATH"
- * @property {string}     title                      MATH 101 => "Introduction to College Algebra"
- * @property {number}     credits                    The integer number of credits for the course
- *                                                   If this is a lab/etc part to a class, this should be 0
- * @property {string}     faculty                    Names of instructors, preferrably in a list
- * @property {string}     scheduleTypeDescription    "Lab", "Lecture", "Recetation", etc.
- * @property {string}     URLcode                    URL code representing a course ID
- * @property {string}     courseRegistrationCode     Code used to register for a course
- * @property {Meeting[]}  meetings                   Explained in next JSDoc comment below
+ * @property {string}               courseNumber               MATH 101 => "101"
+ * @property {string}               subject                    MATH 101 => "MATH"
+ * @property {string}               title                      MATH 101 => "Introduction to College Algebra"
+ * @property {number}               credits                    The integer number of credits for the course
+ *                                                             If this is a lab/etc part to a class, this should be 0
+ * @property {string}               faculty                    Names of instructors, preferrably in a list
+ * @property {string}               scheduleTypeDescription    "Lab", "Lecture", "Recetation", etc.
+ * @property {string}               URLcode                    URL code representing a course ID
+ * @property {string}               courseRegistrationCode     Code used to register for a course
+ * @property {Array<Meeting>}       meetings                   Explained in next JSDoc comment below
  *
  *
 `* The following properties may optionally be set in app_config.PROCESSgetCourses if available:
- * @property {string}     sessionMod                 some colleges like to specify sessions in course number
-                                                     this value captures that session data, like: "MATH 245A" -> "A"
+ * @property {string}               sessionMod                 some colleges like to specify sessions in course number
+                                                               this value captures that session data, like: 
+                                                                                                  "MATH 245A" -> "A"
                                                                                                   "PSY 525RA" -> "RA"
- * @property {number}     maximumEnrollment          Max number of enrollment seats
- * @property {number}     seatsAvailable             Number of seats open for enrollment
- * @property {number}     waitAvailable              Max number of waitlist seats
- * @property {number}     waitCapacity               Number of waitlist seats available
+ * @property {number}               maximumEnrollment          Max number of enrollment seats
+ * @property {number}               seatsAvailable             Number of seats open for enrollment
+ * @property {number}               waitAvailable              Max number of waitlist seats
+ * @property {number}               waitCapacity               Number of waitlist seats available
  *
  *
  * The following properties are automatically assigned later and are only used internally:
- * @property {Course}     home                       The first of a chunk of sections (all MATH 101 sections)
- * @property {Course[][]} alts                       List of all other sections, grouped by scheduleTypeDescription
- * @property {number}     index                      Position in app.courses master list - used for referencing
+ * @property {Course}               home                       The first of a chunk of sections (all MATH 101 sections)
+ * @property {Array<Array<Course>>} alts                       List of all other sections, grouped by scheduleTypeDescription
+ * @property {number}               index                      Position in app.courses master list - used for referencing
  *
  * Here's an example of a properly formatted course object, including meetings (defined below):
  *     {
@@ -553,7 +554,7 @@ app_config.PROCESSgetCourseTotalCount = function(responseText){
  *
  * @param   {string}   responseText    XMPHttp.responseText
  *
- * @returns {!Course[]}                List of courses with members properly set
+ * @returns {!Array<!Course>}          List of courses with members properly set
  *
  * @memberOf app_config
  * @constant

@@ -56,16 +56,32 @@ window.addEventListener("keydown", function (e) {
 	app.courses_generator = null; // force a recalculation to reflect change in app.course
 	app.fillSchedule();
     }
-})
+});
 
-// this function loads / unloads style_dark.css to switch between dark and light mode
+/**
+ * change_style(styleSlider)
+ *
+ * this function loads / unloads style_dark.css to switch between dark and light mode
+ *
+ * @param {!HTMLElement} styleSlider  top left slider
+ */
 let change_style = function(styleSlider){
     document.styleSheets[1].disabled = !styleSlider.checked;
     document.getElementById('logo').src = app_config.getLogoName(styleSlider.checked);
     window.localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
-}
+};
 
-// grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
+/**
+ * app.autoAndLabs(check_course)
+ *
+ * grab the course, and pair it with any labs (and recs, etc). Determines hover style in auto
+ *
+ * @param   {?Course}          check_course  course to check
+ * @returns {!Array<!Course>}
+ *
+ * @memberOf app
+ * @constant
+ */
 app.autoAndLabs = function(check_course){
     if(check_course == null)
 	return []; // if there's one or zero, we don't even need to check
@@ -74,7 +90,16 @@ app.autoAndLabs = function(check_course){
     return app.courses_generator ? app.courses_generator.get(app.course_list_selection).filter(course => course && course.home == check_course.home) : [];
 };
 
-// renders courses into the on screen schedule
+/**
+ * app.fillSchedule(referrer = null)
+ *
+ * renders courses into the on screen schedule
+ *
+ * @param   {?HTMLElement} [referrer]  HTML element calling function
+ *
+ * @memberOf app
+ * @constant
+ */
 app.fillSchedule = function(referrer = null) {
     if(referrer)
 	app.course_list_selection = referrer.value;
@@ -108,7 +133,7 @@ app.fillSchedule = function(referrer = null) {
 		    return function(){app.fetchDescription(c);}; // value of course to be updated
 		}(course);
 		link.innerText = "Description";
-		div.appendChild(link)
+		div.appendChild(link);
 		div.setAttribute("data-index", course.index);
 		div.setAttribute("data-length", courseHere.length);
 		div.setAttribute("data-top", courseHere.top);
@@ -148,7 +173,7 @@ app.fillSchedule = function(referrer = null) {
 		return function(){app.fetchDescription(c);}; // value of course to be updated
 	    }(course);
 	    link.innerText = "Description";
-	    div.appendChild(link)
+	    div.appendChild(link);
 	    div.setAttribute("data-index", course.index);
 	    if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
 		div.classList.add("selected");
@@ -177,7 +202,7 @@ app.fillSchedule = function(referrer = null) {
 		    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 		}
 	    }
-	}
+	};
     }(divTracker);
     for(var j=0; j<divTracker.length; ++j){
 	divTracker[j].ondblclick = function(course){
@@ -185,19 +210,19 @@ app.fillSchedule = function(referrer = null) {
 		app.click(course);
 		app.course = null;
 		document.getElementById("selectBox").value = "";
-	    }
+	    };
 	}(app.courses[divTracker[j].getAttribute("data-index")]);
 	divTracker[j].onmouseenter = function(course){
 	    return function(){
 		app.hovering = app.autoAndLabs(course);
 		update();
-	    }
+	    };
 	}(app.courses[divTracker[j].getAttribute("data-index")]);
 	divTracker[j].onmouseleave = function(){
 	    return function(){
 		app.hovering = [];
 		update();
-	    }
+	    };
 	}();
     }
     
@@ -214,12 +239,29 @@ app.fillSchedule = function(referrer = null) {
 	gtag('event', 'Schedules Tested');
 };
 
-// handler for catching shared scheduled mid-operation without a refresh
-// this only works because the onhashchange function fires after a normal fillSchedule
-// so, all we need to do is detect if we just ran a fill schedule
-// if so, ignore the hash change. If not, we know there's been a manual change -- refill
-// and alert GA of a schedule shared
+/**
+ * app.disableOnHashChange
+ *
+ * Works with window.onhashchange (below) as a means of internal bypassing
+ * Ex, if we're testing a course without adding it to selected, don't change hash
+ *
+ * @type {!bool}
+ *
+ * @memberof app
+ */
 app.disableOnHashChange = false;
+/**
+ * window.onhashchange
+ *
+ * handler for catching shared scheduled mid-operation without a refresh
+ * this only works because the onhashchange function fires after a normal fillSchedule
+ * so, all we need to do is detect if we just ran a fill schedule
+ * if so, ignore the hash change. If not, we know there's been a manual change -- refill
+ * and alert GA of a schedule shared
+ *
+ * @memberof app
+ * @constant
+ */
 window.onhashchange = function(){
     //first, check if we need to load
     //IE, if hash agrees with loaded schedule
@@ -231,7 +273,20 @@ window.onhashchange = function(){
     app.disableOnHashChange = false;
 };
 
-// tests whether or not a course is in a day/hour, and if so returns a render object
+/**
+ * app.courseHere
+ *
+ * tests whether or not a course is in a day/hour, and if so returns a render object
+ *
+ * @param   {string}  day
+ * @param   {number}  hour
+ * @param   {?Course}  course
+ *
+ * @returns {!Object|undefined}
+ *
+ * @memberof app
+ * @constant
+ */
 app.courseHere = function(day, hour, course){
     if (!course) return;
     var res = null;
@@ -246,26 +301,57 @@ app.courseHere = function(day, hour, course){
 	    top: start-Math.trunc(start),
 	    length: end-start,
 	    loc: ((Boolean(meeting.building) && meeting.building.trim().length && Boolean(meeting.room) && meeting.room.trim().length) ? (meeting.building + " " + meeting.room) : ""),
-	}
+	};
     });
     return res;
 };
 
-// converts a time from hour-minute (ex: 1230) format into a float format representing
-// the offset between the time value and the top of the schedule
+/**
+ * app.convertTime(time)
+ *
+ * converts a time from hour-minute (ex: 1230) format into a float format representing
+ * the offset between the time value and the top of the schedule
+ *
+ * @param {number} time
+ *
+ * @returns {number}
+ *
+ * @memberof app
+ * @constant
+ */
 app.convertTime = function(time){
     var minute = time.substr(-2);
     return parseFloat(time.substr(0, time.length-minute.length))+parseFloat(minute)/60-8;
 };
 
-// takes a list of courses and returns only the web courses
+/**
+ * app.webclasses(courses)
+ *
+ * takes a list of courses and returns only the web courses
+ *
+ * @param   {!Array<?Course>} courses
+ *
+ * @returns {!Array<!Course>}
+ *
+ * @memberof app
+ * @constant
+ */
 app.webclasses = function(courses){
     return courses ? courses.filter(function(course){
 	return course && (course.meetings.map(el => el.building == "ONLINE").reduce((a, b) => (a || b), false));
     }) : [];
 };
 
-// fetches and dislpays the description of a course
+/**
+ * app.fetchDescription
+ *
+ * fetches the description of a course and displays it in the foreground
+ *
+ * @param {!Course} course
+ *
+ * @memberof app
+ * @constant
+ */
 app.fetchDescription = function(course){
     //first, show description box
     document.getElementById("description-fetch").style.display = "";
@@ -278,7 +364,7 @@ app.fetchDescription = function(course){
 	show.innerText = text;
 	show.style.display = "";
 	document.getElementById("description-fetch").style.display = "none";
-    }
+    };
     if(!course.description){
 	// if it's not loaded, load it and cache it in the course object
 	(new Searcher("desc", app.term.toString(), course.URLcode.toString())).start(function(response){
@@ -292,7 +378,14 @@ app.fetchDescription = function(course){
     }
 };
 
-// if needed, expands schedule to include Saturdays and Sundays - and show "No valid schedules"
+/**
+ * app.dayUpdate()
+ *
+ * if needed, expands schedule to include Saturdays and Sundays - and show "No valid schedules"
+ *
+ * @memberof app
+ * @constant
+ */
 app.dayUpdate = function(){
     //first, hide weekends
     if(app.mode == "Automatic"){ // check if valid
@@ -367,9 +460,18 @@ app.dayUpdate = function(){
 	    trs[i].children[7].style.display = "none";
 	}
     }
-}
+};
 
-// used to load in a schedule from either a save or a shared URL
+/**
+ * app.loadHash(first = false){
+ *
+ * Loads a schedule from URL hash, and checks whether or not that course is a saved course
+ *
+ * @param {!bool} [first]
+ *
+ * @memberof app
+ * @constant
+*/
 app.loadHash = function(first = false){
     var hashes = app.getHash().split("=")[1].split("&")[0].split(",");
     app.selected = app.courses.filter(function(course){
@@ -398,9 +500,18 @@ app.loadHash = function(first = false){
     }
 };
 
-// handles a double click on a rendered schedule
-// this adds or removes the course from app.selected
-// but this needs extra steps and resets in auto mode
+/**
+ * app.click(course)
+ *
+ * handles a double click on a rendered schedule
+ * this adds or removes the course from app.selected
+ * but this needs extra steps and resets in auto mode
+ *
+ * @param {!Course} course
+ *
+ * @memberof app
+ * @constant
+ */
 app.click = function(course){
     if (app.autoInAlts(app.courses[app.course], course)){ // needs to be added to selected
 	document.getElementById("selectBox").value = "";
@@ -408,7 +519,7 @@ app.click = function(course){
 	    app.course = null;
 	    app.selected.push(course);
 	} else {
-	    var intended = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.course_list_selection).filter(c => app.autoInAlts(app.courses[app.course], c))
+	    var intended = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.course_list_selection).filter(c => app.autoInAlts(app.courses[app.course], c));
 	    app.course = null;
 	    intended.forEach(c => app.selected.push(c));
 	    app.savedCourseGenerator = "A";
