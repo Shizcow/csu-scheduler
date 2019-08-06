@@ -175,7 +175,7 @@ and see JSON coming in properly. If you can get this to work, continue on to the
  *                 them to end-users, appending Allow-Access-Control-Origin yourself
  *                 This means less overhead on your college but way more work on your end
  *
- * @type {number}
+ * @type {string}
  * @memberOf app_config
  * @constant
  */
@@ -186,13 +186,19 @@ app_config.URLprefix = 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb
  * When an XMLHttp request is made, it can be inspected through a browser's network traffic monitor
  * This object has properties which are to be set to hold that information
  *
- * @typedef  {Object} GETPOST       An object used to give some information back about a request
+ * Params:
+ *   url         The URL which the request takes place			 	 
+ *   openMethod  Request type: must be set to either "GET" or "POST"		 
+ *   postData    used when openMethod is "POST", and contains the data to post	 
+ *               may be left unchanged if not a POST request			 
  *
- * @property {string} url           The URL which the request takes place
- * @property {string} openMethod    Request type: must be set to either "GET" or "POST"
- * @property {string} postData      used when openMethod is "POST", and contains the data to post
- *                                  may be left as null if not a POST request
+ * @typedef {{
+ *            url:string,
+ *	      openMethod:string,
+ *	      postData:string
+ *          }}
  */
+var GETPOST;
 
 /**
  * app_config.URLgetTerms(GETPOST)
@@ -218,7 +224,7 @@ app_config.URLgetTerms = function(GETPOST){
  *
  * @param   {!GETPOST} GETPOST      GETPOST object
  * @param   {string}   termURLcode  URL code used to represent a term in a term request
- * @param   {number}   offset       A decimal number representing the starting index of the
+ * @param   {string}   offset       A decimal number string representing the starting index of the
  *                                  desired chunk in a master list of all courses
  * @param   {number}   size         A decimal number representing the total number of courses being requested
  *
@@ -227,7 +233,7 @@ app_config.URLgetTerms = function(GETPOST){
  */
 app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
     GETPOST.openMethod = "GET";
-    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset.toString() + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
+    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
 };
 
 /**
@@ -353,11 +359,17 @@ app_config.PROCESSgetDescription()
 /**
  * We're going to process terms first, so here's how Term objects look
  * 
- * @typedef  {Object} Term           Object that holds data about a particular term
+ * Params:                     
+ *   code           Code used to represent the term in URLS	       
+ *   description    Human readable description, like "Fall 2019"      
+
  *
- * @property {string} code           Code used to represent the term in URLS
- * @property {string} description    Human readable description, like "Fall 2019"
+ * @typedef  {{
+ *             code:string,
+ *             description:string
+ *           }}
  */
+var Term;
 
 
 /**
@@ -437,43 +449,77 @@ app_config.PROCESSgetTerms = function(responseText){
  * @constant
  */
 app_config.PROCESSgetCourseTotalCount = function(responseText){
-    return JSON.parse(responseText).totalCount;
+    return JSON.parse(responseText)['totalCount']; // reference w/ bracket notation please - closure compiler shuts up
 };
+
+/**
+ * We're about to introduce the course Object type, but first it's time to introduce the Meeting Object
+ * Each Course Object (coming soon) contains a list of Meeting Objects
+ * These are used to tell when a class is held - what times, days of the week, etc
+ *   
+ * Params:
+ *  All of these properties are to be set in app_config.PROCESSgetTerms
+ *   building     Building shortcode where the class is held                           
+ *   room         Room number where the class is held                                  
+ *   beginTime    When the class begins                                                
+ *                String representation, military time, no colon. Ex: "1430" for 2:30pm
+ *   endTime      Same as above, but for when the class ends                           
+ *   monday       Is the course held on monday?                                        
+ *   tuesday      ^                                                                    
+ *   wednesday    ^                                                                    
+ *   thursday     ^                                                                    
+ *   friday       ^                                                                    
+ *   saturday     ^                                                                    
+ *   sunday       ^                                                                    
+ *
+ * @typedef  {{
+ *             building:string,
+ *             room:string,
+ *             beginTime:string,
+ *             endTime:string,
+ *             monday:boolean,
+ *             tuesday:boolean,
+ *             wednesday:boolean,
+ *             thursday:boolean,
+ *             friday:boolean,
+ *             saturday:boolean,
+ *             sunday:boolean
+ *           }}
+ */
+var Meeting;
 
 /**
  * Before we continue, it's time to introcude the Course Object
  * This object holds all information about a specific course
  *
- * @typedef  {Object}               Course
- *
- * The following properties must be set later in app_config.PROCESSgetCourses:
- * @property {string}               courseNumber               MATH 101 => "101"
- * @property {string}               subject                    MATH 101 => "MATH"
- * @property {string}               title                      MATH 101 => "Introduction to College Algebra"
- * @property {number}               credits                    The integer number of credits for the course
- *                                                             If this is a lab/etc part to a class, this should be 0
- * @property {string}               faculty                    Names of instructors, preferrably in a list
- * @property {string}               scheduleTypeDescription    "Lab", "Lecture", "Recetation", etc.
- * @property {string}               URLcode                    URL code representing a course ID
- * @property {string}               courseRegistrationCode     Code used to register for a course
- * @property {Array<Meeting>}       meetings                   Explained in next JSDoc comment below
- *
- *
-`* The following properties may optionally be set in app_config.PROCESSgetCourses if available:
- * @property {string}               sessionMod                 some colleges like to specify sessions in course number
-                                                               this value captures that session data, like: 
-                                                                                                  "MATH 245A" -> "A"
-                                                                                                  "PSY 525RA" -> "RA"
- * @property {number}               maximumEnrollment          Max number of enrollment seats
- * @property {number}               seatsAvailable             Number of seats open for enrollment
- * @property {number}               waitAvailable              Max number of waitlist seats
- * @property {number}               waitCapacity               Number of waitlist seats available
+ * Params:
+ *  The following properties must be set later in app_config.PROCESSgetCourses:
+ *   courseNumber               MATH 101 => "101"                                      
+ *   subject                    MATH 101 => "MATH"                                     
+ *   title                      MATH 101 => "Introduction to College Algebra"          
+ *   credits                    The integer number of credits for the course           
+ *                              If this is a lab/etc part to a class, this should be 0 
+ *   faculty                    Names of instructors, preferrably in a list            
+ *   scheduleTypeDescription    "Lab", "Lecture", "Recetation", etc.                   
+ *   URLcode                    URL code representing a course ID                      
+ *   courseRegistrationCode     Code used to register for a course                     
+ *   meetings                   Explained in next JSDoc comment above                  
+ *                                                                                     
+ *   The following properties may optionally be set in app_config.PROCESSgetCourses if available:
+ *   sessionMod                 some colleges like to specify sessions in course number
+ *                              this value captures that session data, like:           
+ *                                                                 "MATH 245A" -> "A"  
+ *                                                                 "PSY 525RA" -> "RA" 
+ *   maximumEnrollment          Max number of enrollment seats
+ *   seatsAvailable             Number of seats open for enrollment
+ *   waitAvailable              Max number of waitlist seats
+ *   waitCapacity               Number of waitlist seats available
  *
  *
- * The following properties are automatically assigned later and are only used internally:
- * @property {Course}               home                       The first of a chunk of sections (all MATH 101 sections)
- * @property {Array<Array<Course>>} alts                       List of all other sections, grouped by scheduleTypeDescription
- * @property {number}               index                      Position in app.courses master list - used for referencing
+ *   The following properties are automatically assigned later and are only used internally:
+ *   home                       The first of a chunk of sections (all MATH 101 sections
+ *   alts                       List of all other sections, grouped by scheduleTypeDescription
+ *   index                      Position in app.courses master list - used for reference
  *
  * Here's an example of a properly formatted course object, including meetings (defined below):
  *     {
@@ -515,29 +561,28 @@ app_config.PROCESSgetCourseTotalCount = function(responseText){
  *      maximumEnrollment: "100"
  *      seatsAvailable: "25"
  *     }
- */
-
-/**
- * This is also a good time to introduce the Meeting Object
- * Each Course Object contains a list of Meeting Objects
- * These are used to tell when a class is held - what times, days of the week, etc
  *
- * @typedef  {Object} Meeting
- *
- * All of these properties are to be set in app_config.PROCESSgetTerms
- * @property {string}  building     Building shortcode where the class is held
- * @property {string}  room         Room number where the class is held
- * @property {string}  beginTime    When the class begins
- *                                  String representation, military time, no colon. Ex: "1430" for 2:30pm
- * @property {string}  endTime      Same as above, but for when the class ends
- * @property {boolean} monday       Is the course held on monday?
- * @property {boolean} tuesday      ^
- * @property {boolean} wednesday    ^
- * @property {boolean} thursday     ^
- * @property {boolean} friday       ^
- * @property {boolean} saturday     ^
- * @property {boolean} sunday       ^
+ * @typedef {{
+ *            courseNumber:string,
+ * 	      subject:string,
+ * 	      title:string,                  
+ * 	      credits:number,                
+ * 	      faculty:string,                
+ * 	      scheduleTypeDescription:string,
+ * 	      URLcode:string,                
+ * 	      courseRegistrationCode:string, 
+ * 	      meetings:!Array<!Meeting>,           
+ * 	      sessionMod:string,                
+ * 	      maximumEnrollment:number,      
+ * 	      seatsAvailable:number,         
+ * 	      waitAvailable:number,          
+ * 	      waitCapacity:number,           
+ * 	      home:!Course,                  
+ * 	      alts:!Array<!Array<!Course>>,                
+ * 	      index:number
+ *          }}
  */
+var Course;
 
 /**
  * app_config.PROCESSgetCourses(responseText)
@@ -563,24 +608,24 @@ app_config.PROCESSgetCourses = function(responseText){
     var coursesJSON = JSON.parse(responseText).data;
     var ret_courses = [];
     coursesJSON.forEach(function(courseJSON){
-	var ret_course = {};
-	ret_course.courseNumber = courseJSON.courseNumber;
-	ret_course.URLcode = courseJSON.courseReferenceNumber;
-	ret_course.courseRegistrationCode = courseJSON.courseReferenceNumber;
-	ret_course.title = courseJSON.courseTitle;
+	var ret_course = {}; // of type Course
+	ret_course.courseNumber = courseJSON['courseNumber'];
+	ret_course.URLcode = courseJSON['courseReferenceNumber'];
+	ret_course.courseRegistrationCode = courseJSON['courseReferenceNumber'];
+	ret_course.title = courseJSON['courseTitle'];
 	
 	ret_course.credits = 0;
 	if(courseJSON.creditHours != undefined)
-	    ret_course.credits = courseJSON.creditHours;
+	    ret_course.credits = courseJSON['creditHours'];
 	else if(courseJSON.creditHourLow != undefined)
-	    ret_course.credits = courseJSON.creditHourLow;
+	    ret_course.credits = courseJSON['creditHourLow'];
 	else if(courseJSON.creditHourHigh != undefined)
-	    ret_course.credits = courseJSON.creditHourHigh;
+	    ret_course.credits = courseJSON['creditHourHigh'];
 
 	if(courseJSON.faculty.length == 0)
 	    ret_course.faculty = "STAFF";
 	else
-	    ret_course.faculty = courseJSON.faculty.map((obj, index, array) => (array.length > 1 && index == array.length-1 ? "and " : "") + obj.displayName.split(", ").reverse().join(" ")).join(", ");
+	    ret_course.faculty = courseJSON['faculty'].map((obj, index, array) => (array.length > 1 && index == array.length-1 ? "and " : "") + obj.displayName.split(", ").reverse().join(" ")).join(", ");
 	// make a list in form of "first last, first last, and first last"
 	// from ["last, first", "last, first", "last, first"] w/ keys
 
@@ -591,19 +636,19 @@ app_config.PROCESSgetCourses = function(responseText){
 	ret_course.waitAvailable = courseJSON.waitAvailable;
 	ret_course.waitCapacity = courseJSON.waitCapacity;
 
-	ret_course.meetings = courseJSON.meetingsFaculty.map(function(meetingFaculty){
+	ret_course.meetings = courseJSON['meetingsFaculty'].map(function(meetingFaculty){
 	    return {
-		building: meetingFaculty.meetingTime.building,
-		room: meetingFaculty.meetingTime.room,
-		beginTime: meetingFaculty.meetingTime.beginTime,
-		endTime: meetingFaculty.meetingTime.endTime,
-		monday: meetingFaculty.meetingTime.monday,
-		tuesday: meetingFaculty.meetingTime.tuesday,
-		wednesday: meetingFaculty.meetingTime.wednesday,
-		thursday: meetingFaculty.meetingTime.thursday,
-		friday: meetingFaculty.meetingTime.friday,
-		saturday: meetingFaculty.meetingTime.saturday,
-		sunday: meetingFaculty.meetingTime.sunday
+		building: meetingFaculty['meetingTime'].building,
+		room: meetingFaculty['meetingTime'].room,
+		beginTime: meetingFaculty['meetingTime'].beginTime,
+		endTime: meetingFaculty['meetingTime'].endTime,
+		monday: meetingFaculty['meetingTime'].monday,
+		tuesday: meetingFaculty['meetingTime'].tuesday,
+		wednesday: meetingFaculty['meetingTime'].wednesday,
+		thursday: meetingFaculty['meetingTime'].thursday,
+		friday: meetingFaculty['meetingTime'].friday,
+		saturday: meetingFaculty['meetingTime'].saturday,
+		sunday: meetingFaculty['meetingTime'].sunday
 	    };
 	});
 	

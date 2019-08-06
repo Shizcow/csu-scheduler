@@ -3,7 +3,7 @@
 var tagID = 'UA-142471442-2';
 
 //first get the tag
-var ref = document.getElementsByTagName( 'script' )[ 0 ];
+var ref = document.getElementsByTagName( 'script' )[0];
 var script = document.createElement( 'script' );
 script.src = 'https://www.googletagmanager.com/gtag/js?id=' + tagID;
 ref.parentNode.insertBefore( script, ref );

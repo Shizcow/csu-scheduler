@@ -111,14 +111,14 @@ class Searcher{
      *
      * Sets up the Searcher object with data.
      *
-     * @param {string}        type     Type of request: "prime", "count", "courses", "terms", "desc", and "test"
-     * @param {string}        [term]   Which term to be concerned with - URL code
-     * @param {number|string} [offset] If type==courses, offset from start of list. If type==desc, course URL code
-     * @param {number}        [size]   If type==courses, the size of request (how many courses)
+     * @param {string}  type     Type of request: "prime", "count", "courses", "terms", "desc", and "test"
+     * @param {string} [term]    Which term to be concerned with - URL code
+     * @param {string} [offset]  If type=courses, offset from start of list. If type=desc, course URL code
+     * @param {number} [size]    If type=courses, the size of request (how many courses)
      *
      * @constant
      */
-    constructor(type, term = null, offset = null, size = null){ // when offset == null or isn't provided, just prime
+    constructor(type, term = "", offset = "", size = 0){
 	this.term = term;
 	this.data = [];
 	this.done = false;
@@ -152,13 +152,13 @@ class Searcher{
 	    app_config.URLgetCourseTotalCount(GETPOST, this.term);
 	    break;
 	case "courses":
-	    app_config.URLgetCourses(GETPOST, this.term, this.offset, this.size);
+	    app_config.URLgetCourses(GETPOST, this.term, this.offset.toString(), this.size);
 	    break;
 	case "terms":
 	    app_config.URLgetTerms(GETPOST);
 	    break;
 	case "desc":
-	    app_config.URLgetDescription(GETPOST, this.term, this.offset);
+	    app_config.URLgetDescription(GETPOST, this.term, this.offset.toString());
 	    break;
 	case "test":
 	    app_config.URLtest(GETPOST);
@@ -280,7 +280,7 @@ class TermManager{
      * if term is already loaded, just fire the callback
      * 
      * @param {?function(string)} main_callback  will fire after the entire term is loaded
-     * @param {!bool}             [bypass]       internal use only - bypass head checks
+     * @param {boolean}             [bypass]       internal use only - bypass head checks
      */
     start(main_callback, bypass = false){ // construct all requests and send, or if already constructed just send
 	// bypass is only used for recursing from inside here
