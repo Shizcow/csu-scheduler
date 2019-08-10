@@ -91,8 +91,15 @@ app.updateCredits = function() {
  */
 app.autoBar = function(){
     var autoBar = document.getElementById("autoBar");
-    autoBar.style.display = app.mode == 'Automatic' && (app.selected.length > 0 || app.course !== null) && app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(1) ? "inline-block" : "none";
+    autoBar.style.display = app.mode == 'Automatic' && (app.selected.length > 0 || app.course !== null) && app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(1) ? "block" : "none";
     document.getElementById('nextButton').innerText='Next';
+    if(autoBar.style.display == "none"){
+	document.getElementById("selectBox").size = 25;
+	document.getElementById("Automatic").style.marginBottom = "10px";
+    } else {
+	document.getElementById("selectBox").size = 24;
+	document.getElementById("Automatic").style.marginBottom = "0px";
+    }
 };
 
 /**
