@@ -1,0 +1,642 @@
+diff --git a/UIright.js b/UIright.js
+index 8a6cd95..deeeb3e 100644
+--- a/UIright.js
++++ b/UIright.js
+@@ -90,7 +90,7 @@ app.updateCredits = function() {
+  */
+ app.autoBar = function(){
+     var autoBar = document.getElementById("autoBar");
+-    autoBar.style.display = app.mode == 'Automatic' && app.course !== null && app.selected.concat(app.courses[app.course])[0] != null ? "inline-block" : "none";
++    autoBar.style.display = app.mode == 'Automatic' && app.selected.concat(app.courses[app.course])[0] != null ? "inline-block" : "none";
+     document.getElementById('nextButton').innerText='Next';
+ };
+ 
+@@ -99,14 +99,12 @@ app.autoBar = function(){
+  * 
+  * generates and displays the next valid schedule in automatic mode
+  *
+- * @param {?Element} button
++ * @param {!HTMLElement} button
+  *
+  * @memberof app
+  * @constant
+  */
+ app.genNext = function(button){
+-    if(!button)
+-	return;
+     if(app.courses_generator && app.courses_generator.get(app.courses_generator.data ? app.courses_generator.data.length : 0)){ // see if there's another valid schedule we haven't seen yet
+ 	app.course_list_selection = (app.courses_generator.data ? app.courses_generator.data.length : 0)-1; // and show it to us
+     } else { // done - start looping
+@@ -129,9 +127,8 @@ app.genNext = function(button){
+  * if loadHash is true, then render app.selected
+  * if loadHash is "first", render from URL hash
+  *
+- * @param {boolean|string}   [loadHash]  should we be loading from URL hash?
+- *                                       if == "first" it's a real share - notify GA
+- * @param {?Element|?Object} [referrer]  term selection box
++ * @param {boolean}      [loadHash]  should we be loading from URL hash?
++ * @param {?HTMLElement} [referrer]  term selection box
+  *
+  * @memberof app
+  * @constant
+@@ -174,13 +171,11 @@ app.changedTerm = function(loadHash = false, referrer = null){
+     app.termCacher.push(app.term, function(_loadHash){
+ 	return function(courses){
+ 	    // update UI
+-	    var notes = document.getElementById("notes");
+-	    if(notes !== null)
+-		app.updateNotes(notes); // fix style in case notes have been cached
++	    app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
+ 	    app.courses = courses;
+ 	    app.genDivs();
+ 	    if(_loadHash)
+-		console.log(_loadHash, _loadHash == "first"); // closure compiler thinks this is always false when ===
++		app.loadHash(_loadHash === "first");
+ 	    app.fillSchedule();
+ 	    app.fillSearch();
+ 	};
+@@ -272,14 +267,12 @@ app.updatePercent = function(){
+  *
+  * update the size of the notes box so it flexes with content
+  *
+- * @param {?Element} noteBox
++ * @param {!HTMLElement} noteBox
+  *
+  * @memberof app
+  * @constant
+  */
+ app.updateNotes = function(noteBox){
+-    if(!noteBox)
+-	return;
+     noteBox.style.height='25px';
+     noteBox.style.height=(noteBox.scrollHeight+25)+'px';
+     app.saveMarker();
+@@ -290,7 +283,7 @@ app.updateNotes = function(noteBox){
+  *
+  * fills in the course selection box according to mode and search query
+  *
+- * @param {?Element} [referrer]
++ * @param {boolean} [referrer]
+  *
+  * @memberof app
+  * @constant
+@@ -313,9 +306,9 @@ app.fillSearch = function(referrer = null) {
+  * returns the option list, dependent on mode
+  * used to render course selection list
+  *
+- * @param   {?Element}         referrer
++ * @param   {?HTMLElement}         referrer
+  *
+- * @returns {!Array<?Element>}
++ * @returns {!Array<!HTMLElement>}
+  *
+  * @memberof app
+  * @constant
+@@ -351,17 +344,15 @@ app.hideSearch = function(referrer = null) {
+  *
+  * hideSearch but for a single option
+  *
+- * @param   {?Course} course   course to be acted on
++ * @param   {!Course} course   course to be acted on
+  * @param   {string}  search   search string
+  *
+- * @returns {boolean}            should this course be shown?
++ * @returns {!bool}            should this course be shown?
+  *
+  * @memberof app
+  * @constant
+ */
+ app.filterSearch = function(course, search) {
+-    if(!course)
+-	return false;
+     if(app.selected.indexOf(course) !== -1) return false;
+     if (!app.closed && (app.mode == "Manual" ? (course.seatsAvailable <= 0) : // if auto, check if it's possible to load in a full configuration
+ 			 course.home.alts // grab alts -> [type:[c, c, c], type:[c, c, c]]
+diff --git a/UIsavebar.js b/UIsavebar.js
+index 1540700..012e795 100644
+--- a/UIsavebar.js
++++ b/UIsavebar.js
+@@ -39,9 +39,9 @@ showExport()
+ /**
+  * animator
+  *
+- * @type {!Object}
++ * @Object
+  *
+- * @property {?Element}     element        element to be acted on
++ * @property {?HTMLElement}     element        element to be acted on
+  * @property {function(Object)} down           mouse controls
+  * @property {function(Object)} move           mouse controls
+  * @property {function(Object)} up             mouse controls
+@@ -160,7 +160,7 @@ app.saveMarker = function() {
+  * @constant
+  */
+ app.updateSaved = function() {
+-    var schedules = Object['keys'](JSON.parse(window.localStorage.schedules)); // shut up closure compiler
++    var schedules = Object.keys(JSON.parse(window.localStorage.schedules));
+     if(!schedules.length)
+ 	return;
+     var saves = document.getElementById("saves");
+@@ -228,7 +228,7 @@ app.save = function() {
+  *
+  * loads schedule from storageString
+  *
+- * @param   {?string} schedule  title of schedule
++ * @param   {string} schedule  title of schedule
+  *
+  * @returns {boolean}          is the user okay with discarding changes?
+  *
+@@ -236,8 +236,6 @@ app.save = function() {
+  * @constant
+  */
+ app.load = function(schedule) {
+-    if(schedule === null)
+-	return false;
+     if(app.changed())
+         if (!window.confirm("Are you sure you want to discard your changes?"))
+ 	    return false;
+diff --git a/UIschedule.js b/UIschedule.js
+index a33de82..3c641a3 100644
+--- a/UIschedule.js
++++ b/UIschedule.js
+@@ -63,7 +63,7 @@ window.addEventListener("keydown", function (e) {
+  *
+  * this function loads / unloads style_dark.css to switch between dark and light mode
+  *
+- * @param {!Element} styleSlider  top left slider
++ * @param {!HTMLElement} styleSlider  top left slider
+  */
+ let change_style = function(styleSlider){
+     document.styleSheets[1].disabled = !styleSlider.checked;
+@@ -105,7 +105,7 @@ app.fillSchedule = function(referrer = null) {
+ 	app.course_list_selection = referrer.value;
+     app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value, 10) : null;
+     var wrappers = document.getElementsByClassName("wrapperInternal");
+-    var schedule = app.autoConstruct(app.selected.concat(app.course ? app.courses[app.course] : null)).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
++    var schedule = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
+     // Then, cycle through and build a divlist
+     var divTracker = [];
+     for(var i=0; i < wrappers.length; ++i){
+@@ -137,7 +137,7 @@ app.fillSchedule = function(referrer = null) {
+ 		div.setAttribute("data-index", course.index);
+ 		div.setAttribute("data-length", courseHere.length);
+ 		div.setAttribute("data-top", courseHere.top);
+-		if(!app.autoInAlts(course, app.course ? app.courses[app.course] : null)) // run an update instantle - fixes flashes
++		if(!app.autoInAlts(course, app.courses[app.course])) // run an update instantle - fixes flashes
+ 		    div.classList.add("selected");
+ 		div.style.top = div.getAttribute("data-top") * 100 + '%';
+ 		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+@@ -175,7 +175,7 @@ app.fillSchedule = function(referrer = null) {
+ 	    link.innerText = "Description";
+ 	    div.appendChild(link);
+ 	    div.setAttribute("data-index", course.index);
+-	    if(!app.autoInAlts(course, app.course ? app.courses[app.course] : null)) // run a single update instantly - fixes flashing in some cases
++	    if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
+ 		div.classList.add("selected");
+ 	    web.appendChild(div);
+ 	    divTracker.push(div);
+@@ -188,18 +188,18 @@ app.fillSchedule = function(referrer = null) {
+ 	    for(var k=0; k<divs.length; ++k){
+ 		var div = divs[k];
+ 		var course = app.courses[div.getAttribute("data-index")];
+-		if(!app.autoInAlts(course, app.course ? app.courses[app.course] : null))
++		if(!app.autoInAlts(course, app.courses[app.course]))
+ 		    div.classList.add("selected");
+ 		else
+ 		    div.classList.remove("selected");
+-		if(course && app.hovering.includes(course)) // if null, nothing matches
++		if(app.hovering.includes(course))
+ 		    div.classList.add("hovering");
+ 		else
+ 		    div.classList.remove("hovering");
+ 		if(div.getAttribute("data-top")){ // non-web
+ 		    div.style.top = div.getAttribute("data-top") * 100 + '%';
+-		    div.style.height = (course && app.hovering.includes(course)) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+-		    div.style.minHeight = !(course && app.hovering.includes(course)) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
++		    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
++		    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+ 		}
+ 	    }
+ 	};
+@@ -278,18 +278,17 @@ window.onhashchange = function(){
+  *
+  * tests whether or not a course is in a day/hour, and if so returns a render object
+  *
+- * @param   {string}   day
+- * @param   {string}   _hour   changed to number type as hour for internal calculations
++ * @param   {string}  day
++ * @param   {number}  hour
+  * @param   {?Course}  course
+  *
+- * @returns {?Object}
++ * @returns {!Object|undefined}
+  *
+  * @memberof app
+  * @constant
+  */
+-app.courseHere = function(day, _hour, course){
+-    if (!course) return null;
+-    var hour = parseInt(_hour, 10);
++app.courseHere = function(day, hour, course){
++    if (!course) return;
+     var res = null;
+     // if course is in day&hour, res will become an object with css information
+     
+@@ -313,7 +312,7 @@ app.courseHere = function(day, _hour, course){
+  * converts a time from hour-minute (ex: 1230) format into a float format representing
+  * the offset between the time value and the top of the schedule
+  *
+- * @param {string} time
++ * @param {number} time
+  *
+  * @returns {number}
+  *
+@@ -330,7 +329,7 @@ app.convertTime = function(time){
+  *
+  * takes a list of courses and returns only the web courses
+  *
+- * @param   {?Array<?Course>} courses
++ * @param   {!Array<?Course>} courses
+  *
+  * @returns {!Array<!Course>}
+  *
+@@ -338,8 +337,6 @@ app.convertTime = function(time){
+  * @constant
+  */
+ app.webclasses = function(courses){
+-    if(!courses) // empty arrays & null
+-	return [];
+     return courses ? courses.filter(function(course){
+ 	return course && (course.meetings.map(el => el.building == "ONLINE").reduce((a, b) => (a || b), false));
+     }) : [];
+@@ -510,21 +507,19 @@ app.loadHash = function(first = false){
+  * this adds or removes the course from app.selected
+  * but this needs extra steps and resets in auto mode
+  *
+- * @param {?Course} course
++ * @param {!Course} course
+  *
+  * @memberof app
+  * @constant
+  */
+ app.click = function(course){
+-    if(course == null)
+-	return;
+-    if (app.autoInAlts(app.course ? app.courses[app.course] : null, course)){ // needs to be added to selected
++    if (app.autoInAlts(app.courses[app.course], course)){ // needs to be added to selected
+ 	document.getElementById("selectBox").value = "";
+ 	if(app.mode == "Manual"){
+ 	    app.course = null;
+ 	    app.selected.push(course);
+ 	} else {
+-	    var intended = app.autoConstruct(app.selected.concat(app.course ? app.courses[app.course] : null)).get(app.course_list_selection).filter(c => app.autoInAlts(app.course ? app.courses[app.course] : null, c));
++	    var intended = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.course_list_selection).filter(c => app.autoInAlts(app.courses[app.course], c));
+ 	    app.course = null;
+ 	    intended.forEach(c => app.selected.push(c));
+ 	    app.savedCourseGenerator = "A";
+diff --git a/apputil.js b/apputil.js
+index 186a14e..0e993ee 100644
+--- a/apputil.js
++++ b/apputil.js
+@@ -16,7 +16,7 @@ app.changed()
+ >and if there is any deviation between that saved schedule and what is actually on the board
+ >ie, modified but not yet saved
+ 
+-app.autoInAlts()
++autoInAlts()
+ >check if two sections are of the same course (ex: MATH 101 lab and MATH 101 lecture)
+ */
+ 
+@@ -104,8 +104,8 @@ app.changed = function(){
+  *
+  * check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
+  *
+- * @param {?Course}   check_course
+- * @param {?Course}   course_alts
++ * @param {!Course}   check_course
++ * @param {!Course}   course_alts
+  * @returns {boolean}
+  *
+  * @memberOf app
+diff --git a/config.js b/config.js
+index 5420f19..cf2d07a 100644
+--- a/config.js
++++ b/config.js
+@@ -360,13 +360,13 @@ app_config.PROCESSgetDescription()
+  * We're going to process terms first, so here's how Term objects look
+  * 
+  * Params:                     
+- *   URLcode     Code used to represent the term in URLS	       
+- *   title       Human readable description, like "Fall 2019"      
++ *   code           Code used to represent the term in URLS	       
++ *   description    Human readable description, like "Fall 2019"      
+ 
+  *
+  * @typedef  {{
+- *             URLcode:string,
+- *             title:string
++ *             code:string,
++ *             description:string
+  *           }}
+  */
+ var Term;
+diff --git a/init.js b/init.js
+index 8ff6629..f950a8b 100644
+--- a/init.js
++++ b/init.js
+@@ -20,11 +20,10 @@ let app = {};
+ /**
+  * app.course
+  * 
+- * pending course to be added - renders as blue
+- * Stored as integer so it can be placed in an option
++ * pending course to be added - renders as blue - stored as an integer
+  * see UIright.js for setting
+  * 
+- * @type {?number}
++ * @type {?Course}
+  * @memberOf app
+  */
+ app.course = null;
+@@ -145,7 +144,7 @@ app.term = "";
+  * list of course divs that are up for selection in automatic mode
+  * see librequests.js for generation and UIright.js for usage
+  *
+- * @type {!Array<!Element>}
++ * @type {!Array<!HTMLElement>}
+  * @memberOf app
+  */
+ app.courses_auto = [];
+@@ -156,7 +155,7 @@ app.courses_auto = [];
+  * list of course divs that are up for selection in manual mode
+  * see librequests.js for generation and UIright.js for usage
+  *
+- * @type {!Array<!Element>}
++ * @type {!Array<!HTMLElement>}
+  * @memberOf app
+  */
+ app.courses_manual = [];
+@@ -167,7 +166,7 @@ app.courses_manual = [];
+  * whether or not we're showing courses that are closed (all seats are filled) or not, used many places
+  * see UIright.js for setting
+  *
+- * @type {boolean}
++ * @type {!bool}
+  * @memberOf app
+  */
+ app.closed = false;
+diff --git a/librequests.js b/librequests.js
+index e4c5ec7..4be728a 100644
+--- a/librequests.js
++++ b/librequests.js
+@@ -133,7 +133,7 @@ class Searcher{
+      * starts the request
+      * if already loaded, callback is executed immediatly
+      *
+-     * @param {?function(string)|?function(boolean)} [callback]  function which will be executed upon completion
++     * @param {?function(string)} [callback]  function which will be executed upon completion
+      *
+      * @constant
+      */
+@@ -279,7 +279,7 @@ class TermManager{
+      * starts loading a term
+      * if term is already loaded, just fire the callback
+      * 
+-     * @param {?function(*)} main_callback  will fire after the entire term is loaded
++     * @param {?function(string)} main_callback  will fire after the entire term is loaded
+      * @param {boolean}             [bypass]       internal use only - bypass head checks
+      */
+     start(main_callback, bypass = false){ // construct all requests and send, or if already constructed just send
+@@ -370,7 +370,7 @@ class TermManager{
+ 			                            // need to count and all courses will be in 1 request
+ 			    app.percent = "";
+ 			    app.updatePercent();
+-			    var searcher = new Searcher("courses", TermManager_ref.term, "0", 0);
++			    var searcher = new Searcher("courses", TermManager_ref.term, 0, 0);
+ 			    searcher.offset = 0;
+ 			    TermManager_ref.requests.push(searcher);
+ 			    TermManager_ref.start(TermManager_ref.main_callback_wrapper.callback, true);
+diff --git a/min.js b/min.js
+index cafc6b1..fcf9d12 100644
+--- a/min.js
++++ b/min.js
+@@ -21,8 +21,9 @@ $jscomp.polyfill=function(a,b,c,d){if(b){c=$jscomp.global;a=a.split(".");for(d=0
+ $jscomp.polyfill("Array.prototype.includes",function(a){return a?a:function(a,c){var b=this;b instanceof String&&(b=String(b));var e=b.length;c=c||0;for(0>c&&(c=Math.max(c+e,0));c<e;c++){var f=b[c];if(f===a||Object.is(f,a))return!0}return!1}},"es7","es3");
+ $jscomp.checkStringArgs=function(a,b,c){if(null==a)throw new TypeError("The 'this' value for String.prototype."+c+" must not be null or undefined");if(b instanceof RegExp)throw new TypeError("First argument to String.prototype."+c+" must not be a regular expression");return a+""};$jscomp.polyfill("String.prototype.includes",function(a){return a?a:function(a,c){return-1!==$jscomp.checkStringArgs(this,a,"includes").indexOf(a,c||0)}},"es6","es3");
+ $jscomp.findInternal=function(a,b,c){a instanceof String&&(a=String(a));for(var d=a.length,e=0;e<d;e++){var f=a[e];if(b.call(c,f,e,a))return{i:e,v:f}}return{i:-1,v:void 0}};$jscomp.polyfill("Array.prototype.findIndex",function(a){return a?a:function(a,c){return $jscomp.findInternal(this,a,c).i}},"es6","es3");$jscomp.polyfill("Array.prototype.find",function(a){return a?a:function(a,c){return $jscomp.findInternal(this,a,c).v}},"es6","es3");
+-$jscomp.polyfill("Math.trunc",function(a){return a?a:function(a){a=Number(a);if(isNaN(a)||Infinity===a||-Infinity===a||0===a)return a;var c=Math.floor(Math.abs(a));return 0>a?-c:c}},"es6","es3");$jscomp.checkEs6ConformanceViaProxy=function(){try{var a={},b=Object.create(new $jscomp.global.Proxy(a,{get:function(c,d,e){return c==a&&"q"==d&&e==b}}));return!0===b.q}catch(c){return!1}};$jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS=!1;
+-$jscomp.ES6_CONFORMANCE=$jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS&&$jscomp.checkEs6ConformanceViaProxy();$jscomp.owns=function(a,b){return Object.prototype.hasOwnProperty.call(a,b)};
++$jscomp.polyfill("Math.trunc",function(a){return a?a:function(a){a=Number(a);if(isNaN(a)||Infinity===a||-Infinity===a||0===a)return a;var c=Math.floor(Math.abs(a));return 0>a?-c:c}},"es6","es3");$jscomp.iteratorFromArray=function(a,b){$jscomp.initSymbolIterator();a instanceof String&&(a+="");var c=0,d={next:function(){if(c<a.length){var e=c++;return{value:b(e,a[e]),done:!1}}d.next=function(){return{done:!0,value:void 0}};return d.next()}};d[Symbol.iterator]=function(){return d};return d};
++$jscomp.polyfill("Array.prototype.keys",function(a){return a?a:function(){return $jscomp.iteratorFromArray(this,function(a){return a})}},"es6","es3");$jscomp.checkEs6ConformanceViaProxy=function(){try{var a={},b=Object.create(new $jscomp.global.Proxy(a,{get:function(c,d,e){return c==a&&"q"==d&&e==b}}));return!0===b.q}catch(c){return!1}};$jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS=!1;$jscomp.ES6_CONFORMANCE=$jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS&&$jscomp.checkEs6ConformanceViaProxy();
++$jscomp.owns=function(a,b){return Object.prototype.hasOwnProperty.call(a,b)};
+ $jscomp.polyfill("WeakMap",function(a){function b(){if(!a||!Object.seal)return!1;try{var c=Object.seal({}),b=Object.seal({}),d=new a([[c,2],[b,3]]);if(2!=d.get(c)||3!=d.get(b))return!1;d.delete(c);d.set(b,4);return!d.has(c)&&4==d.get(b)}catch(m){return!1}}function c(){}function d(a){if(!$jscomp.owns(a,f)){var b=new c;$jscomp.defineProperty(a,f,{value:b})}}function e(a){var b=Object[a];b&&(Object[a]=function(a){if(a instanceof c)return a;d(a);return b(a)})}if($jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS){if(a&&
+ $jscomp.ES6_CONFORMANCE)return a}else if(b())return a;var f="$jscomp_hidden_"+Math.random();e("freeze");e("preventExtensions");e("seal");var l=0,h=function(a){this.id_=(l+=Math.random()+1).toString();if(a){a=$jscomp.makeIterator(a);for(var c;!(c=a.next()).done;)c=c.value,this.set(c[0],c[1])}};h.prototype.set=function(a,c){d(a);if(!$jscomp.owns(a,f))throw Error("WeakMap key fail: "+a);a[f][this.id_]=c;return this};h.prototype.get=function(a){return $jscomp.owns(a,f)?a[f][this.id_]:void 0};h.prototype.has=
+ function(a){return $jscomp.owns(a,f)&&$jscomp.owns(a[f],this.id_)};h.prototype.delete=function(a){return $jscomp.owns(a,f)&&$jscomp.owns(a[f],this.id_)?delete a[f][this.id_]:!1};return h},"es6","es3");$jscomp.MapEntry=function(){};
+@@ -60,23 +61,23 @@ Searcher.prototype.stop=function(){this.xhr&&!this.done&&(this.xhr.abort(),this.
+ TermManager.prototype.start=function(a,b){b=void 0===b?!1:b;this.main_callback_wrapper.callback=a;this.done?a&&a(this.data):this.headRequest||(a=function(a){return function(b){a.requests.length?(b=a.data.reduce(function(a,b){return a+b.courses.length},0),0!==a.totalCount&&(app.percent=b.toString()+"/"+a.totalCount.toString(),app.updatePercent()),a.headRequest=null,a.requests.forEach(function(b){b.start(function(c){c=app_config.PROCESSgetCourses(c);a.data.push({courses:c,offset:b.offset});c=a.data.reduce(function(a,
+ b){return a+b.courses.length},0);0!==a.totalCount&&(app.percent=c.toString()+"/"+a.totalCount.toString(),app.updatePercent());if(0===a.totalCount||c>=app_config.test_percent_cap*a.totalCount/100){app.percent+="\nProcessng courses...";app.updatePercent();a.data=postProcessCourses(a.data.sort(function(a,b){return a.offset-b.offset}).reduce(function(a,b){return a.concat(b.courses)},[]));a.done=!0;a.requests=[];a.main_callback_wrapper.callback&&a.main_callback_wrapper.callback(a.data);c=document.getElementById("saves").children;
+ for(var d=[],e=0;e<c.length;++e)d.push(JSON.parse(window.localStorage.schedules)[c[e].innerText].split("=")[0]);c=app.termCacher.termManagers.filter(function(a){return a.done}).map(function(a){return a.term});for(e=0;e<d.length;++e)if(!c.find(function(a){return a==d[e]})){app.termCacher.push(d[e],null);break}}})})):(app.percent="0/?",app.updatePercent(),a.headRequest=new Searcher("count",a.term),a.headRequest.start(function(b){a.headRequest=null;if(!1===b)app.percent="",app.updatePercent(),b=new Searcher("courses",
+-a.term,"0",0),b.offset=0,a.requests.push(b);else{a.totalCount=app_config.PROCESSgetCourseTotalCount(b);app.percent="0/"+a.totalCount.toString();app.updatePercent();b=[];for(var c=0;c<app_config.test_percent_cap*a.totalCount/100;c+=app_config.chunk)b.push(c);b.forEach(function(b){var c=new Searcher("courses",a.term,b,app_config.chunk);c.offset=b;a.requests.push(c)})}a.start(a.main_callback_wrapper.callback,!0)}))}}(this),b?a(null):(this.headRequest=new Searcher("prime",this.term),this.headRequest.start(a)))};
++a.term,0,0),b.offset=0,a.requests.push(b);else{a.totalCount=app_config.PROCESSgetCourseTotalCount(b);app.percent="0/"+a.totalCount.toString();app.updatePercent();b=[];for(var c=0;c<app_config.test_percent_cap*a.totalCount/100;c+=app_config.chunk)b.push(c);b.forEach(function(b){var c=new Searcher("courses",a.term,b,app_config.chunk);c.offset=b;a.requests.push(c)})}a.start(a.main_callback_wrapper.callback,!0)}))}}(this),b?a(null):(this.headRequest=new Searcher("prime",this.term),this.headRequest.start(a)))};
+ TermManager.prototype.stop=function(){this.done||(this.main_callback_wrapper.callback=null,this.headRequest&&(this.headRequest.stop(),this.headRequest=null),this.requests.forEach(function(a){a.stop()}))};var TermCacher=function(){this.termManagers=[]};
+ TermCacher.prototype.push=function(a,b){b=void 0===b?null:b;var c=this.termManagers.findIndex(function(b){return b.term==a});if(-1<c&&this.termManagers[c].done)this.termManagers.forEach(function(a){a.main_callback_wrapper.callback=null}),this.termManagers[c].start(b);else{var d=null;-1<c&&(d=this.termManagers.splice(c,1)[0]);this.termManagers.forEach(function(a){a.stop()});this.termManagers.push(-1<c?d:new TermManager(a));this.termManagers[this.termManagers.length-1].start(b)}};var app={course:null,courses:[],selected:[],mode:"Manual",courses_generator:null,savedCourseGenerator:"0",course_list_selection:0,hovering:[],currentstorage:null,terms:[],term:"",courses_auto:[],courses_manual:[],closed:!1,percent:""};app.termCacher=new TermCacher;app.generateHash=function(a){var b=app.term+"=";b+=app.selected.map(function(a){return a.URLcode}).sort(function(a,b){return parseInt(a,10)-parseInt(b,10)}).join();app.closed&&(b+="&C");!0===a&&(b+="+"+document.getElementById("notes").value);return b};app.getHash=function(){return decodeURIComponent(location.hash)};
+ app.changed=function(){if(0==app.selected.length)return!1;for(var a=document.getElementById("saves").children,b=!0,c=-1,d=0;d<a.length;++d)a[d].classList.contains("selected")&&(c=d);if(-1<c)b=JSON.parse(window.localStorage.schedules)[a[c].innerText]!=app.generateHash(!0);else for(d=0;d<a.length;++d)a[d].classList.contains("preselect")&&(b=JSON.parse(window.localStorage.schedules)[a[d].innerText]!=app.generateHash(!0));return b};
+ app.autoInAlts=function(a,b){return null==a||null==b?!1:"Manual"==app.mode?a==b:a.home==b.home};window.addEventListener("keydown",function(a){"Escape"==a.key&&(document.getElementById("selectBox").value="",app.course=null,app.savedCourseGenerator="",app.courses_generator=null,app.fillSchedule())});var change_style=function(a){document.styleSheets[1].disabled=!a.checked;document.getElementById("logo").src=app_config.getLogoName(a.checked);window.localStorage.darkMode=a.checked.toString()};
+ app.autoAndLabs=function(a){return null==a?[]:"Manual"==app.mode?[a]:app.courses_generator?app.courses_generator.get(app.course_list_selection).filter(function(b){return b&&b.home==a.home}):[]};
+-app.fillSchedule=function(a){if(a=void 0===a?null:a)app.course_list_selection=a.value;app.course=""!=document.getElementById("selectBox").value?parseInt(document.getElementById("selectBox").value,10):null;var b=document.getElementsByClassName("wrapperInternal"),c=app.autoConstruct(app.selected.concat(app.course?app.courses[app.course]:null)).get("Manual"==app.mode?0:app.course_list_selection);a=[];for(var d=0;d<b.length;++d){for(var e=b[d],f=e.getAttribute("data-day"),l=e.getAttribute("data-hour");e.firstChild;)e.removeChild(e.firstChild);
++app.fillSchedule=function(a){if(a=void 0===a?null:a)app.course_list_selection=a.value;app.course=""!=document.getElementById("selectBox").value?parseInt(document.getElementById("selectBox").value,10):null;var b=document.getElementsByClassName("wrapperInternal"),c=app.autoConstruct(app.selected.concat(app.courses[app.course])).get("Manual"==app.mode?0:app.course_list_selection);a=[];for(var d=0;d<b.length;++d){for(var e=b[d],f=e.getAttribute("data-day"),l=e.getAttribute("data-hour");e.firstChild;)e.removeChild(e.firstChild);
+ for(var h=0;h<c.length;++h){var g=c[h],n=app.courseHere(f,l,g);if(g&&n){var k=document.createElement("div");k.className="item";var m=g.subject+" "+g.courseNumber+"\n"+g.title.replace(/&ndash;/g,"\u2013")+"\n"+(g.faculty.trim().length?g.faculty+"\n":"")+(n.loc.length?n.loc+"\n":"")+g.credits+" credit"+(1!=g.credits?"s":"")+"\n";void 0!==g.seatsAvailable&&void 0!==g.maximumEnrollment&&(m+=Math.max(0,g.seatsAvailable)+"/"+g.maximumEnrollment+" seats open\n");void 0!==g.waitAvailable&&void 0!==g.waitAvailable&&
+-(m+=g.waitAvailable+"/"+g.waitCapacity+" waitlist open\n");m+=app_config.courseRegistrationCodeName+": "+g.courseRegistrationCode+"\n";k.innerText=m;m=document.createElement("a");m.className="link";m.onclick=function(a){return function(){app.fetchDescription(a)}}(g);m.innerText="Description";k.appendChild(m);k.setAttribute("data-index",g.index);k.setAttribute("data-length",n.length);k.setAttribute("data-top",n.top);app.autoInAlts(g,app.course?app.courses[app.course]:null)||k.classList.add("selected");
+-k.style.top=100*k.getAttribute("data-top")+"%";k.style.height=app.hovering.includes(g)?"auto":100*k.getAttribute("data-length")+"%";k.style.minHeight=app.hovering.includes(g)?100*k.getAttribute("data-length")+"%":"auto";e.appendChild(k);a.push(k)}}}h=document.getElementById("webWrapper");for(b=document.getElementById("web");b.firstChild;)b.removeChild(b.firstChild);c=app.webclasses(c);h.style.display=c.length?"":"none";for(h=0;h<c.length;++h)if(g=c[h])k=document.createElement("div"),k.className="item",
+-m=g.subject+" "+g.courseNumber+"\n"+g.title.replace(/&ndash;/g,"\u2013")+"\n"+(g.faculty.trim().length?g.faculty+"\n":"")+g.credits+" credit"+(1!=g.credits?"s":"")+"\n",void 0!==g.seatsAvailable&&void 0!==g.maximumEnrollment&&(m+=Math.max(0,g.seatsAvailable)+"/"+g.maximumEnrollment+" seats open\n"),void 0!==g.waitAvailable&&void 0!==g.waitAvailable&&(m+=g.waitAvailable+"/"+g.waitCapacity+" waitlist open\n"),m+=app_config.courseRegistrationCodeName+": "+g.courseRegistrationCode+"\n",k.innerText=m,
+-m=document.createElement("a"),m.className="link",m.onclick=function(a){return function(){app.fetchDescription(a)}}(g),m.innerText="Description",k.appendChild(m),k.setAttribute("data-index",g.index),app.autoInAlts(g,app.course?app.courses[app.course]:null)||k.classList.add("selected"),b.appendChild(k),a.push(k);var p=function(a){return function(){for(var b=0;b<a.length;++b){var c=a[b],d=app.courses[c.getAttribute("data-index")];app.autoInAlts(d,app.course?app.courses[app.course]:null)?c.classList.remove("selected"):
+-c.classList.add("selected");d&&app.hovering.includes(d)?c.classList.add("hovering"):c.classList.remove("hovering");c.getAttribute("data-top")&&(c.style.top=100*c.getAttribute("data-top")+"%",c.style.height=d&&app.hovering.includes(d)?"auto":100*c.getAttribute("data-length")+"%",c.style.minHeight=d&&app.hovering.includes(d)?100*c.getAttribute("data-length")+"%":"auto")}}}(a);for(h=0;h<a.length;++h)a[h].ondblclick=function(a){return function(){app.click(a);app.course=null;document.getElementById("selectBox").value=
+-""}}(app.courses[a[h].getAttribute("data-index")]),a[h].onmouseenter=function(a){return function(){app.hovering=app.autoAndLabs(a);p()}}(app.courses[a[h].getAttribute("data-index")]),a[h].onmouseleave=function(){return function(){app.hovering=[];p()}}();app.dayUpdate();app.autoBar();app.saveMarker();app.updateCredits();document.getElementById("escTip").style.display=null!=app.course?"":"none";window.localStorage.setItem("lastViewed",app.generateHash(!1));0<app.selected.length&&gtag("event","Schedules Tested")};
+-app.disableOnHashChange=!1;window.onhashchange=function(){!app.disableOnHashChange&&app.generateHash(!1)!=app.getHash().substr(1)&&app.getHash().substr(1).split("=")[0].length&&(app.changedTerm("first",{value:app.terms[app.terms.map(function(a){return a.URLcode}).indexOf(app.getHash().split("=")[0].substr(1))].URLcode}),app.updateTerms());app.disableOnHashChange=!1};
+-app.courseHere=function(a,b,c){if(!c)return null;var d=parseInt(b,10),e=null;c.meetings.forEach(function(b){if("WS"!=b.building&&b.beginTime&&b[a]){var c=app.convertTime(b.beginTime),f=app.convertTime(b.endTime);Math.trunc(c)==d-8&&(e={top:c-Math.trunc(c),length:f-c,loc:b.building&&b.building.trim().length&&b.room&&b.room.trim().length?b.building+" "+b.room:""})}});return e};app.convertTime=function(a){var b=a.substr(-2);return parseFloat(a.substr(0,a.length-b.length))+parseFloat(b)/60-8};
+-app.webclasses=function(a){return a?a?a.filter(function(a){return a&&a.meetings.map(function(a){return"ONLINE"==a.building}).reduce(function(a,b){return a||b},!1)}):[]:[]};
++(m+=g.waitAvailable+"/"+g.waitCapacity+" waitlist open\n");m+=app_config.courseRegistrationCodeName+": "+g.courseRegistrationCode+"\n";k.innerText=m;m=document.createElement("a");m.className="link";m.onclick=function(a){return function(){app.fetchDescription(a)}}(g);m.innerText="Description";k.appendChild(m);k.setAttribute("data-index",g.index);k.setAttribute("data-length",n.length);k.setAttribute("data-top",n.top);app.autoInAlts(g,app.courses[app.course])||k.classList.add("selected");k.style.top=
++100*k.getAttribute("data-top")+"%";k.style.height=app.hovering.includes(g)?"auto":100*k.getAttribute("data-length")+"%";k.style.minHeight=app.hovering.includes(g)?100*k.getAttribute("data-length")+"%":"auto";e.appendChild(k);a.push(k)}}}h=document.getElementById("webWrapper");for(b=document.getElementById("web");b.firstChild;)b.removeChild(b.firstChild);c=app.webclasses(c);h.style.display=c.length?"":"none";for(h=0;h<c.length;++h)if(g=c[h])k=document.createElement("div"),k.className="item",m=g.subject+
++" "+g.courseNumber+"\n"+g.title.replace(/&ndash;/g,"\u2013")+"\n"+(g.faculty.trim().length?g.faculty+"\n":"")+g.credits+" credit"+(1!=g.credits?"s":"")+"\n",void 0!==g.seatsAvailable&&void 0!==g.maximumEnrollment&&(m+=Math.max(0,g.seatsAvailable)+"/"+g.maximumEnrollment+" seats open\n"),void 0!==g.waitAvailable&&void 0!==g.waitAvailable&&(m+=g.waitAvailable+"/"+g.waitCapacity+" waitlist open\n"),m+=app_config.courseRegistrationCodeName+": "+g.courseRegistrationCode+"\n",k.innerText=m,m=document.createElement("a"),
++m.className="link",m.onclick=function(a){return function(){app.fetchDescription(a)}}(g),m.innerText="Description",k.appendChild(m),k.setAttribute("data-index",g.index),app.autoInAlts(g,app.courses[app.course])||k.classList.add("selected"),b.appendChild(k),a.push(k);var p=function(a){return function(){for(var b=0;b<a.length;++b){var c=a[b],d=app.courses[c.getAttribute("data-index")];app.autoInAlts(d,app.courses[app.course])?c.classList.remove("selected"):c.classList.add("selected");app.hovering.includes(d)?
++c.classList.add("hovering"):c.classList.remove("hovering");c.getAttribute("data-top")&&(c.style.top=100*c.getAttribute("data-top")+"%",c.style.height=app.hovering.includes(d)?"auto":100*c.getAttribute("data-length")+"%",c.style.minHeight=app.hovering.includes(d)?100*c.getAttribute("data-length")+"%":"auto")}}}(a);for(h=0;h<a.length;++h)a[h].ondblclick=function(a){return function(){app.click(a);app.course=null;document.getElementById("selectBox").value=""}}(app.courses[a[h].getAttribute("data-index")]),
++a[h].onmouseenter=function(a){return function(){app.hovering=app.autoAndLabs(a);p()}}(app.courses[a[h].getAttribute("data-index")]),a[h].onmouseleave=function(){return function(){app.hovering=[];p()}}();app.dayUpdate();app.autoBar();app.saveMarker();app.updateCredits();document.getElementById("escTip").style.display=null!=app.course?"":"none";window.localStorage.setItem("lastViewed",app.generateHash(!1));0<app.selected.length&&gtag("event","Schedules Tested")};app.disableOnHashChange=!1;
++window.onhashchange=function(){!app.disableOnHashChange&&app.generateHash(!1)!=app.getHash().substr(1)&&app.getHash().substr(1).split("=")[0].length&&(app.changedTerm("first",{value:app.terms[app.terms.map(function(a){return a.URLcode}).indexOf(app.getHash().split("=")[0].substr(1))].URLcode}),app.updateTerms());app.disableOnHashChange=!1};
++app.courseHere=function(a,b,c){if(c){var d=null;c.meetings.forEach(function(c){if("WS"!=c.building&&c.beginTime&&c[a]){var e=app.convertTime(c.beginTime),l=app.convertTime(c.endTime);Math.trunc(e)==b-8&&(d={top:e-Math.trunc(e),length:l-e,loc:c.building&&c.building.trim().length&&c.room&&c.room.trim().length?c.building+" "+c.room:""})}});return d}};app.convertTime=function(a){var b=a.substr(-2);return parseFloat(a.substr(0,a.length-b.length))+parseFloat(b)/60-8};
++app.webclasses=function(a){return a?a.filter(function(a){return a&&a.meetings.map(function(a){return"ONLINE"==a.building}).reduce(function(a,b){return a||b},!1)}):[]};
+ app.fetchDescription=function(a){document.getElementById("description-fetch").style.display="";document.getElementById("description-show").style.display="none";document.getElementById("description").style.display="";document.getElementById("description-strong").innerText=a.subject+" "+a.courseNumber+":";var b=function(a){var b=document.getElementById("description-show");b.innerText=a;b.style.display="";document.getElementById("description-fetch").style.display="none"};a.description?b(a.description):
+ (new Searcher("desc",app.term.toString(),a.URLcode.toString())).start(function(c){c=app_config.PROCESSgetDescription(c);b(c);a.description=c})};
+ app.dayUpdate=function(){if("Automatic"==app.mode)if(0==app.selected.length||app.courses_generator&&app.courses_generator.data&&app.courses_generator.data[app.course_list_selection]){if(document.getElementById("noSchedWrapper").style.display="none","none"==document.getElementById("schedTbody").children[0].children[1].style.display)for(var a=1;5>=a;++a)for(var b=document.getElementById("schedTbody").children,c=0;c<b.length;++c)b[c].children[a].style.display=""}else{if(document.getElementById("noSchedWrapper").style.display=
+@@ -86,18 +87,17 @@ app.course?app.selected:app.selected.concat(app.courses[app.course])).filter(fun
+ "none"};
+ app.loadHash=function(a){a=void 0===a?!1:a;var b=app.getHash().split("=")[1].split("&")[0].split(",");app.selected=app.courses.filter(function(a){return-1<b.indexOf(a.URLcode.toString())});document.getElementById("closedCheck").checked=!!app.getHash().split("&")[1];app.closed=!!app.getHash().split("&")[1];if(a){a=[];for(var c=0,d=document.getElementById("saves").children;c<d.length;++c)JSON.parse(window.localStorage.schedules)[d[c].innerText].split("+")[0]==app.getHash().split("#")[1]&&a.push(d[c]);c=
+ a.filter(function(a){return JSON.parse(window.localStorage.schedules)[a.innerText].split("+")[0]+"!"+a.innerText==window.localStorage.lastSaved});a.length?((c.length?c[0]:a[0]).classList.add("selected"),app.currentstorage=(c.length?c[0]:a[0]).innerText,document.getElementById("notes").value=JSON.parse(window.localStorage.schedules)[app.currentstorage].split("+")[1]):0<app.getHash().split("&")[0].split("=")[1].length&&app.generateHash(!1)!=window.localStorage.lastViewed&&gtag("event","Schedules Shared")}};
+-app.click=function(a){if(null!=a){if(app.autoInAlts(app.course?app.courses[app.course]:null,a))if(document.getElementById("selectBox").value="","Manual"==app.mode)app.course=null,app.selected.push(a);else{var b=app.autoConstruct(app.selected.concat(app.course?app.courses[app.course]:null)).get(app.course_list_selection).filter(function(a){return app.autoInAlts(app.course?app.courses[app.course]:null,a)});app.course=null;b.forEach(function(a){return app.selected.push(a)});app.savedCourseGenerator=
+-"A";app.autoConstruct(app.selected).get(app.course_list_selection,!0)}else"Manual"==app.mode?app.selected.splice(app.selected.indexOf(a),1):app.selected=app.selected.filter(function(b){return a.home!=b.home}),app.hovering=[];location.hash=app.generateHash(!1);app.course_list_selection=0;b=document.getElementById("Range");b.max=0;b.value=0;app.hideSearch();app.fillSchedule()}};app.totalCredits=function(){return app.selected.reduce(function(a,b){return a+b.credits},0)};app.updateCredits=function(){document.getElementById("credits").innerText=app.totalCredits()};app.autoBar=function(){document.getElementById("autoBar").style.display="Automatic"==app.mode&&null!==app.course&&null!=app.selected.concat(app.courses[app.course])[0]?"inline-block":"none";document.getElementById("nextButton").innerText="Next"};
+-app.genNext=function(a){if(a){app.courses_generator&&app.courses_generator.get(app.courses_generator.data?app.courses_generator.data.length:0)?app.course_list_selection=(app.courses_generator.data?app.courses_generator.data.length:0)-1:(app.course_list_selection++,app.course_list_selection%=app.courses_generator?app.courses_generator.data.length:0);app.fillSchedule();var b=document.getElementById("Range");b.max=app.courses_generator?app.courses_generator.data.length-1:0;b.value=app.course_list_selection;
+-a.innerText=app.courses_generator&&app.courses_generator.done?"Loop":"Next"}};
++app.click=function(a){if(app.autoInAlts(app.courses[app.course],a))if(document.getElementById("selectBox").value="","Manual"==app.mode)app.course=null,app.selected.push(a);else{var b=app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.course_list_selection).filter(function(a){return app.autoInAlts(app.courses[app.course],a)});app.course=null;b.forEach(function(a){return app.selected.push(a)});app.savedCourseGenerator="A";app.autoConstruct(app.selected).get(app.course_list_selection,
++!0)}else"Manual"==app.mode?app.selected.splice(app.selected.indexOf(a),1):app.selected=app.selected.filter(function(b){return a.home!=b.home}),app.hovering=[];location.hash=app.generateHash(!1);app.course_list_selection=0;b=document.getElementById("Range");b.max=0;b.value=0;app.hideSearch();app.fillSchedule()};app.totalCredits=function(){return app.selected.reduce(function(a,b){return a+b.credits},0)};app.updateCredits=function(){document.getElementById("credits").innerText=app.totalCredits()};app.autoBar=function(){document.getElementById("autoBar").style.display="Automatic"==app.mode&&null!=app.selected.concat(app.courses[app.course])[0]?"inline-block":"none";document.getElementById("nextButton").innerText="Next"};
++app.genNext=function(a){app.courses_generator&&app.courses_generator.get(app.courses_generator.data?app.courses_generator.data.length:0)?app.course_list_selection=(app.courses_generator.data?app.courses_generator.data.length:0)-1:(app.course_list_selection++,app.course_list_selection%=app.courses_generator?app.courses_generator.data.length:0);app.fillSchedule();var b=document.getElementById("Range");b.max=app.courses_generator?app.courses_generator.data.length-1:0;b.value=app.course_list_selection;
++a.innerText=app.courses_generator&&app.courses_generator.done?"Loop":"Next"};
+ app.changedTerm=function(a,b){a=void 0===a?!1:a;b=void 0===b?null:b;!a&&b&&app.changed()&&!window.confirm("Are you sure you want to discard your changes?")?document.getElementById("termSelect").value=app.term:1==a||app.clear(!1,"first"==a)?(b&&(b.firstChild&&""==b.firstChild.value&&b.removeChild(b.firstChild),app.term=b.value),app.term&&(app.course=null,document.getElementById("selectBox").value="",document.getElementById("searchBox").value="",app.selected=[],app.course_list_selection=0,b=document.getElementById("Range"),
+-b.max=0,b.value=0,app.courses_generator=null,app.savedCourseGenerator="","first"!=a&&app.fillSchedule(),app.percent="",document.getElementById("coursesBox").style.display="none",document.getElementById("loadingCourses").style.display="",app.termCacher.push(app.term,function(a){return function(b){var c=document.getElementById("notes");null!==c&&app.updateNotes(c);app.courses=b;app.genDivs();a&&console.log(a,"first"==a);app.fillSchedule();app.fillSearch()}}(a)))):document.getElementById("termSelect").value=
+-app.term};
+-app.genDivs=function(a){a=app.courses.reduce(function(a,b){return 0<a.length?b.subject+b.courseNumber!=a[a.length-1].subject+a[a.length-1].courseNumber?a.concat(b):a:[b]},[]);app.courses_manual=[];for(var b=0;b<app.courses.length;b++){var c=app.courses[b],d=document.createElement("option");d.innerHTML=c.subject+" "+c.courseNumber+(c.sessionMod?c.sessionMod:"")+": "+c.title;d.value=c.index;app.courses_manual.push(d)}app.courses_auto=[];for(b=0;b<a.length;b++)c=a[b],d=document.createElement("option"),d.innerHTML=
+-c.subject+" "+c.courseNumber+": "+c.title,d.value=c.index,app.courses_auto.push(d);document.getElementById("coursesBox").style.display="";document.getElementById("loadingCourses").style.display="none"};app.updateTerms=function(){for(var a=document.getElementById("termSelect");a.lastChild;)a.removeChild(a.lastChild);for(var b=0;b<app.terms.length;b++){var c=app.terms[b],d=document.createElement("option");d.value=c.URLcode;d.innerText=c.title;a.appendChild(d)}a.value=app.term};
+-app.updatePercent=function(){document.getElementById("loadingCourses").innerText="Loading Courses... "+app.percent};app.updateNotes=function(a){a&&(a.style.height="25px",a.style.height=a.scrollHeight+25+"px",app.saveMarker())};app.fillSearch=function(a){a=void 0===a?null:a;for(var b=document.getElementById("selectBox"),c=b.value;""!=b.lastChild.value;)b.removeChild(b.lastChild);a=app.autoFilter(a);for(var d=0;d<a.length;d++)b.appendChild(a[d]);b.value=c;app.hideSearch()};
++b.max=0,b.value=0,app.courses_generator=null,app.savedCourseGenerator="","first"!=a&&app.fillSchedule(),app.percent="",document.getElementById("coursesBox").style.display="none",document.getElementById("loadingCourses").style.display="",app.termCacher.push(app.term,function(a){return function(b){app.updateNotes(document.getElementById("notes"));app.courses=b;app.genDivs();a&&app.loadHash("first"===a);app.fillSchedule();app.fillSearch()}}(a)))):document.getElementById("termSelect").value=app.term};
++app.genDivs=function(a){a=app.courses.reduce(function(a,b){return 0<a.length?b.subject+b.courseNumber!=a[a.length-1].subject+a[a.length-1].courseNumber?a.concat(b):a:[b]},[]);app.courses_manual=[];for(var b=0;b<app.courses.length;b++){var c=app.courses[b],d=document.createElement("option");d.innerHTML=c.subject+" "+c.courseNumber+(c.sessionMod?c.sessionMod:"")+": "+c.title;d.value=c.index;app.courses_manual.push(d)}app.courses_auto=[];for(b=0;b<a.length;b++)c=a[b],d=document.createElement("option"),
++d.innerHTML=c.subject+" "+c.courseNumber+": "+c.title,d.value=c.index,app.courses_auto.push(d);document.getElementById("coursesBox").style.display="";document.getElementById("loadingCourses").style.display="none"};app.updateTerms=function(){for(var a=document.getElementById("termSelect");a.lastChild;)a.removeChild(a.lastChild);for(var b=0;b<app.terms.length;b++){var c=app.terms[b],d=document.createElement("option");d.value=c.URLcode;d.innerText=c.title;a.appendChild(d)}a.value=app.term};
++app.updatePercent=function(){document.getElementById("loadingCourses").innerText="Loading Courses... "+app.percent};app.updateNotes=function(a){a.style.height="25px";a.style.height=a.scrollHeight+25+"px";app.saveMarker()};app.fillSearch=function(a){a=void 0===a?null:a;for(var b=document.getElementById("selectBox"),c=b.value;""!=b.lastChild.value;)b.removeChild(b.lastChild);a=app.autoFilter(a);for(var d=0;d<a.length;d++)b.appendChild(a[d]);b.value=c;app.hideSearch()};
+ app.autoFilter=function(a){app.mode=a?a.value:app.mode;return"Manual"==app.mode?app.courses_manual:app.courses_auto};app.hideSearch=function(a){if(a=void 0===a?null:a)app.closed=a.checked,location.hash=app.generateHash(!1);a=document.getElementById("selectBox").children;for(var b=document.getElementById("searchBox").value.toLowerCase(),c=1;c<a.length;++c)a[c].style.display=app.filterSearch(app.courses[a[c].value],b)?"":"none"};
+-app.filterSearch=function(a,b){return!a||-1!==app.selected.indexOf(a)||!app.closed&&("Manual"==app.mode?0>=a.seatsAvailable:a.home.alts.map(function(a){return a.map(function(a){return 0>=a.seatsAvailable}).reduce(function(a,b){return a&&b},!0)}).reduce(function(a,b){return a||b},!1))||b&&!(-1<(a.subject+" "+a.courseNumber).toLowerCase().indexOf(b)||-1<a.title.toLowerCase().indexOf(b)||a.URLcode.toString()==b)||"Automatic"==app.mode&&a.home.alts.reduce(function(a,b){return a.concat(b)},[]).some(function(a){return app.selected.includes(a)})?
++app.filterSearch=function(a,b){return-1!==app.selected.indexOf(a)||!app.closed&&("Manual"==app.mode?0>=a.seatsAvailable:a.home.alts.map(function(a){return a.map(function(a){return 0>=a.seatsAvailable}).reduce(function(a,b){return a&&b},!0)}).reduce(function(a,b){return a||b},!1))||b&&!(-1<(a.subject+" "+a.courseNumber).toLowerCase().indexOf(b)||-1<a.title.toLowerCase().indexOf(b)||a.URLcode.toString()==b)||"Automatic"==app.mode&&a.home.alts.reduce(function(a,b){return a.concat(b)},[]).some(function(a){return app.selected.includes(a)})?
+ !1:!0};var animator={element:void 0,down:function(a){return function(b){window.addEventListener("selectstart",animator.disableSelect);animator.element=a;animator.element.style.position="relative";animator.startX=b.clientX;animator.startY=b.clientY;animator.startCenterX=animator.element.offsetLeft+animator.element.offsetWidth/2;animator.startCenterY=animator.element.offsetTop+animator.element.offsetHeight/2}},move:function(a){if(void 0!==animator.element){animator.element.style.top=(a.clientY-animator.startY).toString()+
+ "px";animator.element.style.left=(a.clientX-animator.startX).toString()+"px";var b=animator.element.offsetLeft+animator.element.offsetWidth/2;animator.element.nextSibling&&b>animator.element.nextSibling.offsetLeft+animator.element.nextSibling.offsetWidth/2&&(animator.element.parentNode.insertBefore(animator.element.nextSibling,animator.element),animator.startX+=b-animator.startCenterX,animator.startCenterX=b,animator.element.style.left=(a.clientX-animator.startX).toString()+"px");animator.element.previousSibling&&
+ b<animator.element.previousSibling.offsetLeft+animator.element.previousSibling.offsetWidth/2&&(animator.element.parentNode.insertBefore(animator.element,animator.element.previousSibling),animator.startX+=b-animator.startCenterX,animator.startCenterX=b,animator.element.style.left=(a.clientX-animator.startX).toString()+"px")}},up:function(a){if(void 0!==animator.element){window.removeEventListener("selectstart",animator.disableSelect);animator.element.style.top="auto";animator.element.style.left="auto";
+@@ -109,18 +109,17 @@ app.updateSaved=function(){var a=Object.keys(JSON.parse(window.localStorage.sche
+ a[c],app.currentstorage==b.innerText?b.classList.add("selected"):b.classList.remove("selected");app.saveMarker()}};
+ app.save=function(){if(!app.currentstorage){var a=window.prompt("Please enter a name for the schedule");if(!a)return;app.currentstorage=a}window.localStorage.schedules||window.localStorage.setItem("schedules","{}");a=JSON.parse(window.localStorage.schedules);void 0==a[app.currentstorage]&&gtag("event","Schedules Created");a[app.currentstorage]=app.generateHash(!0);window.localStorage.setItem("schedules",JSON.stringify(a));window.localStorage.setItem("lastSaved",app.generateHash(!1)+"!"+app.currentstorage);
+ app.updateSaved();gtag("event","Schedules Saved")};
+-app.load=function(a){if(null===a||app.changed()&&!window.confirm("Are you sure you want to discard your changes?"))return!1;app.currentstorage=a;document.getElementById("notes").value=JSON.parse(window.localStorage.schedules)[a].split("+")[1];app.disableOnHashChange=!0;location.hash=JSON.parse(window.localStorage.schedules)[a].split("+")[0];a=app.getHash().split("=")[0].substr(1);a=app.terms.map(function(a){return a.URLcode}).indexOf(a);-1<a&&(app.term!=app.terms[a].URLcode?(app.term=app.terms[a].URLcode,
+-app.updateTerms(),app.changedTerm(!0)):(app.course=null,document.getElementById("selectBox").value="",app.updateTerms(),app.loadHash()));app.updateNotes(document.getElementById("notes"));app.fillSchedule();window.localStorage.setItem("lastSaved",app.generateHash(!1)+"!"+app.currentstorage);return!0};
+-app.discard=function(){if(!app.changed()||window.confirm("Are you sure you want to discard your changes?")){var a=app.currentstorage;app.currentstorage=null;app.load(a);window.localStorage.setItem("lastSaved","{}")}};app.saveNew=function(){app.currentstorage=null;app.save()};
+-app.deleteSchedule=function(){if(window.confirm("Are you sure you want to delete the schedule "+app.currentstorage+"?")){var a=JSON.parse(window.localStorage.schedules);delete a[app.currentstorage];window.localStorage.setItem("schedules",JSON.stringify(a));app.clear(!0);app.updateSaved();app.fillSchedule();window.localStorage.setItem("lastSaved","{}")}};
++app.load=function(a){if(app.changed()&&!window.confirm("Are you sure you want to discard your changes?"))return!1;app.currentstorage=a;document.getElementById("notes").value=JSON.parse(window.localStorage.schedules)[a].split("+")[1];app.disableOnHashChange=!0;location.hash=JSON.parse(window.localStorage.schedules)[a].split("+")[0];a=app.getHash().split("=")[0].substr(1);a=app.terms.map(function(a){return a.URLcode}).indexOf(a);-1<a&&(app.term!=app.terms[a].URLcode?(app.term=app.terms[a].URLcode,app.updateTerms(),
++app.changedTerm(!0)):(app.course=null,document.getElementById("selectBox").value="",app.updateTerms(),app.loadHash()));app.updateNotes(document.getElementById("notes"));app.fillSchedule();window.localStorage.setItem("lastSaved",app.generateHash(!1)+"!"+app.currentstorage);return!0};app.discard=function(){if(!app.changed()||window.confirm("Are you sure you want to discard your changes?")){var a=app.currentstorage;app.currentstorage=null;app.load(a);window.localStorage.setItem("lastSaved","{}")}};
++app.saveNew=function(){app.currentstorage=null;app.save()};app.deleteSchedule=function(){if(window.confirm("Are you sure you want to delete the schedule "+app.currentstorage+"?")){var a=JSON.parse(window.localStorage.schedules);delete a[app.currentstorage];window.localStorage.setItem("schedules",JSON.stringify(a));app.clear(!0);app.updateSaved();app.fillSchedule();window.localStorage.setItem("lastSaved","{}")}};
+ app.clear=function(a,b){b=void 0===b?!1:b;if((void 0===a||!a)&&app.changed()&&!window.confirm("Are you sure you want to discard your changes?"))return location.hash=app.generateHash(!1),!1;document.getElementById("selectBox").value="";app.course_list_selection=0;a=document.getElementById("Range");a.max=0;a.value=0;app.courses_generator=null;app.savedCourseGenerator="";b||(location.hash="");document.getElementById("notes").value="";app.course=null;app.selected=[];app.currentstorage=null;app.updateSaved();
+ app.fillSchedule();app.hideSearch();window.localStorage.setItem("lastSaved","{}");return!0};app.showExport=function(){document.getElementById("export").style.display="";document.getElementById("export-link").value=location.href;document.getElementById("export-text").value=app.selected.map(function(a){return a.courseRegistrationCode+": "+a.subject+" "+a.courseNumber}).join("\n")};var Lazy=function(a){this.core=a;this.data=[];this.filters=[];this.done=!1};
+-Lazy.prototype.get=function(a,b){b=void 0===b?!1:b;if("object"==typeof this.core)return[];for(;!this.done&&this.data.length<=a;){var c=this.core.next();if(c.done){this.done=!0;break}this.filters.reduce(function(a,b){return a&&b(c.value)},!0)&&this.data.push({value:c.value,selected:c.value.filter(function(a){return!a.home.alts.reduce(function(a,b){return a.concat(b)},[]).includes(app.course?app.courses[app.course]:null)})})}a=this.data[a];if(!a)return null;if(b||1!=this.data.length)app.selected=a.selected;
+-location.hash=app.generateHash(!1);return a.value};Lazy.prototype.filter=function(a){this.filters.push(a);return this};
+-app.autoConstruct=function(a){if(null===a[0])return new Lazy([]);null===a.slice(-1)[0]&&a.pop();if("Manual"==app.mode){a=app.closed?a:a.filter(function(a){return 0<a.seatsAvailable});if("M"+a.map(function(a){return a.URLcode}).join()==app.savedCourseGenerator)return app.courses_generator||new Lazy([]);"A"==app.savedCourseGenerator[0]&&null!=app.course&&(app.courses_generator&&app.courses_generator.get(app.course_list_selection)&&(a=app.courses_generator.get(app.course_list_selection)||[]),app.course=
+-a.filter(function(a){return a.home==(null!==app.course?app.courses[app.course].home:null)})[0].index,document.getElementById("selectBox").value=app.course.toString());app.savedCourseGenerator="M"+a.map(function(a){return a.URLcode}).join();app.courses_generator=new Lazy(a);return app.courses_generator}if("A"+app.removeDuplicatesBy(function(a){return a.home},a).map(function(a){return a.home.URLcode}).filter(function(a){return a}).join()+(app.closed?"C":"")==app.savedCourseGenerator)return app.courses_generator||
+-new Lazy([]);"M"==app.savedCourseGenerator[0]&&app.course&&(app.course=app.courses[app.course].home.index,document.getElementById("selectBox").value=app.course.toString());app.course_list_selection=0;var b=document.getElementById("Range");b.max=0;b.value=0;app.courses_generator=(new Lazy(app.cartesianProduct(app.removeDuplicatesBy(function(a){return a.home},a).reduce(function(b,d){d.home.alts.forEach(function(c){a.forEach(function(a){c.includes(a)&&(c=c.filter(function(b){return b!=a}),c.unshift(a))});
+-b.push(app.closed?c:c.filter(function(a){return 0<a.seatsAvailable}))});return b},[])))).filter(app.schedCompat);app.savedCourseGenerator="A"+app.removeDuplicatesBy(function(a){return a.home},a).map(function(a){return a.home.URLcode}).filter(function(a){return a}).join()+(app.closed?"C":"");return app.courses_generator};app.removeDuplicatesBy=function(a,b){var c=new Set;return b.filter(function(b){b=a(b);var d=!c.has(b);d&&c.add(b);return d})};
++Lazy.prototype.get=function(a,b){for(b=void 0===b?!1:b;!this.done&&this.data.length<=a;){var c=this.core.next();if(c.done){this.done=!0;break}this.filters.reduce(function(a,b){return a&&b(c.value)},!0)&&this.data.push({value:c.value,selected:c.value.filter(function(a){return!a.home.alts.reduce(function(a,b){return a.concat(b)},[]).includes(app.courses[app.course])})})}a=this.data[a];if(!a)return!1;if(b||1!=this.data.length)app.selected=a.selected;location.hash=app.generateHash(!1);return a.value};
++Lazy.prototype.filter=function(a){this.filters.push(a);return this};
++app.autoConstruct=function(a){if(void 0===a[0])return{get:function(a){return[]}};void 0===a.slice(-1)[0]&&a.pop();if("Manual"==app.mode){a=app.closed?a:a.filter(function(a){return 0<a.seatsAvailable});if("M"+a.map(function(a){return a.URLcode}).join()==app.savedCourseGenerator)return app.courses_generator;"A"==app.savedCourseGenerator[0]&&null!=app.course&&(app.courses_generator&&app.courses_generator.get(app.course_list_selection)&&(a=app.courses_generator.get(app.course_list_selection)),app.course=
++a.filter(function(a){return a.home==app.courses[app.course].home})[0].index,document.getElementById("selectBox").value=app.course.toString());app.savedCourseGenerator="M"+a.map(function(a){return a.URLcode}).join();app.courses_generator={get:function(b){return a}};return app.courses_generator}if("A"+app.removeDuplicatesBy(function(a){return a.home},a).map(function(a){return a.home.URLcode}).filter(function(a){return a}).join()+(app.closed?"C":"")==app.savedCourseGenerator)return app.courses_generator;
++"M"==app.savedCourseGenerator[0]&&app.course&&(app.course=app.courses[app.course].home.index,document.getElementById("selectBox").value=app.course.toString());app.course_list_selection=0;var b=document.getElementById("Range");b.max=0;b.value=0;app.courses_generator=(new Lazy(app.cartesianProduct(app.removeDuplicatesBy(function(a){return a.home},a).reduce(function(b,d){d.home.alts.forEach(function(c){a.forEach(function(a){c.includes(a)&&(c=c.filter(function(b){return b!=a}),c.unshift(a))});b.push(app.closed?
++c:c.filter(function(a){return 0<a.seatsAvailable}))});return b},[])))).filter(app.schedCompat);app.savedCourseGenerator="A"+app.removeDuplicatesBy(function(a){return a.home},a).map(function(a){return a.home.URLcode}).filter(function(a){return a}).join()+(app.closed?"C":"");return app.courses_generator};app.removeDuplicatesBy=function(a,b){var c=new Set;return b.filter(function(b){b=a(b);var d=!c.has(b);d&&c.add(b);return d})};
+ app.cartesianProduct=function $jscomp$generator$function(a){var c,d,e;return $jscomp.generator.createGenerator($jscomp$generator$function,function(f){switch(f.nextAddress){case 1:if(a.map(function(a){return 0==a.length}).reduce(function(a,c){return a||c},!1))return f.return();if(!(1>=a.length)){f.jumpTo(2);break}c=0;case 3:if(!(c<a[0].length)){f.jumpTo(5);break}return f.yield([a[0][c]],4);case 4:++c;f.jumpTo(3);break;case 5:return f.return();case 2:d=Array(a.length).fill(0,0,a.length);case 7:for(c=
+ 0;c<d.length-1;++c)d[c]>a[c].length-1&&(d[c]=0,d[c+1]++);if(d[d.length-1]>a[a.length-1].length-1)return f.return();e=Array(a.length-1);for(c=0;c<a.length;++c)e[c]=a[c][d[c]];return f.yield(e,9);case 9:d[0]++,f.jumpTo(7)}})};app.schedCompat=function(a){if(1==a.length)return!0;for(var b=[a[0]],c=1;c<a.length;){for(var d=0;d<b.length;++d)if(!app.courseCompat(b[d],a[c]))return!1;b.push(a[c++])}return!0};
+ app.courseCompat=function(a,b){return a.meetings.reduce(function(a,d){return a&&b.meetings.reduce(function(a,b){return a&&app.meetingCompat(d,b)},!0)},!0)};app.meetingCompat=function(a,b){return"monday tuesday wednesday thursday friday saturday sunday".split(" ").reduce(function(c,d){return c||a[d]&&b[d]},!1)?!(a.beginTime>=b.beginTime&&a.beginTime<b.endTime||a.endTime>b.beginTime&&a.endTime<=b.endTime||b.endTime>a.beginTime&&b.endTime<=a.endTime||b.endTime>a.beginTime&&b.endTime<=a.endTime):!0};void 0==window.localStorage.lastSaved&&(window.localStorage.lastSaved="");void 0==window.localStorage.darkMode&&(window.localStorage.darkMode="false");var styleSlider=document.getElementById("styleSlider");styleSlider.checked="true"==window.localStorage.darkMode;change_style(styleSlider);app.mode=document.getElementById("Manual").checked?"Manual":"Automatic";app.closed=!!app.getHash().split("&")[1];document.getElementById("closedCheck").checked=app.closed;
+diff --git a/selectionLogic.js b/selectionLogic.js
+index 3ae2d9c..e681e6a 100644
+--- a/selectionLogic.js
++++ b/selectionLogic.js
+@@ -64,8 +64,7 @@ class Lazy{
+     /**
+      * constructor(inputgen)
+      *
+-     * param {!function*(!Array<?Course>):!Array<!Course>|!Array<!Course>} inputgen  generator which gives data cached here
+-     * if input gen is an array, get will return that array
++     * param {function*(!Array<?Course>):!Array<!Course>} inputgen  generator which gives data cached here
+      *
+      * @constant
+      */
+@@ -83,13 +82,11 @@ class Lazy{
+      * @param   {number} i        desired index in generated array
+      * @param   {boolean}  [set]  set app.selected to value grabbed?
+      *
+-     * @returns {?Array<!Course>}
++     * @returns {!Array<!Course>}
+      *
+      * @constant
+      */
+     get(i, set=false){
+-	if(typeof this.core == "object")
+-	    return [];
+         while(!this.done && (this.data.length <= i)){
+ 	    var tmp = this.core.next();
+ 	    if(tmp.done){
+@@ -102,13 +99,13 @@ class Lazy{
+ 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
+ 		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
+ 			return acc.concat(cur); // where cur is a typePack
+-		    }, []).includes(app.course ? app.courses[app.course] : null); // remove pending selection
++		    }, []).includes(app.courses[app.course]); // remove pending selection
+ 		})}); // we need to do this here so it updates the url dynamically
+             }
+ 	}
+ 	var data = this.data[i];
+ 	if(!data)
+-	    return null; // no valid schedules
++	    return false; // no valid schedules
+ 	if(set || this.data.length != 1) // set selected on either a click, or on a autobar change
+ 	    app.selected = data.selected; // update selected on click
+ 	location.hash = app.generateHash(false); // update url
+@@ -119,9 +116,9 @@ class Lazy{
+      * 
+      * add a filter to generated data
+      *
+-     * @param {function(!Array<!Course>):boolean} filter_fun
++     * @param {function(!Array<?Course>):!Array<!Course>} filter_fun
+      *
+-     * @returns {!Lazy}
++     * @returns {!this}
+      *
+      * @constant
+      */
+@@ -144,30 +141,30 @@ class Lazy{
+  * @constant
+  */
+ app.autoConstruct = function(courses){
+-    if(courses[0] === null) return new Lazy([]); // no courses - go no further
+-    if(courses.slice(-1)[0] === null) // remove empty at end when no class is selected
++    if(courses[0] === undefined) return {get: function(i){return [];}}; // no courses - go no further
++    if(courses.slice(-1)[0] === undefined) // remove empty at end when no class is selected
+ 	courses.pop();
+     if(app.mode == "Manual"){
+ 	courses = app.closed ? courses : courses.filter(course => course.seatsAvailable > 0);
+ 	if("M"+courses.map(course => course.URLcode).join() == app.savedCourseGenerator)
+-	    return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
++	    return app.courses_generator; // don't have to run the calculation for every hour in every day
+ 	if(app.savedCourseGenerator[0] == "A" && app.course != null){ // switching from automatic to manual - update app.course
+ 	    if(app.courses_generator)
+ 		if(app.courses_generator.get(app.course_list_selection))
+-		    courses = app.courses_generator.get(app.course_list_selection) || []; // slight optimization for caching
++		    courses = app.courses_generator.get(app.course_list_selection); // slight optimization for caching
+ 	    app.course = courses.filter(function(course){
+-		return course.home == (app.course !== null ? app.courses[app.course].home : null);
++		return course.home == app.courses[app.course].home;
+ 	    })[0].index; // replace app.course with the proper one automatically assigned
+ 	    document.getElementById("selectBox").value = app.course.toString();
+ 	    //and fix a render bug
+ 	}
+ 	app.savedCourseGenerator = "M"+courses.map(el => el.URLcode).join();
+-	app.courses_generator = new Lazy(courses);
++	app.courses_generator = {get: function(i){return courses;}};
+ 	return app.courses_generator;
+     }
+     //automatic generator
+     if("A"+app.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (app.closed ? "C" : "") == app.savedCourseGenerator)
+-	return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
++	return app.courses_generator; // don't have to run the calculation for every hour in every day
+     if(app.savedCourseGenerator[0] == "M" && app.course){ // switching from manual to automatic - update app.course
+ 	app.course = app.courses[app.course].home.index; // basically just a render bug
+ 	document.getElementById("selectBox").value = app.course.toString();
+@@ -199,7 +196,7 @@ app.autoConstruct = function(courses){
+  *
+  * remove duplicates by object key
+  * 
+- * @param {function(?Object):boolean} keyFn
++ * @param {function(!Object):boolean} keyFn
+  * @param {!Array<?Object>}         array
+  *
+  * @returns {!Array<!Object>}
+@@ -227,10 +224,9 @@ app.removeDuplicatesBy = function(keyFn, array) {
+  * Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'], ['a', 'd'], ['b', 'c'], ['b', 'd']]
+  * go read the wikipedia article on cartesian products for more info
+  *
+- * @param   {!Array<!Array<?Object>>} dimensions
++ * @param  {!Array<!Array<?Object>>} dimensions
+  *
+- * @returns {!Generator}
+- *  yields  {!Array<?Object>}
++ * @yields {!Array<?Object>}
+  *
+  * @memberof app
+  * @constant

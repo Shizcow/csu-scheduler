@@ -133,7 +133,7 @@ class Searcher{
      * starts the request
      * if already loaded, callback is executed immediatly
      *
-     * @param {?function(string)} [callback]  function which will be executed upon completion
+     * @param {?function(string)|?function(boolean)} [callback]  function which will be executed upon completion
      *
      * @constant
      */
@@ -279,7 +279,7 @@ class TermManager{
      * starts loading a term
      * if term is already loaded, just fire the callback
      * 
-     * @param {?function(string)} main_callback  will fire after the entire term is loaded
+     * @param {?function(*)} main_callback  will fire after the entire term is loaded
      * @param {boolean}             [bypass]       internal use only - bypass head checks
      */
     start(main_callback, bypass = false){ // construct all requests and send, or if already constructed just send
@@ -370,7 +370,7 @@ class TermManager{
 			                            // need to count and all courses will be in 1 request
 			    app.percent = "";
 			    app.updatePercent();
-			    var searcher = new Searcher("courses", TermManager_ref.term, 0, 0);
+			    var searcher = new Searcher("courses", TermManager_ref.term, "0", 0);
 			    searcher.offset = 0;
 			    TermManager_ref.requests.push(searcher);
 			    TermManager_ref.start(TermManager_ref.main_callback_wrapper.callback, true);

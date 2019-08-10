@@ -63,7 +63,7 @@ window.addEventListener("keydown", function (e) {
  *
  * this function loads / unloads style_dark.css to switch between dark and light mode
  *
- * @param {!HTMLElement} styleSlider  top left slider
+ * @param {!Element} styleSlider  top left slider
  */
 let change_style = function(styleSlider){
     document.styleSheets[1].disabled = !styleSlider.checked;
@@ -105,7 +105,7 @@ app.fillSchedule = function(referrer = null) {
 	app.course_list_selection = referrer.value;
     app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value, 10) : null;
     var wrappers = document.getElementsByClassName("wrapperInternal");
-    var schedule = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
+    var schedule = app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
     // Then, cycle through and build a divlist
     var divTracker = [];
     for(var i=0; i < wrappers.length; ++i){
@@ -137,7 +137,7 @@ app.fillSchedule = function(referrer = null) {
 		div.setAttribute("data-index", course.index);
 		div.setAttribute("data-length", courseHere.length);
 		div.setAttribute("data-top", courseHere.top);
-		if(!app.autoInAlts(course, app.courses[app.course])) // run an update instantle - fixes flashes
+		if(!app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)) // run an update instantle - fixes flashes
 		    div.classList.add("selected");
 		div.style.top = div.getAttribute("data-top") * 100 + '%';
 		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
@@ -175,7 +175,7 @@ app.fillSchedule = function(referrer = null) {
 	    link.innerText = "Description";
 	    div.appendChild(link);
 	    div.setAttribute("data-index", course.index);
-	    if(!app.autoInAlts(course, app.courses[app.course])) // run a single update instantly - fixes flashing in some cases
+	    if(!app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)) // run a single update instantly - fixes flashing in some cases
 		div.classList.add("selected");
 	    web.appendChild(div);
 	    divTracker.push(div);
@@ -188,18 +188,18 @@ app.fillSchedule = function(referrer = null) {
 	    for(var k=0; k<divs.length; ++k){
 		var div = divs[k];
 		var course = app.courses[div.getAttribute("data-index")];
-		if(!app.autoInAlts(course, app.courses[app.course]))
+		if(!app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null))
 		    div.classList.add("selected");
 		else
 		    div.classList.remove("selected");
-		if(app.hovering.includes(course))
+		if(course !== null && app.hovering.includes(course))
 		    div.classList.add("hovering");
 		else
 		    div.classList.remove("hovering");
 		if(div.getAttribute("data-top")){ // non-web
 		    div.style.top = div.getAttribute("data-top") * 100 + '%';
-		    div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		    div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+		    div.style.height = (course !== null && app.hovering.includes(course)) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
+		div.style.minHeight = !(course !== null && app.hovering.includes(course)) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 		}
 	    }
 	};
@@ -278,17 +278,18 @@ window.onhashchange = function(){
  *
  * tests whether or not a course is in a day/hour, and if so returns a render object
  *
- * @param   {string}  day
- * @param   {number}  hour
+ * @param   {string}   day
+ * @param   {string}  _hour
  * @param   {?Course}  course
  *
- * @returns {!Object|undefined}
+ * @returns {?Object}
  *
  * @memberof app
  * @constant
  */
-app.courseHere = function(day, hour, course){
-    if (!course) return;
+app.courseHere = function(day, _hour, course){
+    if (!course) return null;
+    var hour = parseInt(_hour, 10);
     var res = null;
     // if course is in day&hour, res will become an object with css information
     
@@ -312,7 +313,7 @@ app.courseHere = function(day, hour, course){
  * converts a time from hour-minute (ex: 1230) format into a float format representing
  * the offset between the time value and the top of the schedule
  *
- * @param {number} time
+ * @param   {string} time
  *
  * @returns {number}
  *
@@ -329,7 +330,7 @@ app.convertTime = function(time){
  *
  * takes a list of courses and returns only the web courses
  *
- * @param   {!Array<?Course>} courses
+ * @param   {?Array<?Course>} courses
  *
  * @returns {!Array<!Course>}
  *
@@ -507,13 +508,15 @@ app.loadHash = function(first = false){
  * this adds or removes the course from app.selected
  * but this needs extra steps and resets in auto mode
  *
- * @param {!Course} course
+ * @param {?Course} course
  *
  * @memberof app
  * @constant
  */
 app.click = function(course){
-    if (app.autoInAlts(app.courses[app.course], course)){ // needs to be added to selected
+    if(course === null)
+	return;
+    if (app.autoInAlts(app.course !== null ? app.courses[app.course] : null, course)){ // needs to be added to selected
 	document.getElementById("selectBox").value = "";
 	if(app.mode == "Manual"){
 	    app.course = null;

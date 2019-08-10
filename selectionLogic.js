@@ -64,7 +64,8 @@ class Lazy{
     /**
      * constructor(inputgen)
      *
-     * param {function*(!Array<?Course>):!Array<!Course>} inputgen  generator which gives data cached here
+     * param {!function*(!Array<?Course>):!Array<!Course>|!Array<!Courses>} inputgen  generator which gives data cached here
+     * if input gen is an array, get will return that array
      *
      * @constant
      */
@@ -87,6 +88,8 @@ class Lazy{
      * @constant
      */
     get(i, set=false){
+	if(Array.isArray(this.core))
+	    return this.core;
         while(!this.done && (this.data.length <= i)){
 	    var tmp = this.core.next();
 	    if(tmp.done){
@@ -99,7 +102,7 @@ class Lazy{
 		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
 		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
 			return acc.concat(cur); // where cur is a typePack
-		    }, []).includes(app.courses[app.course]); // remove pending selection
+		    }, []).includes(app.course !== null ? app.courses[app.course] : null); // remove pending selection
 		})}); // we need to do this here so it updates the url dynamically
             }
 	}
@@ -116,9 +119,9 @@ class Lazy{
      * 
      * add a filter to generated data
      *
-     * @param {function(!Array<?Course>):!Array<!Course>} filter_fun
+     * @param {function(!Array<?Course>):boolean} filter_fun
      *
-     * @returns {!this}
+     * @returns {!Lazy}
      *
      * @constant
      */
@@ -141,30 +144,30 @@ class Lazy{
  * @constant
  */
 app.autoConstruct = function(courses){
-    if(courses[0] === undefined) return {get: function(i){return [];}}; // no courses - go no further
-    if(courses.slice(-1)[0] === undefined) // remove empty at end when no class is selected
+    if(courses[0] === undefined || courses[0] === null) return {get: function(i){return [];}}; // no courses - go no further
+    if(courses.slice(-1)[0] === undefined || courses.slice(-1)[0] === null) // remove empty at end when no class is selected
 	courses.pop();
     if(app.mode == "Manual"){
 	courses = app.closed ? courses : courses.filter(course => course.seatsAvailable > 0);
 	if("M"+courses.map(course => course.URLcode).join() == app.savedCourseGenerator)
-	    return app.courses_generator; // don't have to run the calculation for every hour in every day
+	    return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
 	if(app.savedCourseGenerator[0] == "A" && app.course != null){ // switching from automatic to manual - update app.course
 	    if(app.courses_generator)
 		if(app.courses_generator.get(app.course_list_selection))
-		    courses = app.courses_generator.get(app.course_list_selection); // slight optimization for caching
+		    courses = app.courses_generator.get(app.course_list_selection) || []; // slight optimization for caching
 	    app.course = courses.filter(function(course){
-		return course.home == app.courses[app.course].home;
+		return (app.course !== null ) && (course.home == app.courses[app.course].home);
 	    })[0].index; // replace app.course with the proper one automatically assigned
 	    document.getElementById("selectBox").value = app.course.toString();
 	    //and fix a render bug
 	}
 	app.savedCourseGenerator = "M"+courses.map(el => el.URLcode).join();
-	app.courses_generator = {get: function(i){return courses;}};
+	app.courses_generator = new Lazy(courses);
 	return app.courses_generator;
     }
     //automatic generator
     if("A"+app.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (app.closed ? "C" : "") == app.savedCourseGenerator)
-	return app.courses_generator; // don't have to run the calculation for every hour in every day
+	return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
     if(app.savedCourseGenerator[0] == "M" && app.course){ // switching from manual to automatic - update app.course
 	app.course = app.courses[app.course].home.index; // basically just a render bug
 	document.getElementById("selectBox").value = app.course.toString();
@@ -196,7 +199,7 @@ app.autoConstruct = function(courses){
  *
  * remove duplicates by object key
  * 
- * @param {function(!Object):boolean} keyFn
+ * @param {!function(?Object):boolean} keyFn
  * @param {!Array<?Object>}         array
  *
  * @returns {!Array<!Object>}
@@ -224,9 +227,10 @@ app.removeDuplicatesBy = function(keyFn, array) {
  * Example: [['a', 'b'], ['c', 'd']] => [['a', 'c'], ['a', 'd'], ['b', 'c'], ['b', 'd']]
  * go read the wikipedia article on cartesian products for more info
  *
- * @param  {!Array<!Array<?Object>>} dimensions
+ * @param   {!Array<!Array<?Object>>} dimensions
  *
- * @yields {!Array<?Object>}
+ * @returns {!Generator}
+ *  yields  {!Array<?Object>}
  *
  * @memberof app
  * @constant

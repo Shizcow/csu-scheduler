@@ -16,7 +16,7 @@ app.changed()
 >and if there is any deviation between that saved schedule and what is actually on the board
 >ie, modified but not yet saved
 
-autoInAlts()
+app.autoInAlts()
 >check if two sections are of the same course (ex: MATH 101 lab and MATH 101 lecture)
 */
 
@@ -104,8 +104,8 @@ app.changed = function(){
  *
  * check if check_course exists within the alts of course_alts, but ONLY if we're in automatic mode
  *
- * @param {!Course}   check_course
- * @param {!Course}   course_alts
+ * @param {?Course}   check_course
+ * @param {?Course}   course_alts
  * @returns {boolean}
  *
  * @memberOf app

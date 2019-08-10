@@ -20,10 +20,11 @@ let app = {};
 /**
  * app.course
  * 
- * pending course to be added - renders as blue - stored as an integer
+ * pending course to be added - renders as blue
+ * Stored as integer so it can be placed in an option
  * see UIright.js for setting
  * 
- * @type {?Course}
+ * @type {?number}
  * @memberOf app
  */
 app.course = null;
@@ -144,7 +145,7 @@ app.term = "";
  * list of course divs that are up for selection in automatic mode
  * see librequests.js for generation and UIright.js for usage
  *
- * @type {!Array<!HTMLElement>}
+ * @type {!Array<!Element>}
  * @memberOf app
  */
 app.courses_auto = [];
@@ -155,7 +156,7 @@ app.courses_auto = [];
  * list of course divs that are up for selection in manual mode
  * see librequests.js for generation and UIright.js for usage
  *
- * @type {!Array<!HTMLElement>}
+ * @type {!Array<!Element>}
  * @memberOf app
  */
 app.courses_manual = [];
@@ -166,7 +167,7 @@ app.courses_manual = [];
  * whether or not we're showing courses that are closed (all seats are filled) or not, used many places
  * see UIright.js for setting
  *
- * @type {!bool}
+ * @type {boolean}
  * @memberOf app
  */
 app.closed = false;

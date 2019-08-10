@@ -39,9 +39,9 @@ showExport()
 /**
  * animator
  *
- * @Object
+ * @type {!Object}
  *
- * @property {?HTMLElement}     element        element to be acted on
+ * @property {?Element}     element        element to be acted on
  * @property {function(Object)} down           mouse controls
  * @property {function(Object)} move           mouse controls
  * @property {function(Object)} up             mouse controls
@@ -160,7 +160,7 @@ app.saveMarker = function() {
  * @constant
  */
 app.updateSaved = function() {
-    var schedules = Object.keys(JSON.parse(window.localStorage.schedules));
+    var schedules = Object['keys'](JSON.parse(window.localStorage.schedules)); // shut up closure compiler
     if(!schedules.length)
 	return;
     var saves = document.getElementById("saves");
@@ -228,14 +228,16 @@ app.save = function() {
  *
  * loads schedule from storageString
  *
- * @param   {string} schedule  title of schedule
+ * @param   {?string} schedule  title of schedule
  *
- * @returns {boolean}          is the user okay with discarding changes?
+ * @returns {boolean}           is the user okay with discarding changes?
  *
  * @memberof app
  * @constant
  */
 app.load = function(schedule) {
+    if(schedule === null)
+	return false;
     if(app.changed())
         if (!window.confirm("Are you sure you want to discard your changes?"))
 	    return false;

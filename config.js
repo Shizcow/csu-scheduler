@@ -57,7 +57,7 @@ This section contains options useful for non-production versions
  * @memberOf app_config
  * @constant
  */
-app_config.test_percent_cap = 100;
+app_config.test_percent_cap = 1;
 
 /**
  * app_config.chunk
@@ -360,13 +360,13 @@ app_config.PROCESSgetDescription()
  * We're going to process terms first, so here's how Term objects look
  * 
  * Params:                     
- *   code           Code used to represent the term in URLS	       
- *   description    Human readable description, like "Fall 2019"      
+ *   URLcode    Code used to represent the term in URLS	       
+ *   title      Human readable description, like "Fall 2019"      
 
  *
  * @typedef  {{
- *             code:string,
- *             description:string
+ *             URLcode:string,
+ *             title:string
  *           }}
  */
 var Term;

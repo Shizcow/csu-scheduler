@@ -90,7 +90,7 @@ app.updateCredits = function() {
  */
 app.autoBar = function(){
     var autoBar = document.getElementById("autoBar");
-    autoBar.style.display = app.mode == 'Automatic' && app.selected.concat(app.courses[app.course])[0] != null ? "inline-block" : "none";
+    autoBar.style.display = app.mode == 'Automatic' && app.course !== null && app.selected.concat(app.courses[app.course])[0] != null ? "inline-block" : "none";
     document.getElementById('nextButton').innerText='Next';
 };
 
@@ -99,12 +99,14 @@ app.autoBar = function(){
  * 
  * generates and displays the next valid schedule in automatic mode
  *
- * @param {!HTMLElement} button
+ * @param {?Element} button
  *
  * @memberof app
  * @constant
  */
 app.genNext = function(button){
+    if(!button)
+	return;
     if(app.courses_generator && app.courses_generator.get(app.courses_generator.data ? app.courses_generator.data.length : 0)){ // see if there's another valid schedule we haven't seen yet
 	app.course_list_selection = (app.courses_generator.data ? app.courses_generator.data.length : 0)-1; // and show it to us
     } else { // done - start looping
@@ -127,8 +129,9 @@ app.genNext = function(button){
  * if loadHash is true, then render app.selected
  * if loadHash is "first", render from URL hash
  *
- * @param {boolean}      [loadHash]  should we be loading from URL hash?
- * @param {?HTMLElement} [referrer]  term selection box
+ * @param {boolean|string}   [loadHash]  should we be loading from URL hash?
+ *                                       if == "first" it's a real share - notify GA
+ * @param {?Element|?Object} [referrer]  term selection box
  *
  * @memberof app
  * @constant
@@ -171,11 +174,13 @@ app.changedTerm = function(loadHash = false, referrer = null){
     app.termCacher.push(app.term, function(_loadHash){
 	return function(courses){
 	    // update UI
-	    app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
+	    var notes = document.getElementById("notes");
+	    if(notes !== null)
+		app.updateNotes(notes); // fix style in case notes have been cached
 	    app.courses = courses;
 	    app.genDivs();
 	    if(_loadHash)
-		app.loadHash(_loadHash === "first");
+		app.loadHash(_loadHash == "first");
 	    app.fillSchedule();
 	    app.fillSearch();
 	};
@@ -267,12 +272,14 @@ app.updatePercent = function(){
  *
  * update the size of the notes box so it flexes with content
  *
- * @param {!HTMLElement} noteBox
+ * @param {?Element} noteBox
  *
  * @memberof app
  * @constant
  */
 app.updateNotes = function(noteBox){
+    if(!noteBox)
+	return;
     noteBox.style.height='25px';
     noteBox.style.height=(noteBox.scrollHeight+25)+'px';
     app.saveMarker();
@@ -283,7 +290,7 @@ app.updateNotes = function(noteBox){
  *
  * fills in the course selection box according to mode and search query
  *
- * @param {boolean} [referrer]
+ * @param {?Element} [referrer]
  *
  * @memberof app
  * @constant
@@ -306,9 +313,9 @@ app.fillSearch = function(referrer = null) {
  * returns the option list, dependent on mode
  * used to render course selection list
  *
- * @param   {?HTMLElement}         referrer
+ * @param   {?Element}         referrer
  *
- * @returns {!Array<!HTMLElement>}
+ * @returns {!Array<?Element>}
  *
  * @memberof app
  * @constant
@@ -344,15 +351,17 @@ app.hideSearch = function(referrer = null) {
  *
  * hideSearch but for a single option
  *
- * @param   {!Course} course   course to be acted on
+ * @param   {?Course} course   course to be acted on
  * @param   {string}  search   search string
  *
- * @returns {!bool}            should this course be shown?
+ * @returns {boolean}          should this course be shown?
  *
  * @memberof app
  * @constant
 */
 app.filterSearch = function(course, search) {
+    if(!course)
+	return false;
     if(app.selected.indexOf(course) !== -1) return false;
     if (!app.closed && (app.mode == "Manual" ? (course.seatsAvailable <= 0) : // if auto, check if it's possible to load in a full configuration
 			 course.home.alts // grab alts -> [type:[c, c, c], type:[c, c, c]]
