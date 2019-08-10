@@ -151,7 +151,7 @@ app.changedTerm = function(loadHash = false, referrer = null){
 	    return;
 	}
     }
-    if(loadHash != true && !app.clear(false, loadHash == "first")){
+    if(loadHash != true && !app.clear((!loadHash && referrer && app.changed()), loadHash == "first")){ // don't confirm twice
 	document.getElementById("termSelect").value = app.term; // confirm
 	return;
     }
