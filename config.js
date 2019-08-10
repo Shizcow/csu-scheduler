@@ -709,8 +709,8 @@ self explanatory
  * @memberOf app_config
  * @constant
  */
-
 app_config.collegeName = "Colorado State University";
+
 /**
  * app_config.collegeNameShort
  * Few-letter abreviation for your college
@@ -720,8 +720,8 @@ app_config.collegeName = "Colorado State University";
  * @memberOf app_config
  * @constant
  */
-
 app_config.collegeNameShort = "CSU";
+
 /**
  * app_config.siteTitle
  * Title for the site exposed in the browser's tab area
@@ -731,8 +731,8 @@ app_config.collegeNameShort = "CSU";
  * @memberOf app_config
  * @constant
  */
-
 app_config.siteTitle = "CSU Scheduler - Course Scheduler for Colorado State University";
+
 /**
  * app_config.siteTitleShort
  * A short version of the site title used in messages
@@ -820,7 +820,7 @@ app_config.CORScustom = "If you\'d like to use this tool without needing an exte
 
 // You're almost done!
 //
-// You should also go to index.html and do a few things
+// You should also go to index_source.html and do a few things
 // 1) Go set up google analytics, then go to the top of GA.js and change the tracking tag
 // 2) Change the second <meta> tag in index_source.html to properly represent your college
 // 3) If there are any other scripts that need to be loaded, a good place to put them is at the end of mounted.js,

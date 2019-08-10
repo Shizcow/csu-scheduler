@@ -316,7 +316,7 @@ app.fillSearch = function(referrer = null) {
 };
 
 /**
- * app.autoFilter(courses, referrer)
+ * app.autoFilter(referrer)
  *
  * returns the option list, dependent on mode
  * used to render course selection list

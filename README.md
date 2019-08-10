@@ -37,6 +37,7 @@ Here's how the minify structure is layed out, which if followed means no modific
 - JS:
     - GA.js, config.js, index.js, librequests.js, init.js, apputil.js, UIschedule.js, UIright.js, UIsavebar.js, selectionLogic.js, mounted.js -> min.js
     - Note: you'll need a jsminifier that works with ES6. Google Closure Compiler is a nice choice.
+    -       This minifier also must not rename global varibles, such as the app object (SIMPLE_OPTIMIZATIONS)
 
 
 Once you find good packages that work on your machine, it might be a good idea to set up a pre-commit git hook.
