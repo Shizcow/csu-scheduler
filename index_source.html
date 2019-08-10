@@ -83,6 +83,7 @@
 	  <input id="Manual" name="mode" type="radio" value="Manual" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();" checked="checked"> Manual
 	  <br>
 	  <input id="Automatic" name="mode" type="radio" value="Automatic" onchange="app.fillSearch(this); app.autoConstruct(app.selected.concat(app.courses[app.course])).get(0); app.fillSchedule();"> Automatic
+	  <br>
 	  <div id="autoBar" style="display:none;" style="width: 100%;">
 	    <input id="Range" oninput="app.fillSchedule(this);" type="range" min="0" max="0" style="width: 66%;">
 	    <button id="nextButton" style="width: 30%;float: right;"></button>
