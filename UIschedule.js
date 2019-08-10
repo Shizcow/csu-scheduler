@@ -153,7 +153,7 @@ app.fillSchedule = function(referrer = null) {
     var web = document.getElementById("web");
     while(web.firstChild)
 	web.removeChild(web.firstChild);
-    var webClasses = app.webclasses(schedule);
+    var webClasses = Array.isArray(schedule) ? app.webclasses(schedule) : [];
     webWrapper.style.display = webClasses.length ? "" : "none";
     for(var j=0; j<webClasses.length; ++j){
 	var course = webClasses[j];
@@ -522,7 +522,7 @@ app.click = function(course){
 	    app.course = null;
 	    app.selected.push(course);
 	} else {
-	    var intended = app.autoConstruct(app.selected.concat(app.courses[app.course])).get(app.course_list_selection).filter(c => app.autoInAlts(app.courses[app.course], c));
+	    var intended = app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.course_list_selection).filter(c => app.autoInAlts(app.course !== null ? app.courses[app.course] : null, c));
 	    app.course = null;
 	    intended.forEach(c => app.selected.push(c));
 	    app.savedCourseGenerator = "A";

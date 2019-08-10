@@ -84,13 +84,14 @@ app.updateCredits = function() {
  * app.autoBar()
  *
  * shows or hides the automatic selection bar depending on the mode and number of courses selected
+ * If there's only one valid schedule, don't bother giving the illusion of choice
  *
  * @memberof app
  * @constant
  */
 app.autoBar = function(){
     var autoBar = document.getElementById("autoBar");
-    autoBar.style.display = app.mode == 'Automatic' && app.course !== null && app.selected.concat(app.courses[app.course])[0] != null ? "inline-block" : "none";
+    autoBar.style.display = app.mode == 'Automatic' && (app.selected.length > 0 || app.course !== null) && app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(1) ? "inline-block" : "none";
     document.getElementById('nextButton').innerText='Next';
 };
 
@@ -360,7 +361,7 @@ app.hideSearch = function(referrer = null) {
  * @constant
 */
 app.filterSearch = function(course, search) {
-    if(!course)
+    if(course === null)
 	return false;
     if(app.selected.indexOf(course) !== -1) return false;
     if (!app.closed && (app.mode == "Manual" ? (course.seatsAvailable <= 0) : // if auto, check if it's possible to load in a full configuration

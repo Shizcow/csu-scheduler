@@ -44,7 +44,7 @@ This allows you to executute "git commit" whenever you want to build and test th
 options to git commit, it won't actually commit, but only build and ask for options.
 
 
-Here's an example of a pre-commit hook for this project, which may or may not work on your machine:
+Here's an example of a pre-commit hook for this project, which may or may not work on your machine depending on your OS and other factors:
 ```
 #!/bin/sh
 
@@ -53,7 +53,7 @@ echo "minifying files..."
 
 echo "->minifying JS..."
 
-closure-compiler --compilation_level SIMPLE_OPTIMIZATIONS --js_output_file min.js --js GA.js config.js index.js librequests.js init.js apputil.js UIschedule.js UIright.js UIsavebar.js selectionLogic.js mounted.js
+closure-compiler --compilation_level SIMPLE_OPTIMIZATIONS --jscomp_warning=* --jscomp_off=strictMissingRequire --js_output_file min.js --js GA.js config.js index.js librequests.js init.js apputil.js UIschedule.js UIright.js UIsavebar.js selectionLogic.js mounted.js
 
 if [[ $? != 0 ]]; then 
     exit 1

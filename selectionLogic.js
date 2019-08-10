@@ -80,10 +80,10 @@ class Lazy{
      *
      * grabbs a value from the generator
      *
-     * @param   {number} i        desired index in generated array
-     * @param   {boolean}  [set]  set app.selected to value grabbed?
+     * @param   {number}                  i     desired index in generated array
+     * @param   {boolean}                [set]  set app.selected to value grabbed?
      *
-     * @returns {!Array<!Course>}
+     * @returns {!Array<!Course>|boolean}       false if generator is done 
      *
      * @constant
      */
@@ -144,7 +144,7 @@ class Lazy{
  * @constant
  */
 app.autoConstruct = function(courses){
-    if(courses[0] === undefined || courses[0] === null) return {get: function(i){return [];}}; // no courses - go no further
+    if(courses[0] === undefined || courses[0] === null) return new Lazy([]); // no courses - go no further
     if(courses.slice(-1)[0] === undefined || courses.slice(-1)[0] === null) // remove empty at end when no class is selected
 	courses.pop();
     if(app.mode == "Manual"){
@@ -152,9 +152,12 @@ app.autoConstruct = function(courses){
 	if("M"+courses.map(course => course.URLcode).join() == app.savedCourseGenerator)
 	    return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
 	if(app.savedCourseGenerator[0] == "A" && app.course != null){ // switching from automatic to manual - update app.course
-	    if(app.courses_generator)
-		if(app.courses_generator.get(app.course_list_selection))
-		    courses = app.courses_generator.get(app.course_list_selection) || []; // slight optimization for caching
+	    if(app.courses_generator){
+		if(app.courses_generator.get(app.course_list_selection)){
+		    var tmp = app.courses_generator.get(app.course_list_selection);
+		    courses = Array.isArray(tmp) ? tmp : []; // slight optimization for caching
+		}
+	    }
 	    app.course = courses.filter(function(course){
 		return (app.course !== null ) && (course.home == app.courses[app.course].home);
 	    })[0].index; // replace app.course with the proper one automatically assigned
@@ -199,8 +202,8 @@ app.autoConstruct = function(courses){
  *
  * remove duplicates by object key
  * 
- * @param {!function(?Object):boolean} keyFn
- * @param {!Array<?Object>}         array
+ * @param {function(?*):boolean} keyFn
+ * @param {!Array<?Object>}      array
  *
  * @returns {!Array<!Object>}
  *
