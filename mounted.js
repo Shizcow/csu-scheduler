@@ -12,10 +12,12 @@ This should be the last script to be loaded, as it depends on all other scripts 
 if(window.localStorage.lastSaved == undefined) window.localStorage.lastSaved = "";
 
 //style first
-if(window.localStorage.darkMode == undefined) window.localStorage.darkMode = "false";
-var styleSlider = document.getElementById("styleSlider");
-styleSlider.checked = window.localStorage.darkMode == "true";
-change_style(styleSlider);
+(function(){
+    if(window.localStorage.darkMode == undefined) window.localStorage.darkMode = "false";
+    var styleSlider = document.getElementById("styleSlider");
+    styleSlider.checked = window.localStorage.darkMode == "true";
+    change_style(styleSlider);
+})();
 
 //then check browser cache for radio buttons and checkboxes, update accordingly
 app.mode = document.getElementById("Manual").checked ? "Manual" : "Automatic";

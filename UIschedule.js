@@ -9,40 +9,40 @@ EventListener for escape/delete
 change_style()
 >toggles between dark mode and light mode
 
-autoAndLabs()
+app.autoAndLabs()
 >gets all selected sections which are of the same course as the input section
 >used to render hovering
 
-fillSchedule()
+app.fillSchedule()
 >Renders courses into the on screen schedule
 
 window.onhashchange()
 >detects a URL shared schedule during normal operation
 
-courseHere()
+app.courseHere()
 >Checks if a course section is offered during a given day/hour
 >If so, returns a minimal rendering object
 
-convertTime()
+app.convertTime()
 >Converts a time string into a float offset value for rendering
 
-autoFilter()
+app.autoFilter()
 >for automatic mode - removes all 
 
-webclasses()
+app.webclasses()
 >takes in a list of courses, filters, and returns only web courses
 
-fetchDescription()
+app.fetchDescription()
 >grabs a course's description from data server and shows it to the user
 
-dayUpdate()
+app.dayUpdate()
 >looks through all courses to be rendered. If any of those courses are on
 >a weekend, expand the schedule to show those courses
 
-loadHash()
+app.loadHash()
 >used to load a hash from a save or a URL
 
-click()
+app.click()
 >handles a doubleclick on a rendered course
  */
 

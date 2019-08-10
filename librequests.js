@@ -3,15 +3,21 @@ Provides an interface for talking to the course data server
 
 In this file:
 
-string server(string)
+server(string)
 >URL prefix for all requests
 
-void preProcessDataPack(dataPack_object)
+preProcessDataPack(dataPack_object)
 >Takes a freshly loaded JSON object for a large course request and strips out unwanted data
 >Uses references to do this in place
 
-[courses_object...] postProcessCourses([courses_object...])
+postProcessCourses([courses_object...])
 >For each course in the list, remove or modify it to fit in line
+
+Searcher
+
+TermManager
+
+TermCacher
 */
 
 /**

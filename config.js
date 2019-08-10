@@ -1,5 +1,3 @@
-// TODO: consider adding classes for terms and courses?
-
 /* config.js
 This file contains various configs for developing or adapting to other colleges
 If you're lucky, this file contains everything you need to do so

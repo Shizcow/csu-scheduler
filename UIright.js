@@ -6,49 +6,49 @@ This does NOT include webclass rendering. That's in UIschedule.js for continuity
 
 In this file:
 
-totalCredits()
+app.totalCredits()
 >returns an integer value representing the total number of credits for all
 >selected courses combined
 
-updateCredits()
+app.updateCredits()
 >Updates the "Total Credits" span according to totalCredits()
 
-autoBar()
+app.autoBar()
 >Shows/hides automatic selection bar
 
-genNext()
+app.genNext()
 >Listener for the "Next" button in automatic mode. Calls out to selectionLogic.js to generate
 >the next valid schedule, or loop. Also updates UI accordingly
 
-changedTerm()
+app.changedTerm()
 >Listener for the term selectionn box. Upon change, will load the new term and update the UI accordingly
 
-genDivs()
+app.genDivs()
 >Generates two lists of divs used in automatic&manual mode which are placed in the main course selection box
 
-updateTerms()
+app.updateTerms()
 >Fills the term selection dropdown list
 
-updatePercent()
+app.updatePercent()
 >Update the current percent message
 
-updateNotes()
+app.updateNotes()
 >Listener for the notes textbox, will stretch or shrink the box according to the text within
 
-fillSearch()
+app.fillSearch()
 >Fills the course selection box
 
->autoFilter()
+app.autoFilter()
 >Filters out courses from the course selection box depending on the current mode
 
-hideSearch()
+app.hideSearch()
 >Filters out options from the course selection box depending on their filterSearch valie
 
-filterSearch()
+app.filterSearch()
 >Filters out a single option from the course selection box if the current search
 >query should filter it out
 
-loadHash()
+app.loadHash()
 >Load the URL hash value into the schedule. Primarily used when recieving a schedule shared by URL
 */
 
@@ -145,13 +145,13 @@ app.genNext = function(button){
  * @constant
  */
 app.changedTerm = function(loadHash = false, referrer = null){
-    if(!loadHash && referrer && app.changed()){
+    if(!loadHash && referrer !== null && app.changed()){
         if (!window.confirm("Are you sure you want to discard your changes?")){
 	    document.getElementById("termSelect").value = app.term;
 	    return;
 	}
     }
-    if(loadHash != true && !app.clear((!loadHash && referrer && app.changed()), loadHash == "first")){ // don't confirm twice
+    if(loadHash != true && !app.clear((!loadHash && referrer !== null && app.changed()), loadHash == "first")){ // don't confirm twice
 	document.getElementById("termSelect").value = app.term; // confirm
 	return;
     }

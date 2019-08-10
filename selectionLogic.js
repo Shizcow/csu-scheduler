@@ -7,22 +7,22 @@ In this file:
 Lazy class
 >caches generated schedules
 
-autoConstruct()
+app.autoConstruct()
 >creates a Lazy object which contains a generator for all valid courses of a given schedule
 
-removeDuplicatesBy()
+app.removeDuplicatesBy()
 >util function which removes duplicates from an array based on an object value
 
-cartesianProduct*()
+app.cartesianProduct*()
 >generator which returns a cartesian product from a given set of dimensions
 
-schedCompat()
+app.schedCompat()
 >checks if there are schedule conflicts in a given list of courses
 
-courseCompat()
+app.courseCompat()
 >checks if two courses have a schedule conflict
 
-meetingCompat()
+app.meetingCompat()
 >checks if two meeting times conflict
 */
 
