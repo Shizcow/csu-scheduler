@@ -156,6 +156,18 @@ and see JSON coming in properly. If you can get this to work, continue on to the
 */
 
 /**
+ * app_config.useCredentials
+ * 
+ * Whether or not your college uses AUTH cookies
+ * If you can't get thing's to load, change this value
+ *
+ * @type {boolean}
+ * @memberOf app_config
+ * @constant
+ */
+app_config.useCredentials = true;
+
+/**
  * app_config.URLprefix
  *
  * The common URL prefix for all incoming data from your university's server
