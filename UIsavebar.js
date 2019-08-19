@@ -250,11 +250,11 @@ app.load = function(schedule) {
     if (foundIdx > -1){ // make sure term is valid
         if(app.term != app.terms[foundIdx].URLcode) { // need to switch term
 	    app.term = app.terms[foundIdx].URLcode;
-	    app.updateTerms();
         } else { // already on correct term
 	    app.course = null;
 	    document.getElementById("selectBox").value = "";
         }
+	app.updateTerms();
 	app.changedTerm(true); // must always load AFTER loading term
 	// Why? Term isn't always fully loaded when request goes through
     }
