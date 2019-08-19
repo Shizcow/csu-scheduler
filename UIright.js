@@ -179,15 +179,15 @@ app.changedTerm = function(loadHash = false, referrer = null){
     app.termCacher.push(app.term, function(_loadHash){
 	return function(courses){
 	    // update UI
-	    var notes = document.getElementById("notes");
-	    if(notes !== null)
-		app.updateNotes(notes); // fix style in case notes have been cached
 	    app.courses = courses;
 	    app.genDivs();
 	    if(_loadHash)
 		app.loadHash(_loadHash == "first");
 	    app.fillSchedule();
 	    app.fillSearch();
+	    var notes = document.getElementById("notes");
+	    if(notes !== null)
+		app.updateNotes(notes); // fix style in case notes have been cached
 	};
     }(loadHash));
 };

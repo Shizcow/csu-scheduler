@@ -1,6 +1,3 @@
-console.log("MAKE NOTES UPDATE AFTER FILLING ON LOADING A SCHEDULE")
-console.log("LOADING TERM ON FIRST ACTION LOADS TERM  BUT NOT CLASSES")
-
 /* config.js
 This file contains various configs for developing or adapting to other colleges
 If you're lucky, this file contains everything you need to do so
