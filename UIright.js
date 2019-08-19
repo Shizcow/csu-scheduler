@@ -47,9 +47,6 @@ app.hideSearch()
 app.filterSearch()
 >Filters out a single option from the course selection box if the current search
 >query should filter it out
-
-app.loadHash()
->Load the URL hash value into the schedule. Primarily used when recieving a schedule shared by URL
 */
 
 /**

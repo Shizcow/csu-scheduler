@@ -274,12 +274,12 @@ app.load = function(schedule) {
  * @constant
  */
 app.discard = function() {
-    if(app.changed())
-	if (!window.confirm("Are you sure you want to discard your changes?"))
-	    return;
     var schedule = app.currentstorage;
     app.currentstorage = null;
-    app.load(schedule);
+    if(app.changed() && !app.load(schedule)){ // reset
+	app.currentstorage = schedule;
+	return;
+    }
     window.localStorage.setItem('lastSaved', "{}");
 };
 

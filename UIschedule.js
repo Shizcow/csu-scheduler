@@ -44,6 +44,9 @@ app.loadHash()
 
 app.click()
 >handles a doubleclick on a rendered course
+
+app.loadHash()
+>loads a hash from URL
  */
 
 // remove app.course and re-render
