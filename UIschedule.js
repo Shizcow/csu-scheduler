@@ -144,6 +144,7 @@ app.fillSchedule = function(referrer = null) {
 			    app.fillSchedule();
 			};
 		    }(course);
+		    checkWrapper.style.top = courseHere.top * 100 + '%';
 		    ext.appendChild(checkWrapper);
 		}
 		

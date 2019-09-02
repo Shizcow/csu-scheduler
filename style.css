@@ -149,11 +149,10 @@ table .item.selected.hovering {
 
 .autoLock{
     background-color: white;
-    border: 1px solid red;
+    border: 1px solid black;
     z-index: 2;
     position: absolute;
-    right: 0;
-    top: 0;
+    right: 1%;
     cursor: pointer;
 }
 

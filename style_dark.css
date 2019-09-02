@@ -59,6 +59,13 @@ table .item {
     background: #2f82e0b5;
 }
 
+
+
+.autoLock{
+    background-color: #555;
+    border: 1px solid #f8f8f2;
+}
+
 .footer .option.selected, .selectedList div.selected, table .item.selected {
     background: #95e454b5;
 }
