@@ -106,12 +106,15 @@ app.autoAndLabs = function(check_course){
  * @constant
  */
 app.fillSchedule = function(referrer = null) {
-    if(referrer)
+    if(referrer){
+	if(app.course !== null)
+	    app.courses[app.course].locked = false;
 	app.course_list_selection = referrer.value;
+    }
     app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value, 10) : null;
     var wrappers = document.getElementsByClassName("wrapperInternal");
     var schedule = app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
-    // Then, cycle through and build a divlist
+    // Then, cycle through and build a divlist -- needed for onclick listeners
     var divTracker = [];
     for(var i=0; i < wrappers.length; ++i){
 	var wrapper = wrappers[i];
@@ -123,6 +126,27 @@ app.fillSchedule = function(referrer = null) {
 	    var course = schedule[j];
 	    var courseHere = app.courseHere(day, hour, course);
 	    if(course && courseHere){
+		var ext = document.createElement("div");
+		if(app.mode == "Automatic"){
+		    var checkWrapper = document.createElement("div");
+		    checkWrapper.className = "autoLock";
+		    if(course.locked)
+			checkWrapper.innerText = "🔒"; // closed lock
+		    else
+			checkWrapper.innerText = "🔓 "; // open lock
+		    checkWrapper.onclick = function(c){
+			return function(ref){
+			    console.log("pre-auto", app.selected.map(c => c.courseRegistrationCode))
+			    app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.course_list_selection, true); // set selected to what's shown on schedule
+			    c.locked = !c.locked;
+			    app.savedCourseGenerator = ""; // force recalc
+			    console.log("pre-fill", app.selected.map(c => c.courseRegistrationCode))
+			    app.fillSchedule();
+			};
+		    }(course);
+		    ext.appendChild(checkWrapper);
+		}
+		
 		var div = document.createElement("div");
 		div.className = "item";
 		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + (course.faculty.trim().length ? (course.faculty + '\n') : "") + (courseHere.loc.length ? (courseHere.loc + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
@@ -147,7 +171,8 @@ app.fillSchedule = function(referrer = null) {
 		div.style.top = div.getAttribute("data-top") * 100 + '%';
 		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 		div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		wrapper.appendChild(div);
+		ext.appendChild(div);
+		wrapper.appendChild(ext);
 		divTracker.push(div);
 	    }
 	}
@@ -529,6 +554,7 @@ app.loadHash = function(first = false){
 app.click = function(course){
     if(course === null)
 	return;
+    course.locked = false;
     if (app.autoInAlts(app.course !== null ? app.courses[app.course] : null, course)){ // needs to be added to selected
 	document.getElementById("selectBox").value = "";
 	if(app.mode == "Manual"){

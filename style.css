@@ -147,6 +147,16 @@ table .item.selected.hovering {
     z-index: 3;
 }
 
+.autoLock{
+    background-color: white;
+    border: 1px solid red;
+    z-index: 2;
+    position: absolute;
+    right: 0;
+    top: 0;
+    cursor: pointer;
+}
+
 .selectedList {
     border: 1px solid #ccc;
     margin-top: 5px;

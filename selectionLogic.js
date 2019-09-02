@@ -99,7 +99,7 @@ class Lazy{
 	    if(this.filters.reduce(function(acc, cur_filter){ // run all filters on value
 		return acc && cur_filter(tmp.value);
 	    }, true)){
-		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// => // cache selected change
+		this.data.push({value: tmp.value, selected: tmp.value.filter(function(course){// cache selected for change -> take this.core.next() and remove app.course
 		    return !course.home.alts.reduce(function(acc, cur){ // look through all of course offerings
 			return acc.concat(cur); // where cur is a typePack
 		    }, []).includes(app.course !== null ? app.courses[app.course] : null); // remove pending selection
@@ -109,7 +109,8 @@ class Lazy{
 	var data = this.data[i];
 	if(!data)
 	    return false; // no valid schedules
-	if(set || this.data.length != 1) // set selected on either a click, or on a autobar change
+	console.log("data i: ", i, " data:", this.data[i].selected.map(c => c.courseRegistrationCode))
+	if(set) // set selected on either a click, or on a autobar change
 	    app.selected = data.selected; // update selected on click
 	location.hash = app.generateHash(false); // update url
         return data.value;
@@ -168,6 +169,7 @@ app.autoConstruct = function(courses){
 	app.courses_generator = new Lazy(courses);
 	return app.courses_generator;
     }
+    console.log("courses pre-comp: ", courses.map( c => c.courseRegistrationCode))
     //automatic generator
     if("A"+app.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (app.closed ? "C" : "") == app.savedCourseGenerator)
 	return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
@@ -179,18 +181,26 @@ app.autoConstruct = function(courses){
     var range = document.getElementById('Range');
     range.max = 0;
     range.value = 0; // and reset render
+    console.log("courses pre-typePack: ", courses.map( c => c.courseRegistrationCode))
     app.courses_generator = new Lazy(app.cartesianProduct(app.removeDuplicatesBy(course => course.home, courses).reduce(function(acc, course){ // expands courses into all alt lists
 	course.home.alts.forEach(function(typePack){ // move in every typePack
-	    //first, we need to check if we need to move any courses to the front of their typePack
-	    //this makes auto<->manual switches behave as expected
-	    courses.forEach(function(compareCourse){
-		if(typePack.includes(compareCourse)){
-		    typePack = typePack.filter(c => c!=compareCourse); // remove course
-		    typePack.unshift(compareCourse); // then re-add it to front
-		}	
-	    });
+	    // first, factor in any locked courses
+	    let locked = typePack.filter(c => c.locked);
+	    if(locked.length)
+		typePack = locked; // force 0-length typePack
+	    else
+		//then, we need to check if we need to move any courses to the front of their typePack
+		//this makes auto<->manual switches behave as expected
+		courses.forEach(function(compareCourse){
+		    if(typePack.includes(compareCourse)){
+			typePack = typePack.filter(c => c!=compareCourse); // remove course
+			typePack.unshift(compareCourse); // then re-add it to front
+		    }	
+		});
 	    acc.push(app.closed ? typePack : typePack.filter(c => c.seatsAvailable > 0)); // filter out courses that are closed
 	});
+	//76584
+	//83912
 	return acc;
     }, []))).filter(app.schedCompat);
     app.savedCourseGenerator = "A"+app.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (app.closed ? "C" : "");
@@ -239,6 +249,7 @@ app.removeDuplicatesBy = function(keyFn, array) {
  * @constant
  */
 app.cartesianProduct = function*(dimensions){
+    console.log("dimensions: ", dimensions)
     if(dimensions.map(dimension => dimension.length == 0).reduce((acc, cur) => (acc || cur), false))
 	return; // there's an empty dimension - this means all the courses in it are closed
     if(dimensions.length <= 1){ // no need to calculate for 1 length lists (0 neither) - just yield each schedule
