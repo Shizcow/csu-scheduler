@@ -32,7 +32,7 @@ if(app_config.CORStest === true){
     var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     for(var i=0; i<days.length; ++i){
 	var day = days[i];
-	var td = document.createElement("td");
+	var td = document.createElement("th");
 	td.innerText = day;
 	thead.appendChild(td);
     }

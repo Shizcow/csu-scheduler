@@ -149,7 +149,7 @@ app.autoConstruct = function(courses){
     if(courses.slice(-1)[0] === undefined || courses.slice(-1)[0] === null) // remove empty at end when no class is selected
 	courses.pop();
     if(app.mode == "Manual"){
-	courses = app.closed ? courses : courses.filter(course => course.seatsAvailable > 0);
+	courses = app.closed ? courses : courses.filter(c => c.seatsAvailable > 0 || c.locked);
 	if("M"+courses.map(course => course.URLcode).join() == app.savedCourseGenerator)
 	    return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
 	if(app.savedCourseGenerator[0] == "A" && app.course != null){ // switching from automatic to manual - update app.course
@@ -169,7 +169,7 @@ app.autoConstruct = function(courses){
 	app.courses_generator = new Lazy(courses);
 	return app.courses_generator;
     }
-    console.log("courses pre-comp: ", courses.map( c => c.courseRegistrationCode))
+    console.log("courses pre-comp: ", courses.map(c => c.courseRegistrationCode))
     //automatic generator
     if("A"+app.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (app.closed ? "C" : "") == app.savedCourseGenerator)
 	return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
@@ -197,7 +197,7 @@ app.autoConstruct = function(courses){
 			typePack.unshift(compareCourse); // then re-add it to front
 		    }	
 		});
-	    acc.push(app.closed ? typePack : typePack.filter(c => c.seatsAvailable > 0)); // filter out courses that are closed
+	    acc.push(app.closed ? typePack : typePack.filter(c => c.seatsAvailable > 0 || c.locked)); // filter out courses that are closed
 	});
 	//76584
 	//83912

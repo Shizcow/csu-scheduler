@@ -127,7 +127,7 @@ app.fillSchedule = function(referrer = null) {
 	    var courseHere = app.courseHere(day, hour, course);
 	    if(course && courseHere){
 		var ext = document.createElement("div");
-		if(app.mode == "Automatic"){
+		if(app.mode == "Automatic" || !app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)){
 		    var checkWrapper = document.createElement("div");
 		    checkWrapper.className = "autoLock";
 		    if(course.locked)
@@ -189,6 +189,27 @@ app.fillSchedule = function(referrer = null) {
     for(var j=0; j<webClasses.length; ++j){
 	var course = webClasses[j];
 	if(course){
+	    var ext = document.createElement("div");
+	    if(app.mode == "Automatic" || !app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)){
+		var checkWrapper = document.createElement("div");
+		checkWrapper.className = "autoLock";
+		if(course.locked)
+		    checkWrapper.innerText = "🔒"; // closed lock
+		else
+		    checkWrapper.innerText = "🔓 "; // open lock
+		checkWrapper.onclick = function(c){
+		    return function(ref){
+			console.log("pre-auto", app.selected.map(c => c.courseRegistrationCode))
+			app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.course_list_selection, true); // set selected to what's shown on schedule
+			c.locked = !c.locked;
+			app.savedCourseGenerator = ""; // force recalc
+			console.log("pre-fill", app.selected.map(c => c.courseRegistrationCode))
+			app.fillSchedule();
+		    };
+		}(course);
+		ext.appendChild(checkWrapper);
+	    }
+	    
 	    var div = document.createElement("div");
 	    div.className = "item";
 	    var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + (course.faculty.trim().length ? (course.faculty + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
@@ -208,7 +229,8 @@ app.fillSchedule = function(referrer = null) {
 	    div.setAttribute("data-index", course.index);
 	    if(!app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)) // run a single update instantly - fixes flashing in some cases
 		div.classList.add("selected");
-	    web.appendChild(div);
+	    ext.appendChild(div);
+	    web.appendChild(ext);
 	    divTracker.push(div);
 	}
     }
