@@ -144,16 +144,20 @@ table .item.selected {
 
 table .item.selected.hovering {
     background: rgba(222, 104, 73, 0.8);
-    z-index: 3;
+    z-index: 4;
 }
 
 .autoLock{
     background-color: white;
     border: 1px solid black;
-    z-index: 2;
+    z-index: 3;
     position: absolute;
     right: 1%;
     cursor: pointer;
+}
+
+.autoLock.hovering{
+    z-index: 5;
 }
 
 .selectedList {

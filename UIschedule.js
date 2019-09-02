@@ -223,10 +223,16 @@ app.fillSchedule = function(referrer = null) {
 		    div.classList.add("selected");
 		else
 		    div.classList.remove("selected");
-		if(course !== null && app.hovering.includes(course))
+		let autoLock = div.parentElement.getElementsByClassName("autoLock");
+		if(course !== null && app.hovering.includes(course)){
+		    if(autoLock.length)
+			autoLock[0].classList.add("hovering");
 		    div.classList.add("hovering");
-		else
+		} else {
+		    if(autoLock.length)
+			autoLock[0].classList.remove("hovering");
 		    div.classList.remove("hovering");
+		}
 		if(div.getAttribute("data-top")){ // non-web
 		    div.style.top = div.getAttribute("data-top") * 100 + '%';
 		    div.style.height = (course !== null && app.hovering.includes(course)) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
