@@ -4,7 +4,7 @@
 <select onchange=app.changedTerm(false,this) id=termSelect>
 <option value selected hidden disabled></select><div id=coursesBox style=display:none><span class=title>Courses</span>
 <input id=searchBox oninput=app.hideSearch() placeholder="Search for a course..." style=width:100%>
-<select id=selectBox onchange=app.fillSchedule() size=25>
+<select id=selectBox onchange="if(app.course===null){app.autoConstruct(app.selected).get(app.course_list_selection,true)};app.fillSchedule();" size=25>
 <option value selected disabled hidden>default</select>
 <input id=closedCheck onclick=app.hideSearch(this);app.fillSchedule(this) type=checkbox> Closed<br><span id=escTip class=hint>*Press esc to cancel selection</span><br><br><div><span class=title>Total Credits:</span>
 <span id=credits></span><br><br></div><span class=title>Notes:</span>

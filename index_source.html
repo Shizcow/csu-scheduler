@@ -98,7 +98,7 @@
 	  <div id="coursesBox" style="display:none;">
             <span class="title">Courses</span>
             <input id="searchBox" oninput="app.hideSearch()" placeholder="Search for a course..." style="width: 100%;">
-            <select id="selectBox" onchange="app.fillSchedule()" size="25">
+            <select id="selectBox" onchange="if(app.course===null){app.autoConstruct(app.selected).get(app.course_list_selection, true)};app.fillSchedule();" size="25">
 	      <option value="" selected disabled hidden>default</option>
 	      <!-- options are filled in automatically -->
             </select>
