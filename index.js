@@ -88,3 +88,8 @@ if(app_config.CORStest === true){
 	trs[i].children[7].style.display = "none";
     }
 })();
+
+window.onresize = function(){
+    w = document.getElementById("weekTableWrapper");
+    document.getElementById("weekTableHead").style.borderRight = (w.offsetWidth - w.clientWidth).toString() + "px solid " + getComputedStyle(document.getElementById("schedThead")).backgroundColor;
+}

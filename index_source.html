@@ -43,36 +43,42 @@
 	    </div>
 	  </div>
 	</div>
-	<table id="weekTable">
-          <thead>
-            <tr id="schedThead">
-              <th class="time">
-		<label id="switch">
-		  <input onclick="change_style(this);" type="checkbox" id="styleSlider">
-		  <span class="slider round"></span>
-		</label>
-	      </th>
+	<div id="weekTableHeadWrapper">
+	  <table id="weekTableHead">
+            <thead>
+              <tr id="schedThead">
+		<th class="time">
+		  <label id="switch">
+		    <input onclick="change_style(this);" type="checkbox" id="styleSlider">
+		    <span class="slider round"></span>
+		  </label>
+		</th>
+		<!--
+		    <th for="day in daylist(false)" text="day"></th>
+		    -->
+              </tr>
+            </thead>
+	  </table>
+	</div>
+	<div id="weekTableWrapper">
+	  <table id="weekTable">
+            <tbody id="schedTbody">
 	      <!--
-		  <th for="day in daylist(false)" text="day"></th>
-		  -->
-            </tr>
-          </thead>
-          <tbody id="schedTbody">
-	    <!--
-		<tr for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
-		  <td text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
-		  <td for="day in daylist(true)" class="block">
-                    <div class="wrapper">
-                      <div class="wrapperInternal" data-hour="hour" data-day="day">
+		  <tr for="hour in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]">
+		    <td text="((hour - 1) % 12 + 1) + ':00'" class="time"></td>
+		    <td for="day in daylist(true)" class="block">
+                      <div class="wrapper">
+			<div class="wrapperInternal" data-hour="hour" data-day="day">
+			</div>
+			<div></div>                               
+			<div></div>                               
                       </div>
-                      <div></div>                               
-                      <div></div>                               
-                    </div>
-		  </td>
-		</tr>
-		-->
-          </tbody>
-	</table>
+		    </td>
+		  </tr>
+		  -->
+            </tbody>
+	  </table>
+	</div>
       </div>
 
       <div class="rightWrapper">
