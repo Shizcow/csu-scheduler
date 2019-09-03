@@ -89,7 +89,12 @@ if(app_config.CORStest === true){
     }
 })();
 
+/** window.onresize
+ * 
+ * Watches for content in weekTable body to be overflowing - IE there's a scrollbar
+ * If so, add some padding to header compensate and keep looking good
+ */
 window.onresize = function(){
-    w = document.getElementById("weekTableWrapper");
+    let w = document.getElementById("weekTableWrapper");
     document.getElementById("weekTableHead").style.borderRight = (w.offsetWidth - w.clientWidth).toString() + "px solid " + getComputedStyle(document.getElementById("schedThead")).backgroundColor;
-}
+};

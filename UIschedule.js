@@ -137,7 +137,8 @@ app.fillSchedule = function(referrer = null) {
 			    c.locked = !c.locked;
 			    app.savedCourseGenerator = ""; // force recalc
 			    app.fillSchedule();
-			    location.hash = app.generateHash(); // force hash update
+			    if(app.course !== null && !app.autoInAlts(app.courses[app.course], c))
+				location.hash = app.generateHash(false); // force hash update
 			};
 		    }(course);
 		    checkWrapper.style.top = courseHere.top * 100 + '%';
@@ -195,13 +196,12 @@ app.fillSchedule = function(referrer = null) {
 		    checkWrapper.innerText = "🔓 "; // open lock
 		checkWrapper.onclick = function(c){
 		    return function(ref){
-			console.log("pre-auto", app.selected.map(c => c.courseRegistrationCode))
 			app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.course_list_selection, true); // set selected to what's shown on schedule
 			c.locked = !c.locked;
 			app.savedCourseGenerator = ""; // force recalc
-			console.log("pre-fill", app.selected.map(c => c.courseRegistrationCode))
 			app.fillSchedule();
-			location.hash = app.generateHash(); // force hash update
+			if(app.course !== null && !app.autoInAlts(app.courses[app.course], c))
+			    location.hash = app.generateHash(false); // force hash update
 		    };
 		}(course);
 		ext.appendChild(checkWrapper);
@@ -540,7 +540,7 @@ app.loadHash = function(first = false){
     }
     var hashes = app.getHash().split("=")[1].split("&")[0].split(",");
     app.selected = app.courses.filter(function(course){
-	ret = hashes.map(hash => hash.replace("!", "")).indexOf(course.URLcode.toString());
+	let ret = hashes.map(hash => hash.replace("!", "")).indexOf(course.URLcode.toString());
 	if(ret > -1)
 	    course.closed = hashes[ret][hashes[ret].length-1] == "!";
 	return ret > -1;
