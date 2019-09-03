@@ -217,7 +217,7 @@ app.save = function() {
     
     schedules[app.currentstorage] = app.generateHash(true);
     window.localStorage.setItem('schedules', JSON.stringify(schedules));
-    window.localStorage.setItem('lastSaved', app.generateHash(false) + "!" + app.currentstorage);
+    window.localStorage.setItem('lastSaved', app.generateHash(false) + "?" + app.currentstorage);
     
     app.updateSaved();
     gtag('event', 'Schedules Saved');
@@ -260,7 +260,7 @@ app.load = function(schedule) {
     }
     app.updateNotes(document.getElementById("notes")); // fix style in case notes have been cached
     app.fillSchedule();
-    window.localStorage.setItem('lastSaved', app.generateHash(false) + "!" + app.currentstorage);
+    window.localStorage.setItem('lastSaved', app.generateHash(false) + "?" + app.currentstorage);
     return true;
 };
 

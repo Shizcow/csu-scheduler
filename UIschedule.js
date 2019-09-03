@@ -554,7 +554,7 @@ app.loadHash = function(first = false){
 	    if(JSON.parse(window.localStorage.schedules)[saves[i].innerText].split("+")[0] == app.getHash().split("#")[1])
 		possible.push(saves[i]);
 	var lastMatch = possible.filter(function(element){ // sees if there's any save that was also most recently used
-	    return JSON.parse(window.localStorage.schedules)[element.innerText].split("+")[0] + "!" + element.innerText == window.localStorage.lastSaved;
+	    return JSON.parse(window.localStorage.schedules)[element.innerText].split("+")[0] + "?" + element.innerText == window.localStorage.lastSaved;
 	});
 	if(!possible.length){ // no matches - probably completly new
 	    if((app.getHash().split("&")[0].split("=")[1].length > 0) && (app.generateHash(false) != window.localStorage["lastViewed"])) // make sure there are actually some courses
