@@ -450,28 +450,10 @@ app.fetchDescription = function(course){
 app.dayUpdate = function(){
     //first, hide weekends
     if(app.mode == "Automatic"){ // check if valid
-	if((app.selected.length == 0) || (app.courses_generator && app.courses_generator.data && app.courses_generator.data[app.course_list_selection])){
-	    //good to go
+	if((app.selected.length == 0) || (app.courses_generator && app.courses_generator.data && app.courses_generator.data[app.course_list_selection])) //good to go
 	    document.getElementById("noSchedWrapper").style.display = "none";
-	    if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
-		for(var i=1; i<=5; ++i){
-		    var trs = document.getElementById("schedTbody").children;
-		    for(var j=0; j<trs.length; ++j){
-			trs[j].children[i].style.display = "";
-		    }
-		}
-	    }
-	} else { // no valid schedules - show msg
+	else // no valid schedules - show msg
 	    document.getElementById("noSchedWrapper").style.display = "";
-	    if(document.getElementById("schedTbody").children[0].children[1].style.display == ""){
-		for(var i=1; i<=5; ++i){
-		    var trs = document.getElementById("schedTbody").children;
-		    for(var j=0; j<trs.length; ++j){
-			trs[j].children[i].style.display = "none";
-		    }
-		}
-	    }
-	} // let it continue - will wipe saturdays & sundays
     } else { // Manual - always valid
 	document.getElementById("noSchedWrapper").style.display = "none";
 	if(document.getElementById("schedTbody").children[0].children[1].style.display == "none"){
@@ -483,7 +465,6 @@ app.dayUpdate = function(){
 	    }
 	}
     }
-
     
     //then, show only what needed
     if((app.course === null ? app.selected : app.selected.concat(app.courses[app.course])) // saturday
@@ -542,7 +523,7 @@ app.loadHash = function(first = false){
     app.selected = app.courses.filter(function(course){
 	let ret = hashes.map(hash => hash.replace("!", "")).indexOf(course.URLcode.toString());
 	if(ret > -1)
-	    course.closed = hashes[ret][hashes[ret].length-1] == "!";
+	    course.locked = hashes[ret][hashes[ret].length-1] == "!";
 	return ret > -1;
     });
     document.getElementById("closedCheck").checked = Boolean(app.getHash().split("&")[1]);

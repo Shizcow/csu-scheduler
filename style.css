@@ -181,6 +181,10 @@ table .item.selected.hovering {
     position: absolute;
     right: 1%;
     cursor: pointer;
+    -webkit-user-select: none;     
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .autoLock.hovering{
@@ -306,6 +310,7 @@ table .item.selected.hovering {
 }
 
 #noSchedWrapper{
+    position: absolute;
     padding-left: 50px;
     padding-top: 26px;
     height: 100%;
@@ -313,6 +318,7 @@ table .item.selected.hovering {
 }
 
 #noSchedAlign{
+    background-color: #eeea;
     height: 100%;
     width: 100%;
     display: flex;
@@ -321,6 +327,9 @@ table .item.selected.hovering {
 }
 
 #noSched{
+    border-radius: 100px;
+    z-index: 6;
+    background: #ddd;
     width: 400px;
     text-align: center;
 }

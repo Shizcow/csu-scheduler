@@ -120,3 +120,11 @@ To fix the above for the dropdown - it renders ugly with a changed background
 .title {
     color: #cae682;
 }
+
+#noSchedAlign{
+    background-color: #555a;
+}
+
+#noSched{
+    background-color: #242424;
+}
