@@ -55,7 +55,7 @@ This section contains options useful for non-production versions
  * @memberOf app_config
  * @constant
  */
-app_config.test_percent_cap = 100;
+app_config.test_percent_cap = 1;
 
 /**
  * app_config.chunk

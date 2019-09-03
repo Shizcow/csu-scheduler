@@ -109,7 +109,6 @@ class Lazy{
 	var data = this.data[i];
 	if(!data)
 	    return false; // no valid schedules
-	console.log("data i: ", i, " data:", this.data[i].selected.map(c => c.courseRegistrationCode))
 	if(set) // set selected on either a click, or on a autobar change
 	    app.selected = data.selected; // update selected on click
 	location.hash = app.generateHash(false); // update url
@@ -169,7 +168,6 @@ app.autoConstruct = function(courses){
 	app.courses_generator = new Lazy(courses);
 	return app.courses_generator;
     }
-    console.log("courses pre-comp: ", courses.map(c => c.courseRegistrationCode))
     //automatic generator
     if("A"+app.removeDuplicatesBy(course => course.home, courses).map(el => el.home.URLcode).filter(c => c).join() + (app.closed ? "C" : "") == app.savedCourseGenerator)
 	return app.courses_generator || new Lazy([]); // don't have to run the calculation for every hour in every day
@@ -181,7 +179,6 @@ app.autoConstruct = function(courses){
     var range = document.getElementById('Range');
     range.max = 0;
     range.value = 0; // and reset render
-    console.log("courses pre-typePack: ", courses.map( c => c.courseRegistrationCode))
     app.courses_generator = new Lazy(app.cartesianProduct(app.removeDuplicatesBy(course => course.home, courses).reduce(function(acc, course){ // expands courses into all alt lists
 	course.home.alts.forEach(function(typePack){ // move in every typePack
 	    // first, factor in any locked courses
@@ -249,7 +246,6 @@ app.removeDuplicatesBy = function(keyFn, array) {
  * @constant
  */
 app.cartesianProduct = function*(dimensions){
-    console.log("dimensions: ", dimensions)
     if(dimensions.map(dimension => dimension.length == 0).reduce((acc, cur) => (acc || cur), false))
 	return; // there's an empty dimension - this means all the courses in it are closed
     if(dimensions.length <= 1){ // no need to calculate for 1 length lists (0 neither) - just yield each schedule
