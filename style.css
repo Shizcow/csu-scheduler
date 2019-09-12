@@ -155,7 +155,7 @@ table .block .wrapper>div {
 table .item {
     position: absolute;
     background: rgba(47, 130, 224, 0.4);
-    z-index: 2;
+    z-index: 3;
     width: 99%;
     padding: 2px;
     overflow: hidden;
@@ -194,7 +194,6 @@ table .closedMsg {
 .autoLock{
     background-color: white;
     border: 1px solid black;
-    z-index: 3;
     position: absolute;
     right: 1%;
     cursor: pointer;
@@ -202,9 +201,10 @@ table .closedMsg {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    z-index: 2;
 }
 
-.autoLock.hovering{
+.autoLock.hovering {
     z-index: 5;
 }
 
