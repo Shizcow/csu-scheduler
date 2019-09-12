@@ -110,7 +110,7 @@ app.fillSchedule = function(referrer = null) {
 	app.course_list_selection = referrer.value;
     app.course = document.getElementById("selectBox").value != "" ? parseInt(document.getElementById("selectBox").value, 10) : null;
     var wrappers = document.getElementsByClassName("wrapperInternal");
-    var schedule = app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
+    var schedule = app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null), true).get(app.mode == 'Manual' ? 0 : app.course_list_selection);
     // Then, cycle through and build a divlist -- needed for onclick listeners
     var divTracker = [];
     for(var i=0; i < wrappers.length; ++i){
@@ -170,6 +170,17 @@ app.fillSchedule = function(referrer = null) {
 		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 		div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 		ext.appendChild(div);
+
+
+		
+		if(app.closed && app.mode == "Manual" && !course.locked && course.seatsAvailable == 0){ // show as grey
+		    let msg = document.createElement("div");
+		    msg.className = "closedMsg";
+		    msg.innerText = "CLOSED";
+		    ext.appendChild(msg);
+		}
+		
+		
 		wrapper.appendChild(ext);
 		divTracker.push(div);
 	    }

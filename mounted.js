@@ -68,7 +68,7 @@ window.onload = function(){
 	waiter: null,
 	advanceNextButton: function(e){
 	    app.genNext(nextButton);
-	    longpress.waiter = setTimeout(longpress.advanceNextButton, 50);
+	    longpress.waiter = setTimeout(longpress.advanceNextButton, 1);
 	},
 	pressingDown: function(e){
 	    app.genNext(nextButton);
