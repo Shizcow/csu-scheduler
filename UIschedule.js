@@ -132,7 +132,7 @@ app.fillSchedule = function(referrer = null) {
 			checkWrapper.innerText = "🔒"; // closed lock
 		    else
 			checkWrapper.innerText = "🔓 "; // open lock
-		    checkWrapper.onclick = function(c){
+		    checkWrapper.onclick = function(c, w){
 			return function(ref){
 			    app.autoConstruct(app.selected.concat(app.course !== null ? app.courses[app.course] : null)).get(app.course_list_selection, true); // set selected to what's shown on schedule
 			    c.locked = !c.locked;
@@ -141,7 +141,7 @@ app.fillSchedule = function(referrer = null) {
 			    if(app.course !== null && !app.autoInAlts(app.courses[app.course], c))
 				location.hash = app.generateHash(false); // force hash update
 			};
-		    }(course);
+		    }(course, checkWrapper);
 		    checkWrapper.style.top = courseHere.top * 100 + '%';
 		    ext.appendChild(checkWrapper);
 		}
@@ -241,6 +241,16 @@ app.fillSchedule = function(referrer = null) {
 	    if(!app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)) // run a single update instantly - fixes flashing in some cases
 		div.classList.add("selected");
 	    ext.appendChild(div);
+	    if(!app.closed && app.mode == "Manual" && !course.locked && course.seatsAvailable <= 0){ // show as grey
+		let align = document.createElement("div");
+		align.className = "closedAlign";
+		let msg = document.createElement("div");
+		msg.className = "closedMsg";
+		msg.innerText = "CLOSED";
+		
+		align.appendChild(msg);
+		div.insertBefore(align, div.childNodes[0]);
+	    }
 	    web.appendChild(ext);
 	    divTracker.push(div);
 	}
