@@ -282,13 +282,13 @@ app.fillSchedule = function(referrer = null) {
 		document.getElementById("selectBox").value = "";
 	    };
 	}(app.courses[divTracker[j].getAttribute("data-index")]);
-	divTracker[j].onmouseenter = function(course){
+	divTracker[j].parentElement.onmouseover = function(course){
 	    return function(){
 		app.hovering = app.autoAndLabs(course);
 		update();
 	    };
 	}(app.courses[divTracker[j].getAttribute("data-index")]);
-	divTracker[j].onmouseleave = function(){
+	divTracker[j].parentElement.onmouseout = function(){
 	    return function(){
 		app.hovering = [];
 		update();
