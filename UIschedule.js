@@ -124,6 +124,7 @@ app.fillSchedule = function(referrer = null) {
 	    var courseHere = app.courseHere(day, hour, course);
 	    if(course && courseHere){
 		var ext = document.createElement("div");
+		
 		if(app.mode == "Automatic" || !app.autoInAlts(course, app.course !== null ? app.courses[app.course] : null)){
 		    var checkWrapper = document.createElement("div");
 		    checkWrapper.className = "autoLock";
@@ -146,6 +147,7 @@ app.fillSchedule = function(referrer = null) {
 		}
 		
 		var div = document.createElement("div");
+		
 		div.className = "item";
 		var innerText = course.subject + ' ' + course.courseNumber + '\n' + course.title.replace(/&ndash;/g, "–") + '\n' + (course.faculty.trim().length ? (course.faculty + '\n') : "") + (courseHere.loc.length ? (courseHere.loc + '\n') : "") + course.credits + ' credit' + (course.credits !=1 ? 's' : '') + '\n';
 		if((course.seatsAvailable !== undefined) && (course.maximumEnrollment !== undefined))
@@ -169,17 +171,18 @@ app.fillSchedule = function(referrer = null) {
 		div.style.top = div.getAttribute("data-top") * 100 + '%';
 		div.style.height = app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
 		div.style.minHeight = !app.hovering.includes(course) ? 'auto' : div.getAttribute("data-length") * 100 + '%';
-		ext.appendChild(div);
-
-
 		
-		if(app.closed && app.mode == "Manual" && !course.locked && course.seatsAvailable == 0){ // show as grey
+		if(!app.closed && app.mode == "Manual" && !course.locked && course.seatsAvailable <= 0){ // show as grey
+		    let align = document.createElement("div");
+		    align.className = "closedAlign";
 		    let msg = document.createElement("div");
 		    msg.className = "closedMsg";
 		    msg.innerText = "CLOSED";
-		    ext.appendChild(msg);
+		    
+		    align.appendChild(msg);
+		    div.insertBefore(align, div.childNodes[0]);
 		}
-		
+		ext.appendChild(div);
 		
 		wrapper.appendChild(ext);
 		divTracker.push(div);

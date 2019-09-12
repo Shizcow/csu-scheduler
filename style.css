@@ -174,13 +174,21 @@ table .item.selected.hovering {
     z-index: 4;
 }
 
-table .closedMsg {
+.closedAlign {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    background-color: #FFFA;
+    background-color: #FFFD;
+}
+
+table .closedMsg {
+    text-align: center;
+    font-weight: bold;
 }
 
 .autoLock{
