@@ -284,6 +284,7 @@ app.fillSchedule = function(referrer = null) {
 	    }
 	};
     }(divTracker);
+    update(); // force hover update - if not here, app.hovering might accidentally get cleared
     for(var j=0; j<divTracker.length; ++j){
 	divTracker[j].ondblclick = function(course){
 	    return function(){
