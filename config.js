@@ -827,7 +827,7 @@ app_config.CORStest = true;
  * @memberOf app_config
  * @constant
  */
-app_config.CORScustom = "If you\'d like to use this tool without needing an extension, go bother Joe Rymski, Director of Web Communications, (Joe.Rymski@colostate.edu) and say you like this tool and want to see it used freeley.";
+app_config.CORScustom = "If you\'d like to use this tool without needing an extension and have some programming knowlege, contact Devin.Pohl@colostate.edu. Otherwise, just be patitent.";
 
 
 // You're almost done!
