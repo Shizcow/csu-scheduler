@@ -34,15 +34,20 @@ window.onload = function(){
     document.getElementById("closedCheck").checked = app.closed;
 
     //check CORS
-    (new Searcher("test")).start(function(success){
-	if(success){
-	    document.getElementById("loading").style.display = "none";
-	    document.getElementById("main").style.display = "";
-	} else {
-	    document.getElementById("loading").style.display = "none";
-	    document.getElementById("cors").style.display = "";
-	}
-    });
+    if(app_config.CORStest){
+	(new Searcher("test")).start(function(success){
+	    if(success){
+		document.getElementById("loading").style.display = "none";
+		document.getElementById("main").style.display = "";
+	    } else {
+		document.getElementById("loading").style.display = "none";
+		document.getElementById("cors").style.display = "";
+	    }
+	});
+    } else {
+	document.getElementById("loading").style.display = "none";
+	document.getElementById("main").style.display = "";	
+    }
 
     //load terms -> then load courses and everything else
     (new Searcher("terms")).start(function(response){
