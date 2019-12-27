@@ -189,7 +189,7 @@ app_config.useCredentials = false;
  * @memberOf app_config
  * @constant
  */
-app_config.URLprefix = 'http://shizcow-pi.ddns.net/csu-crawler?';
+app_config.URLprefix = 'https://shizcow-pi.ddns.net/csu-crawler?';
 
 /**
  * Before we continue, it's time to introcude the GETPOST object
