@@ -45,7 +45,7 @@ TermCacher
  * @constant
  */
 let postProcessCourses = function(courses){
-    return courses
+    var ret = courses
 	.filter(function(course){ // remove courses that don't have a scheduled time / can't be shown on the board
 	    return course.meetings.reduce(function(acc, cur){
 		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur[_cur], false)||cur.building=="ONLINE";
@@ -94,6 +94,8 @@ let postProcessCourses = function(courses){
 	    course.index = i;
 	    return course;
 	});
+    ret[0].term = app.term;
+    return ret;
 };
 
 
