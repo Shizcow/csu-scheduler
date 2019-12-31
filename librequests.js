@@ -23,30 +23,29 @@ TermCacher
 /**
  * postProcessCourses(courses)
  * 
- * after a term is fully loaded, all courses are extracted and ran through here				 
- * a few important steps are taken:									 
- * 1) if a course has no meeting times, get rid of it							 
- * 2) if a course is a honors section, remove the honors in the scheduleTypeDescription			 
- *    this allows honors sections to still appear as honors but render like normal courses		 
- * 3) build alts list											 
- *    this step is important for automatic mode								 
- *    this will take all classes with the same number (ex: MATH 101)					 
- *    then seperate them into lectures, labs, recitation, workshops, ect.				 
- *    and place those in a list of [[lecture...],[lab...],[rec...]]					 
- *    then, link that list in the FIRST course of that name						 
- *    and for all other courses, add a .home member which points to that first course			 
- * 4) add an index to each course									 
- *    this is done because HTML <selection>s don't support objects in <option>s				 
+ * after a term is fully loaded, all courses are extracted and ran through here
+ * a few important steps are taken:
+ * 1) if a course has no meeting times, get rid of it
+ * 2) if a course is a honors section, remove the honors in the scheduleTypeDescription 
+ *    this allows honors sections to still appear as honors but render like normal courses 
+ * 3) build alts list 
+ *    this step is important for automatic mode 
+ *    this will take all classes with the same number (ex: MATH 101) 
+ *    then seperate them into lectures, labs, recitation, workshops, ect. 
+ *    and place those in a list of [[lecture...],[lab...],[rec...]] 
+ *    then, link that list in the FIRST course of that name 
+ *    and for all other courses, add a .home member which points to that first course 
+ * 4) add an index to each course 
+ *    this is done because HTML <selection>s don't support objects in <option>s 
  *    so, instead we store the index of the course and when we pull it out, look in the big list by index
  * 
  * @param   {!Array<!Course>} courses    courses to process
- * @param   {string}          term       what term to label courses with
  * @returns {!Array<!Course>}            processed courses
  *
  * @constant
  */
-let postProcessCourses = function(courses, term){
-    let ret = courses
+let postProcessCourses = function(courses){
+    return courses
 	.filter(function(course){ // remove courses that don't have a scheduled time / can't be shown on the board
 	    return course.meetings.reduce(function(acc, cur){
 		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur[_cur], false)||cur.building=="ONLINE";
@@ -95,8 +94,6 @@ let postProcessCourses = function(courses, term){
 	    course.index = i;
 	    return course;
 	});
-    ret[0].term = term;
-    return ret;
 };
 
 
@@ -336,7 +333,7 @@ class TermManager{
 					.sort((a, b) => a.offset - b.offset) // sort them all, because they probably won't load in order
 					.reduce(function(acc, cur){ // and unwrap them all
 					    return acc.concat(cur.courses); // into one big array
-					}, []), TermManager_ref.term
+					}, [])
 				); // then post process them so automatic mode actually works
 				
 				TermManager_ref.done = true;
