@@ -219,17 +219,15 @@ app.save = function() {
     window.localStorage.setItem('schedules', JSON.stringify(schedules));
     window.localStorage.setItem('lastSaved', app.generateHash(false) + "?" + app.currentstorage);
 
-    app.load(app.currentstorage);
-
-    /* makes sure it was saved
-var teststate = function(){
-for(var i=0; i<app.selected.sort((a, b) => a.URLcode - b.URLcode).map(c=>c.URLcode).length; ++i)
-    if (app.courses_generator.data[app.course_list_selection].selected.sort((a, b) => a.URLcode - b.URLcode).map(c=>c.URLcode)[i] != app.selected.sort((a, b) => a.URLcode - b.URLcode).map(c=>c.URLcode)[i])
-        return false;
-return true;}
-*/
-
-    // think we need to 1) set hash, 2) load from hash
+    app.selected = [];
+    app.course_list_selection = 0;
+    var range = document.getElementById('Range');
+    range.max = 0;
+    range.value = 0;
+    app.courses_generator = null;
+    app.savedCourseGenerator = "";
+    app.loadHash();
+    app.autoBar();
     
     app.updateSaved();
     gtag('event', 'Schedules Saved');
