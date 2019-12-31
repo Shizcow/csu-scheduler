@@ -179,7 +179,7 @@ app.changedTerm = function(loadHash = false, referrer = null){
     app.termCacher.push(app.term, function(_loadHash){
 	return function(courses){
 	    // update UI
-	    var dry_run = app.courses[0] && app.courses[0].term == courses[0].term;
+	    var dry_run = app.courses[0] && (app.courses[0].term == courses[0].term);
 	    // sometimes we end up switching from one term to the same term, so don't
 	    // bother with doing all these slow things
 	    if(!dry_run){
@@ -188,8 +188,8 @@ app.changedTerm = function(loadHash = false, referrer = null){
 	    }
 	    if(_loadHash)
 		app.loadHash(_loadHash == "first");
-	    app.fillSchedule();
 	    if(!dry_run){
+		app.fillSchedule();
 		app.fillSearch();
 		var notes = document.getElementById("notes");
 		if(notes !== null)

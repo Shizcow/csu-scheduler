@@ -40,12 +40,13 @@ TermCacher
  *    so, instead we store the index of the course and when we pull it out, look in the big list by index
  * 
  * @param   {!Array<!Course>} courses    courses to process
+ * @param   {string}          term       what term to label courses with
  * @returns {!Array<!Course>}            processed courses
  *
  * @constant
  */
-let postProcessCourses = function(courses){
-    var ret = courses
+let postProcessCourses = function(courses, term){
+    let ret = courses
 	.filter(function(course){ // remove courses that don't have a scheduled time / can't be shown on the board
 	    return course.meetings.reduce(function(acc, cur){
 		return acc||["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].reduce((_acc,_cur)=>_acc||cur[_cur], false)||cur.building=="ONLINE";
@@ -94,7 +95,7 @@ let postProcessCourses = function(courses){
 	    course.index = i;
 	    return course;
 	});
-    ret[0].term = app.term;
+    ret[0].term = term;
     return ret;
 };
 
@@ -335,7 +336,7 @@ class TermManager{
 					.sort((a, b) => a.offset - b.offset) // sort them all, because they probably won't load in order
 					.reduce(function(acc, cur){ // and unwrap them all
 					    return acc.concat(cur.courses); // into one big array
-					}, [])
+					}, []), TermManager_ref.term
 				); // then post process them so automatic mode actually works
 				
 				TermManager_ref.done = true;
