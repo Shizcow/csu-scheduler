@@ -218,6 +218,8 @@ app.save = function() {
     schedules[app.currentstorage] = app.generateHash(true);
     window.localStorage.setItem('schedules', JSON.stringify(schedules));
     window.localStorage.setItem('lastSaved', app.generateHash(false) + "?" + app.currentstorage);
+
+    app.load(app.currentstorage);
     
     app.updateSaved();
     gtag('event', 'Schedules Saved');
