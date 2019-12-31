@@ -295,9 +295,11 @@ app.updatePercent = function(){
 app.updateNotes = function(noteBox){
     if(!noteBox)
 	return;
-    noteBox.style.height='25px';
-    noteBox.style.height=(noteBox.scrollHeight+25)+'px';
-    app.saveMarker();
+    if(noteBox.style.height != (noteBox.scrollHeight+25)+'px'){
+	noteBox.style.height='25px';
+	noteBox.style.height=(noteBox.scrollHeight+25)+'px';
+	app.saveMarker();
+    }
 };
 
 /**
