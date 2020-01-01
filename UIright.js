@@ -204,27 +204,13 @@ app.changedTerm = function(loadHash = false, referrer = null){
  * @constant
  */
 app.genDivs = function(loadSelect = true){
-    var courses_auto = app.courses.reduce(function(acc, cur){
-	if(acc.length > 0){
-	    if(cur.subject + cur.courseNumber != acc[acc.length-1].subject + acc[acc.length-1].courseNumber){
-		return acc.concat(cur); // add new
-	    } else {
-		return acc; // ignore duplicate
-	    }
-	} else {
-	    return [cur]; // first iteration - set up accumulator
-	}
-    }, []);
     app.courses_manual = "";
-    for(var i = 0; i < app.courses.length; i++){
-	var c = app.courses[i];
-	app.courses_manual += '<option value="' + c.index + '">' + c.subject + ' ' + c.courseNumber + (c.sessionMod ? c.sessionMod : "") + ': ' + c.title + "</option>";
-    }
+    for(var i = 0; i < app.courses.length; i++)
+	app.courses_manual += '<option value="' + app.courses[i].index + '">' + app.courses[i].subject + ' ' + app.courses[i].courseNumber + (app.courses[i].sessionMod ? app.courses[i].sessionMod : "") + ': ' + app.courses[i].title + "</option>";
     app.courses_auto = "";
-    for(var i = 0; i < courses_auto.length; i++){
-	var c = courses_auto[i];
-	app.courses_auto += '<option value="' + c.index + '">' + c.subject + ' ' + c.courseNumber + ': ' + c.title + "</option>";
-    }
+    for(var i=0; i < app.courses.length; ++i)
+	if(i == 0 || (app.courses[i].subject + app.courses[i].courseNumber != app.courses[i-1].subject + app.courses[i-1].courseNumber))
+	    app.courses_auto += '<option value="' + app.courses[i].index + '">' + app.courses[i].subject + ' ' + app.courses[i].courseNumber + ': ' + app.courses[i].title + "</option>";
     document.getElementById("coursesBox").style.display = "";
     document.getElementById("loadingCourses").style.display = "none";
 };
