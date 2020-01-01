@@ -215,21 +215,15 @@ app.genDivs = function(loadSelect = true){
 	    return [cur]; // first iteration - set up accumulator
 	}
     }, []);
-    app.courses_manual = [];
+    app.courses_manual = "";
     for(var i = 0; i < app.courses.length; i++){
 	var c = app.courses[i];
-	var el = document.createElement("option");
-	el.innerHTML = c.subject + ' ' + c.courseNumber + (c.sessionMod ? c.sessionMod : "") + ': ' + c.title;
-	el.value = c.index;
-	app.courses_manual.push(el);
+	app.courses_manual += '<option value="' + c.index + '">' + c.subject + ' ' + c.courseNumber + (c.sessionMod ? c.sessionMod : "") + ': ' + c.title + "</option>";
     }
-    app.courses_auto = [];
+    app.courses_auto = "";
     for(var i = 0; i < courses_auto.length; i++){
 	var c = courses_auto[i];
-	var el = document.createElement("option");
-	el.innerHTML = c.subject + ' ' + c.courseNumber + ': ' + c.title;
-	el.value = c.index;
-	app.courses_auto.push(el);
+	app.courses_auto += '<option value="' + c.index + '">' + c.subject + ' ' + c.courseNumber + ': ' + c.title + "</option>";
     }
     document.getElementById("coursesBox").style.display = "";
     document.getElementById("loadingCourses").style.display = "none";
@@ -304,11 +298,7 @@ app.updateNotes = function(noteBox){
 app.fillSearch = function(referrer = null) {
     var selectBox = document.getElementById("selectBox");
     var val = selectBox.value;
-    while(selectBox.lastChild.value != "")
-	selectBox.removeChild(selectBox.lastChild);
-    var courses = app.autoFilter(referrer);
-    for(var i = 0; i < courses.length; i++)
-	selectBox.appendChild(courses[i]);
+    selectBox.innerHTML = app.autoFilter(referrer);
     selectBox.value = val;
     app.hideSearch();
 };
@@ -321,7 +311,7 @@ app.fillSearch = function(referrer = null) {
  *
  * @param   {?Element}         referrer
  *
- * @returns {!Array<?Element>}
+ * @returns {string}
  *
  * @memberof app
  * @constant
