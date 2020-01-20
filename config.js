@@ -16,6 +16,8 @@ Those sections are as follows:
  L->Used to process incoming requests and construct course objects
 -misc
  L->Used for determining names of files, error messages, and your college's name
+
+NOTE: This project requires minification. Run the make command to see changes in browser.
 */
 
 /**
