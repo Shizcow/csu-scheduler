@@ -9,9 +9,7 @@ Features include:
 -Dark<=>Light mode slider in top left  
 -Automatic schedule generation - change mode to automatic and you can start off with an already valid schedule  
 -Notes that can be saved alongside schedules  
--And a lot more  
-
-Currently in Beta.
+-Locks to keep closed courses on the board, or to keep in place in automatic mode  
 
 
 # Want to contribute or use for your college?
