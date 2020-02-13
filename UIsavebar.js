@@ -8,31 +8,31 @@ animator object
 >contains functions needed for drag-drop rearranging saves
 >also adds window.onmouseup and window.onmousedown listeners for animator
 
-saveMarker()
+app.saveMarker()
 >shows/hides everything in <div class="floatRight"> tag
 
-updateSaved()
+app.updateSaved()
 >renders in all the saved schedules buttons into the <div id="saves"> tag
 
-save()
+app.save()
 >saves the currently selected schedule
 
-load()
+app.load()
 >loads the selected saved schedule
 
-discard()
+app.discard()
 >discards changes made to a loaded schedule
 
-saveNew()
+app.saveNew()
 >saves the currently selected schedule into a new save
 
-deleteSchedule()
+app.deleteSchedule()
 >removes the saved schedule which the user is currently viewing
 
-clear()
+app.clear()
 >clears the board and de-selects any currently selected schedules
 
-showExport()
+app.showExport()
 >generates and shows everything needed to share a schedule
 */
 

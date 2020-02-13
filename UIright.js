@@ -181,9 +181,9 @@ app.changedTerm = function(loadHash = false, referrer = null){
 	    // update UI
 	    app.courses = courses;
 	    app.genDivs();
-	    app.loadHash(_loadHash == "first");
 	    app.fillSchedule();
 	    app.fillSearch();
+	    app.loadHash(_loadHash == "first");
 	    var notes = document.getElementById("notes");
 	    if(notes !== null)
 		app.updateNotes(notes); // fix style in case notes have been cached
@@ -324,8 +324,11 @@ app.hideSearch = function(referrer = null) {
     }
     var options = document.getElementById("selectBox").children;
     var search = document.getElementById("searchBox").value.toLowerCase();
-    for(var i=1; i < options.length; ++i)
+    for(var i=1; i < options.length; ++i){
+	if(app.courses[options[i].value] === undefined)
+	    console.log(i);
 	options[i].style.display = app.filterSearch(app.courses[options[i].value], search) ? "" : "none";
+    }
 };
 
 /**
