@@ -324,11 +324,8 @@ app.hideSearch = function(referrer = null) {
     }
     var options = document.getElementById("selectBox").children;
     var search = document.getElementById("searchBox").value.toLowerCase();
-    for(var i=1; i < options.length; ++i){
-	if(app.courses[options[i].value] === undefined)
-	    console.log(i);
+    for(var i=1; i < options.length; ++i)
 	options[i].style.display = app.filterSearch(app.courses[options[i].value], search) ? "" : "none";
-    }
 };
 
 /**
