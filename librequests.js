@@ -139,11 +139,12 @@ class Searcher{
      * starts the request
      * if already loaded, callback is executed immediatly
      *
-     * @param {?function(string)|?function(boolean)} [callback]  function which will be executed upon completion
+     * @param {?function(string)|?function(boolean)} [callback]        executed upon successful completion
+     * @param {?function(number, string)}            [callback_error]  executed on unexpected HTTP error
      *
      * @constant
      */
-    start(callback = null){
+    start(callback = null, callback_error = null){
 	if(this.xhr || this.done) // don't restart if not needed
 	    return;
 	var GETPOST = {};
@@ -219,7 +220,8 @@ class Searcher{
 		    return;
 		}
 		else if(this.status != 200 && this.status != 0){
-		    console.error("A network request failed with code " + this.status.toString()); // might need in the future for testing errors
+		    if(callback_error)
+			callback_error(this.status, this.responseText); // handle error
 		}
 	    };
 	}(this);

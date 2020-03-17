@@ -47,7 +47,10 @@ app.click()
 
 app.loadHash()
 >loads a hash from URL
- */
+*/
+
+// Extern for gtag
+var gtag;
 
 // remove app.course and re-render
 // used to de-select a pending (rendered in blue) course
