@@ -219,9 +219,11 @@ class Searcher{
 		    ref.xhr = null;
 		    return;
 		}
-		else if(this.status != 200 && this.status != 0){
+		else if(this.status != 200 && this.readyState == 4){
 		    if(callback_error)
 			callback_error(this.status, this.responseText); // handle error
+		    else
+			console.error("Unhandled erorr on HTTP request: ", this.status.toString());
 		}
 	    };
 	}(this);
@@ -365,6 +367,13 @@ class TermManager{
 				    }
 				}
 				// if we reach here, all of our saves are loaded and there's nothing else to do
+			    }
+			}, function(error_code, error_message){
+			    if(error_code == 404) {
+				if(error_message == "Cache not warm")
+				    alert("It looks like the server just started recently and has not downloaded data for this term yet. Please try again in a few minutes.");
+				else if(error_message !== "")
+				    console.error("Unhandled error " + error_code+":"+error_message);
 			    }
 			});
 		    });
