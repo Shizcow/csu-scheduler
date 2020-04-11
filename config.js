@@ -191,7 +191,7 @@ app_config.useCredentials = false;
  * @memberOf app_config
  * @constant
  */
-app_config.URLprefix = 'https://shizcow-pi.ddns.net/csu-crawler?';
+app_config.URLprefix = 'https://csu-crawler.wm.r.appspot.com/';
 
 /**
  * Before we continue, it's time to introcude the GETPOST object
@@ -245,7 +245,7 @@ app_config.URLgetTerms = function(GETPOST){
  */
 app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
     GETPOST.openMethod = "GET";
-    GETPOST.url = app_config.URLprefix + "t=" + termURLcode;
+    GETPOST.url = app_config.URLprefix + "term?" + termURLcode;
 };
 
 /**
@@ -262,7 +262,7 @@ app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
  */
 app_config.URLgetDescription = function(GETPOST, termURLcode, courseURLcode){
     GETPOST.openMethod = "GET";
-    GETPOST.url = app_config.URLprefix + "t=" + termURLcode + "&d=" + courseURLcode;
+    GETPOST.url = app_config.URLprefix + "description?t=" + termURLcode + "&c=" + courseURLcode;
 };
 
 /**
@@ -798,7 +798,7 @@ app_config.CORStest = false;
  * @memberOf app_config
  * @constant
  */
-app_config.CORScustom = "If you\'d like to use this tool without needing an extension and have some programming knowlege, contact Devin.Pohl@colostate.edu. Otherwise, just be patitent.";
+app_config.CORScustom = "";
 
 
 // You're almost done!
