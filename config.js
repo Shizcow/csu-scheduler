@@ -1,3 +1,4 @@
+
 /* config.js
 This file contains various configs for developing or adapting to other colleges
 If you're lucky, this file contains everything you need to do so
@@ -191,7 +192,7 @@ app_config.useCredentials = false;
  * @memberOf app_config
  * @constant
  */
-app_config.URLprefix = 'https://csu-crawler.wm.r.appspot.com/';
+app_config.URLprefix = 'https://api.pohldev.in/csucrawler/';
 
 /**
  * Before we continue, it's time to introcude the GETPOST object
