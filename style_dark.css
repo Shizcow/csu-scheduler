@@ -104,26 +104,24 @@ table .item.selected.hovering, .selectedList div.selected:hover {
 }
 
 .export, .description {
-    background: rgba(0, 0, 0, .5);
+    background: #222;
 }
 
 .export .wrapper, .description .wrapper {
     background: #555555;
 }
 
-.export textarea, .export input, .right select:not(#termSelect), #searchBox, #selectBox>option, #notes, #nextButton {
-    background: #f6f3e8;
-    color: #242424;
+.export textarea, .export input, .right select:not(#termSelect), #searchBox, #selectBox>option, #notes, #nextButton, select {
+    background: #242424;
+    color: #f6f3e8;
 }
 
 /*
 To fix the above for the dropdown - it renders ugly with a changed background
 */
-#termSelect {
-    color: #242424;
-}
-#termSelect>option {
-    color: #242424;
+#termSelect, #termSelect>option {
+    background: #242424;
+    color: #f6f3e8;
 }
 
 .title {
@@ -146,3 +144,5 @@ To fix the above for the dropdown - it renders ugly with a changed background
 input:checked + .slider {
     background-color: #555;
 }
+
+textarea
