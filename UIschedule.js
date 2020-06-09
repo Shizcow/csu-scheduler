@@ -72,11 +72,21 @@ window.addEventListener("keydown", function (e) {
  * @param {!Element} styleSlider  top left slider
  */
 let change_style = function(styleSlider){
+    let plugin_detected = false;
     for(var i = 0; i<document.styleSheets.length; ++i)
-	if(document.styleSheets[i].href.includes("style_dark.min.css"))
+	if(document.styleSheets[i].href == null)
+	    plugin_detected = true;
+	else if(document.styleSheets[i].href.includes("style_dark.min.css"))
 	    document.styleSheets[i].disabled = !styleSlider.checked;
-    document.getElementById('logo').src = app_config.getLogoName(styleSlider.checked);
-    window.localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
+    if(plugin_detected) { // if there's a plugin, 99% chance it's darkreader or similar
+	window.localStorage.darkMode = true; // so assume dark mode
+	document.styleSheets[0].disabled = true;
+	document.getElementById('logo').src = app_config.getLogoName(true);
+	styleSlider.style.display = "none";
+    } else {
+	document.getElementById('logo').src = app_config.getLogoName(styleSlider.checked);
+	window.localStorage.darkMode = styleSlider.checked.toString(); // see mounted.js for storage value handling on page re/load
+    }
 };
 
 /**
