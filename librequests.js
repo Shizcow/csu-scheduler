@@ -370,7 +370,8 @@ class TermManager{
 			    }
 			}, function(error_code, error_message){
 			    if(error_code == 404) {
-				if(error_message == "Cache not warm")
+				if(error_message == "Cache not warm"
+				   && app.term == TermManager_ref.term)
 				    alert("It looks like the server just started recently and has not downloaded data for this term yet. Please try again in a few minutes.");
 				else if(error_message !== "")
 				    console.error("Unhandled error " + error_code+":"+error_message);

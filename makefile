@@ -13,3 +13,6 @@ default:
 
 	@echo "->minifing was a success"
 	@echo "Output written to: [min.js, style.min.css, style_dark.min.css, index.html]"
+
+test:	default
+	firefox index.html
