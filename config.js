@@ -1,4 +1,3 @@
-
 /* config.js
 This file contains various configs for developing or adapting to other colleges
 If you're lucky, this file contains everything you need to do so
@@ -168,7 +167,7 @@ and see JSON coming in properly. If you can get this to work, continue on to the
  * @memberOf app_config
  * @constant
  */
-app_config.useCredentials = false;
+app_config.useCredentials = true;//false;
 
 /**
  * app_config.URLprefix
@@ -192,7 +191,8 @@ app_config.useCredentials = false;
  * @memberOf app_config
  * @constant
  */
-app_config.URLprefix = 'https://api.pohldev.in/csucrawler/';
+//app_config.URLprefix = 'https://api.pohldev.in/csucrawler/';
+app_config.URLprefix = 'https://bannerxe.is.colostate.edu/StudentRegistrationSsb/ssb/';
 
 /**
  * Before we continue, it's time to introcude the GETPOST object
@@ -227,7 +227,9 @@ var GETPOST;
 app_config.URLgetTerms = function(GETPOST){
     GETPOST.openMethod = "GET";
     // GET request - no need to set postData
-    GETPOST.url = app_config.URLprefix + "terms";
+    //GETPOST.url = app_config.URLprefix + "terms";
+    //GETPOST.url = app_config.URLprefix + "classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566";
+    GETPOST.url = app_config.URLprefix + "courseSearch/getTerms?searchTerm=&offset=1&max=100&_=1600789612817";
 };
 
 /**
@@ -246,7 +248,9 @@ app_config.URLgetTerms = function(GETPOST){
  */
 app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
     GETPOST.openMethod = "GET";
-    GETPOST.url = app_config.URLprefix + "term?" + termURLcode;
+    //GETPOST.url = app_config.URLprefix + "term?" + termURLcode;
+    //GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
+    GETPOST.url = app_config.URLprefix + "courseSearchResults/courseSearchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
 };
 
 /**
@@ -262,8 +266,11 @@ app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
  * @constant
  */
 app_config.URLgetDescription = function(GETPOST, termURLcode, courseURLcode){
-    GETPOST.openMethod = "GET";
-    GETPOST.url = app_config.URLprefix + "description?t=" + termURLcode + "&c=" + courseURLcode;
+    //GETPOST.openMethod = "GET";
+    //GETPOST.url = app_config.URLprefix + "description?t=" + termURLcode + "&c=" + courseURLcode;
+    GETPOST.openMethod = "POST";
+    GETPOST.url = app_config.URLprefix + "searchResults/getCourseDescription";
+    GETPOST.postData = "term=" + termURLcode + "&courseReferenceNumber=" + courseURLcode;
 };
 
 /**
@@ -286,7 +293,8 @@ app_config.URLgetCourseTotalCount = function(GETPOST, termURLcode){
     // this example just loads as few courses as possible to get some data - may not be the same
     // at every school
     GETPOST.openMethod = "GET";
-    GETPOST.url = "";
+    //GETPOST.url = "";
+    GETPOST.url = app_config.URLprefix + "courseSearchResults/courseSearchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc";
 };
 
 /**
@@ -324,11 +332,11 @@ app_config.URLtest = function(GETPOST){
  * @constant
 */
 app_config.URLprime = function(GETPOST, termURLcode){
-    GETPOST.url = ""; // this is an example where your life is easy and you don't
-    return;           // need to bother with cookies
-    //GETPOST.openMethod = "POST";
-    //GETPOST.url = app_config.URLprefix + "term/search?mode=search";
-    //GETPOST.postData = "term=" + termURLcode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
+    //GETPOST.url = ""; // this is an example where your life is easy and you don't
+    //return;           // need to bother with cookies
+    GETPOST.openMethod = "POST";
+    GETPOST.url = app_config.URLprefix + "term/search?mode=search";
+    GETPOST.postData = "term=" + termURLcode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
 };
 
 
@@ -437,7 +445,13 @@ var Term;
  * @constant
 */
 app_config.PROCESSgetTerms = function(responseText){
-    return JSON.parse(responseText).map(t => ({"URLcode": t.URLcode, "title": t.title}));
+    //return JSON.parse(responseText).map(t => ({"URLcode": t.URLcode, "title": t.title}));
+    var termJSON = JSON.parse(responseText);
+    var ret = [];
+    termJSON.forEach(function(termObj){
+	ret.push({URLcode: termObj.code, title: termObj.description});
+    });
+    return ret;
 };
 
 /**
@@ -456,7 +470,10 @@ app_config.PROCESSgetTerms = function(responseText){
  * @constant
  */
 app_config.PROCESSgetCourseTotalCount = function(responseText){
-    return JSON.parse(responseText).length; // reference w/ bracket notation please - closure compiler shuts up
+    //return JSON.parse(responseText).length; // reference w/ bracket notation please - closure compiler shuts up
+    if(JSON.parse(responseText).success == "false")
+	console.trace("there's something wrong!");
+    return JSON.parse(responseText)['totalCount']; // reference w/ bracket notation please - closure compiler shuts up
 };
 
 /**
@@ -611,7 +628,7 @@ var Course;
  * @memberOf app_config
  * @constant
 */
-app_config.PROCESSgetCourses = function(responseText){
+/*app_config.PROCESSgetCourses = function(responseText){
     var coursesJSON = JSON.parse(responseText);
     var ret_courses = [];
     coursesJSON.forEach(function(courseJSON){
@@ -633,6 +650,58 @@ app_config.PROCESSgetCourses = function(responseText){
 	ret_course.waitCapacity = courseJSON['waitCapacity'];
 
 	ret_course.meetings = courseJSON['meetings'];
+	
+	ret_courses.push(ret_course);
+    });
+    return ret_courses;
+    };*/
+app_config.PROCESSgetCourses = function(responseText){
+    var coursesJSON = JSON.parse(responseText).data;
+    var ret_courses = [];
+    coursesJSON.forEach(function(courseJSON){
+	var ret_course = {}; // of type Course
+	ret_course.courseNumber = courseJSON['courseNumber'];
+	ret_course.URLcode = courseJSON['courseReferenceNumber'];
+	ret_course.courseRegistrationCode = courseJSON['courseReferenceNumber'];
+	ret_course.title = courseJSON['courseTitle'];
+	
+	ret_course.credits = 0;
+	if(courseJSON.creditHours != undefined)
+	    ret_course.credits = courseJSON['creditHours'];
+	else if(courseJSON.creditHourLow != undefined)
+	    ret_course.credits = courseJSON['creditHourLow'];
+	else if(courseJSON.creditHourHigh != undefined)
+	    ret_course.credits = courseJSON['creditHourHigh'];
+
+	if(courseJSON.faculty.length == 0)
+	    ret_course.faculty = "STAFF";
+	else
+	    ret_course.faculty = courseJSON['faculty'].map((obj, index, array) => (array.length > 1 && index == array.length-1 ? "and " : "") + obj.displayName.split(", ").reverse().join(" ")).join(", ");
+	// make a list in form of "first last, first last, and first last"
+	// from ["last, first", "last, first", "last, first"] w/ keys
+
+	ret_course.scheduleTypeDescription = courseJSON.scheduleTypeDescription;
+	ret_course.subject = courseJSON.subject;
+	ret_course.maximumEnrollment = courseJSON.maximumEnrollment;
+	ret_course.seatsAvailable = courseJSON.seatsAvailable;
+	ret_course.waitAvailable = courseJSON.waitAvailable;
+	ret_course.waitCapacity = courseJSON.waitCapacity;
+
+	ret_course.meetings = courseJSON['meetingsFaculty'].map(function(meetingFaculty){
+	    return {
+		building: meetingFaculty['meetingTime'].building,
+		room: meetingFaculty['meetingTime'].room,
+		beginTime: meetingFaculty['meetingTime'].beginTime,
+		endTime: meetingFaculty['meetingTime'].endTime,
+		monday: meetingFaculty['meetingTime'].monday,
+		tuesday: meetingFaculty['meetingTime'].tuesday,
+		wednesday: meetingFaculty['meetingTime'].wednesday,
+		thursday: meetingFaculty['meetingTime'].thursday,
+		friday: meetingFaculty['meetingTime'].friday,
+		saturday: meetingFaculty['meetingTime'].saturday,
+		sunday: meetingFaculty['meetingTime'].sunday
+	    };
+	});
 	
 	ret_courses.push(ret_course);
     });
@@ -783,7 +852,7 @@ app_config.getLogoName = function(isDarkMode){
  * @memberOf app_config
  * @constant
  */
-app_config.CORStest = false;
+app_config.CORStest = true;//false;
 
 /**
  * app_config.CORScustom
@@ -799,7 +868,8 @@ app_config.CORStest = false;
  * @memberOf app_config
  * @constant
  */
-app_config.CORScustom = "";
+//app_config.CORScustom = "";
+app_config.CORScustom = "The developer ran out of hosting credits on a free trial. Sorry but I'm not paying to make this easy for you.";
 
 
 // You're almost done!
