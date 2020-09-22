@@ -673,7 +673,7 @@ app_config.PROCESSgetCourses = function(responseText){
 	else if(courseJSON.creditHourHigh != undefined)
 	    ret_course.credits = courseJSON['creditHourHigh'];
 
-	if(courseJSON.faculty.length == 0)
+	if(courseJSON.faculty === undefined || courseJSON.faculty.length == 0)
 	    ret_course.faculty = "STAFF";
 	else
 	    ret_course.faculty = courseJSON['faculty'].map((obj, index, array) => (array.length > 1 && index == array.length-1 ? "and " : "") + obj.displayName.split(", ").reverse().join(" ")).join(", ");
@@ -687,21 +687,24 @@ app_config.PROCESSgetCourses = function(responseText){
 	ret_course.waitAvailable = courseJSON.waitAvailable;
 	ret_course.waitCapacity = courseJSON.waitCapacity;
 
-	ret_course.meetings = courseJSON['meetingsFaculty'].map(function(meetingFaculty){
-	    return {
-		building: meetingFaculty['meetingTime'].building,
-		room: meetingFaculty['meetingTime'].room,
-		beginTime: meetingFaculty['meetingTime'].beginTime,
-		endTime: meetingFaculty['meetingTime'].endTime,
-		monday: meetingFaculty['meetingTime'].monday,
-		tuesday: meetingFaculty['meetingTime'].tuesday,
-		wednesday: meetingFaculty['meetingTime'].wednesday,
-		thursday: meetingFaculty['meetingTime'].thursday,
-		friday: meetingFaculty['meetingTime'].friday,
-		saturday: meetingFaculty['meetingTime'].saturday,
-		sunday: meetingFaculty['meetingTime'].sunday
-	    };
-	});
+	if(courseJSON['meetingsFaculty'] !== undefined)
+	    ret_course.meetings = courseJSON['meetingsFaculty'].map(function(meetingFaculty){
+		return {
+		    building: meetingFaculty['meetingTime'].building,
+		    room: meetingFaculty['meetingTime'].room,
+		    beginTime: meetingFaculty['meetingTime'].beginTime,
+		    endTime: meetingFaculty['meetingTime'].endTime,
+		    monday: meetingFaculty['meetingTime'].monday,
+		    tuesday: meetingFaculty['meetingTime'].tuesday,
+		    wednesday: meetingFaculty['meetingTime'].wednesday,
+		    thursday: meetingFaculty['meetingTime'].thursday,
+		    friday: meetingFaculty['meetingTime'].friday,
+		    saturday: meetingFaculty['meetingTime'].saturday,
+		    sunday: meetingFaculty['meetingTime'].sunday
+		};
+	    });
+	else
+	    ret_course.meetings = [];
 	
 	ret_courses.push(ret_course);
     });
