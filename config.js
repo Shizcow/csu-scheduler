@@ -229,7 +229,7 @@ app_config.URLgetTerms = function(GETPOST){
     // GET request - no need to set postData
     //GETPOST.url = app_config.URLprefix + "terms";
     //GETPOST.url = app_config.URLprefix + "classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566";
-    GETPOST.url = app_config.URLprefix + "courseSearch/getTerms?searchTerm=&offset=1&max=100&_=1600789612817";
+    GETPOST.url = app_config.URLprefix + "classSearch/getTerms?searchTerm=&offset=1&max=100&_=1600878705085";
 };
 
 /**
@@ -250,7 +250,7 @@ app_config.URLgetCourses = function(GETPOST, termURLcode, offset, size){
     GETPOST.openMethod = "GET";
     //GETPOST.url = app_config.URLprefix + "term?" + termURLcode;
     //GETPOST.url = app_config.URLprefix + "searchResults/searchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
-    GETPOST.url = app_config.URLprefix + "courseSearchResults/courseSearchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
+    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?mepCode=CSU&txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=" + offset + "&pageMaxSize=" + size.toString() + "&sortColumn=subjectDescription&sortDirection=asc";
 };
 
 /**
@@ -293,8 +293,7 @@ app_config.URLgetCourseTotalCount = function(GETPOST, termURLcode){
     // this example just loads as few courses as possible to get some data - may not be the same
     // at every school
     GETPOST.openMethod = "GET";
-    //GETPOST.url = "";
-    GETPOST.url = app_config.URLprefix + "courseSearchResults/courseSearchResults?txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc";
+    GETPOST.url = app_config.URLprefix + "searchResults/searchResults?mepCode=CSU&txt_term=" + termURLcode + "&startDatepicker=&endDatepicker=&pageOffset=0&pageMaxSize=10&sortColumn=subjectDescription&sortDirection=asc";
 };
 
 /**

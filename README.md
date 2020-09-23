@@ -1,8 +1,3 @@
-# Dead Project
-Well, it was fun while it lasted. CSU has removed schedule day/time data from
-public records. Bringing this back would require havng a user log into RamWeb via
-this tool, which is too much of a security risk IMO. Sad.
-
 # csu-scheduler
 Course Scheduler for Colorado State University. Create, save, edit, and view all your schedules in one simple page.
 
