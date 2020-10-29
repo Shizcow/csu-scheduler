@@ -229,7 +229,7 @@ app_config.URLgetTerms = function(GETPOST){
     // GET request - no need to set postData
     //GETPOST.url = app_config.URLprefix + "terms";
     //GETPOST.url = app_config.URLprefix + "classSearch/getTerms?searchTerm=&offset=1&max=100&_=1554348528566";
-    GETPOST.url = app_config.URLprefix + "classSearch/getTerms?searchTerm=&offset=1&max=100&_=1600878705085";
+    GETPOST.url = app_config.URLprefix + "classSearch/getTerms?mepCode=CSU&searchTerm=&offset=1&max=100&_=1600878705085";
 };
 
 /**
@@ -334,7 +334,7 @@ app_config.URLprime = function(GETPOST, termURLcode){
     //GETPOST.url = ""; // this is an example where your life is easy and you don't
     //return;           // need to bother with cookies
     GETPOST.openMethod = "POST";
-    GETPOST.url = app_config.URLprefix + "term/search?mode=search";
+    GETPOST.url = app_config.URLprefix + "term/search?mepCode=CSU&mode=search";
     GETPOST.postData = "term=" + termURLcode + "&studyPath=&studyPathText=&startDatepicker=&endDatepicker=";
 };
 
